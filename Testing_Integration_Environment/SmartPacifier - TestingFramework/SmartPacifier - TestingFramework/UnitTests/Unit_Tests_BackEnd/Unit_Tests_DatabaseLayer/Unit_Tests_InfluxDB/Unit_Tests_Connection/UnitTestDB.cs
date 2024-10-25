@@ -10,10 +10,10 @@ namespace SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.Unit_Tes
 {
     public class UnitTestDB : IUnitTestDB
     {
-        private readonly string _url = "http://localhost:8086";  // Update this if needed
-        private readonly string _validToken = "XA_RX0PWO3L9T4EPRf0SjWIC6sGv-l2ndFiUHCgZmhGcCyw85YDH7hGN8DdzTfpJd7T0j3f45LymSaLIthQ5ag==";
-        private readonly string _bucket = "SmartPacifier-Bucket1";  // Update this if needed
-        private readonly string _org = "thu-de";  // Update this if needed
+        private readonly string _url = "http://localhost:8086";  
+        private readonly string _validToken = "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ==";
+        private readonly string _bucket = "SmartPacifier-Bucket1";  
+        private readonly string _org = "thu-de";  
 
  
         public async Task Test_ValidToken_Should_Allow_Connection()
