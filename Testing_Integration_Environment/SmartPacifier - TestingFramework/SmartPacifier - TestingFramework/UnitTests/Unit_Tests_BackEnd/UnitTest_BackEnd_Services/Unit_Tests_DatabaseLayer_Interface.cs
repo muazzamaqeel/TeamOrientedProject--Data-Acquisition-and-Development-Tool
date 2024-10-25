@@ -10,4 +10,13 @@ namespace SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.UnitTest
     {
         Task Test_ValidToken_Should_Allow_Connection();
     }
+
+
+    public interface IUnitTestMAN
+    {
+    }
+
+
+
+
 }
