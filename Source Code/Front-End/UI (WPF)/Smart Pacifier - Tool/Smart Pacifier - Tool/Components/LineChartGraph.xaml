@@ -1,0 +1,8 @@
+﻿<UserControl x:Class="Smart_Pacifier___Tool.Components.LineChartGraph"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:oxy="http://oxyplot.org/wpf"
+             Height="300" Width="400">
+
+    <oxy:PlotView x:Name="plotView" Model="{Binding PlotModel}" />
+</UserControl>

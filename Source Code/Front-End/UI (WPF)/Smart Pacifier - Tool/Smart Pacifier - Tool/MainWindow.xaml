@@ -14,9 +14,9 @@
            </Grid.ColumnDefinitions>
 
            <!-- Sidebar -->
-           <local:Sidebar Grid.Column="0"/>
+            <local:Sidebar x:Name="Sidebar" Grid.Column="0"/>
 
-           <!-- Main content -->
+        <!-- Main content -->
            <ContentControl x:Name="MainContent" Grid.Column="1" Background="{StaticResource PrimaryBackgroundColor}"/>
        </Grid>
    </Window>

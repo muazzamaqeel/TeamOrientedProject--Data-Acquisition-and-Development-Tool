@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<RootNamespace>SmartPacifier___TestingFramework</RootNamespace>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+
+		<!-- Suppress NU1701 warnings -->
+		<NoWarn>NU1701</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Castle.Core" Version="5.1.1" />
+		<PackageReference Include="coverlet.collector" Version="6.0.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="FlaUI.Core" Version="4.0.0" />
+		<PackageReference Include="FlaUI.UIA3" Version="4.0.0" />
+		<PackageReference Include="InfluxDB.Client" Version="4.18.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="TestStack.White" Version="0.13.3" />
+		<PackageReference Include="xunit" Version="2.9.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Xunit" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="UITests\UI_Tests-BackEnd\" />
+	  <Folder Include="UnitTests\Unit_Templates\" />
+	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\" />
+	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_MonitoringTab\" />
+	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_SettingsTab\" />
+	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_DeveloperTab\" />
+	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_CampaignsTab\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\Source Code\Back-End\BackEndService\BackEndService\SmartPacifier.BackEnd.csproj" />
+	  <ProjectReference Include="..\..\..\Source Code\Front-End\UI (WPF)\Smart Pacifier - Tool\Smart Pacifier - Tool\SmartPacifier.UI (WPF).csproj" />
+	  <ProjectReference Include="..\..\..\Source Code\Interface\Interface_NETInterop\Interface_NETInterop\SmartPacifier.Interface.csproj" />
+	</ItemGroup>
+
+</Project>

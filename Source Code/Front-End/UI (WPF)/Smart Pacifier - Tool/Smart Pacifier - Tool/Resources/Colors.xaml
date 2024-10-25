@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="PrimaryBackgroundColor" Color="#333333"/>
+    <SolidColorBrush x:Key="SidebarBackgroundColor" Color="#383838"/>
+    <SolidColorBrush x:Key="MainViewBackgroundColor" Color="#1f1f1f"/>
+    <SolidColorBrush x:Key="MainViewSecondaryBackgroundColor" Color="#383838"/>
+    <SolidColorBrush x:Key="MainViewForegroundColor" Color="#ffffff"/>
+    <SolidColorBrush x:Key="AccentColor" Color="#FF0059FF"/>
+    <SolidColorBrush x:Key="ButtonHoverColor" Color="#555555"/>
+    <SolidColorBrush x:Key="ButtonPressedColor" Color="#777777"/>
+    <SolidColorBrush x:Key="TextColor" Color="White"/>
+</ResourceDictionary>

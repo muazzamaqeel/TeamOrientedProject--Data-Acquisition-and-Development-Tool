@@ -52,6 +52,7 @@
         <StackPanel Grid.Row="1">
             <Button Content="Active Monitoring" Click="MonitoringButton_Click"/>
             <Button Content="Campaigns" Click="CampaignsButton_Click"/>
+            <Button x:Name="DeveloperButton" Content="Developer" Visibility="Collapsed" Click="DeveloperButton_Click"/>
             <Button Content="Settings" Click="SettingsButton_Click" />
         </StackPanel>
     </Grid>
