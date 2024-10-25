@@ -57,10 +57,21 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             }
         }
 
-        public List<string> ReadData(string query)
+        public async Task<List<string>> ReadData(string query)
         {
-            // Implement your read logic here
-            return new List<string>();
+            var queryApi = _client.GetQueryApi();
+            var tables = await queryApi.QueryAsync(query, _org);
+            var records = new List<string>();
+
+            foreach (var table in tables)
+            {
+                foreach (var record in table.Records)
+                {
+                    records.Add(record.GetValue().ToString());
+                }
+            }
+
+            return records;
         }
 
         public async Task<List<string>> GetCampaignsAsync()
@@ -85,5 +96,8 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 
             return campaigns;
         }
+
+
+
     }
 }

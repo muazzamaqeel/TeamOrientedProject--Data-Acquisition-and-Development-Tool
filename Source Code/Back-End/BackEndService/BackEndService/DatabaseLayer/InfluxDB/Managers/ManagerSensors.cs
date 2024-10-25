@@ -19,9 +19,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers
             await _databaseService.WriteDataAsync(measurement, fields, tags);
         }
 
-        public List<string> ReadData(string query)
+        public Task<List<string>> ReadData(string query)
         {
-            return _databaseService.ReadData(query);
+            return _databaseService.ReadData(query); // Make this async to return Task
         }
 
         public async Task<List<string>> GetCampaignsAsync()
