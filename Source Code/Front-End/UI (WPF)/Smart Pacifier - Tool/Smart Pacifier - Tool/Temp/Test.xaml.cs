@@ -2,55 +2,32 @@
 using System.Collections.Generic;
 using System.Windows;
 using SmartPacifier.Interface.Services;
-using SmartPacifier.BackEnd.Database.InfluxDB.Connection;
-using Smart_Pacifier___Tool.Components;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
-using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
+using Smart_Pacifier___Tool.Components;
 
 namespace Smart_Pacifier___Tool.Temp
 {
     public partial class Test : Window
     {
-        private readonly IDatabaseService _databaseService;
-        private readonly List<string> _campaigns = new List<string>();  // List to store campaigns
-        private readonly List<string> _pacifiers = new List<string>();  // List to store pacifiers
-        private ManagerCampaign? _managerCampaign;
-        private ManagerPacifiers? _managerPacifiers;
-        private ManagerSensors? _managerSensors;
+        private readonly IManagerCampaign _managerCampaign;
+        private readonly IManagerPacifiers _managerPacifiers;
+        private readonly IManagerSensors _managerSensors;
+        private readonly List<string> _campaigns = new List<string>();
+        private readonly List<string> _pacifiers = new List<string>();
 
-        public Test(IDatabaseService databaseService)
+        public Test(IManagerCampaign managerCampaign, IManagerPacifiers managerPacifiers, IManagerSensors managerSensors)
         {
             InitializeComponent();
-            _databaseService = databaseService;
-
-            // Initialize the managers with default or placeholder values
-            _managerCampaign = new ManagerCampaign(databaseService);
-            _managerSensors = new ManagerSensors(databaseService);
-
-            // Retrieve the client from the InfluxDatabaseService instance
-            var influxService = _databaseService as InfluxDatabaseService;
-
-            if (influxService == null)
-            {
-                MessageBox.Show("Failed to initialize InfluxDatabaseService. Please check the service configuration.",
-                                "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;  // Exit constructor gracefully if the client can't be initialized
-            }
-
-            var client = influxService.GetClient();
-            _managerPacifiers = new ManagerPacifiers(databaseService, client);
-
-            // Load existing campaigns into ComboBox
+            _managerCampaign = managerCampaign;
+            _managerPacifiers = managerPacifiers;
+            _managerSensors = managerSensors;
             LoadExistingCampaigns();
         }
 
-        // Method to load existing campaigns (from the database)
         public async void LoadExistingCampaigns()
         {
-            _campaigns.Clear();  // Clear the current list
-
-            // Fetch campaigns from the database
-            var campaignsFromDb = await _databaseService.GetCampaignsAsync();
+            _campaigns.Clear();
+            var campaignsFromDb = await _managerCampaign.GetCampaignsAsync();
 
             if (campaignsFromDb != null && campaignsFromDb.Count > 0)
             {
@@ -59,8 +36,7 @@ namespace Smart_Pacifier___Tool.Temp
                     _campaigns.Add(campaign);
                 }
 
-                CampaignComboBox.ItemsSource = null;  // Clear ComboBox
-                CampaignComboBox.ItemsSource = _campaigns;  // Bind campaigns to ComboBox
+                CampaignComboBox.ItemsSource = _campaigns;
             }
             else
             {
@@ -68,62 +44,36 @@ namespace Smart_Pacifier___Tool.Temp
             }
         }
 
-        // Method to load pacifiers for the selected campaign
-        // Method to load pacifiers for the selected campaign
-        public async void LoadPacifiers(string selectedCampaign)
-        {
-            _pacifiers.Clear();  // Clear the current list of pacifiers
-
-            if (string.IsNullOrWhiteSpace(selectedCampaign))
-            {
-                MessageBox.Show("Please select a valid campaign.");
-                return;
-            }
-
-            // Check if _managerPacifiers is initialized
-            if (_managerPacifiers != null)
-            {
-                // Fetch pacifiers for the selected campaign from the database
-                var pacifiersFromDb = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
-
-                if (pacifiersFromDb != null && pacifiersFromDb.Count > 0)
-                {
-                    foreach (var pacifier in pacifiersFromDb)
-                    {
-                        _pacifiers.Add(pacifier);
-                    }
-
-                    // Refresh the PacifierComboBox with pacifiers
-                    PacifierComboBox.ItemsSource = null;  // Clear ComboBox
-                    PacifierComboBox.ItemsSource = _pacifiers;  // Bind pacifiers to ComboBox
-                }
-                else
-                {
-                    MessageBox.Show("No pacifiers found for the selected campaign.");
-                }
-            }
-            else
-            {
-                MessageBox.Show("Pacifier manager is not initialized.");
-            }
-        }
-
-
-
-        // Event handler for when a campaign is selected, triggering loading of pacifiers
-        // Event handler for when a campaign is selected, triggering loading of pacifiers
-        private void CampaignComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private async void CampaignComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             string? selectedCampaign = CampaignComboBox.SelectedItem as string;
 
             if (!string.IsNullOrWhiteSpace(selectedCampaign))
             {
-                LoadPacifiers(selectedCampaign);  // Load pacifiers for the selected campaign
+                await LoadPacifiers(selectedCampaign);
             }
         }
 
+        public async Task LoadPacifiers(string selectedCampaign)
+        {
+            _pacifiers.Clear();
+            var pacifiersFromDb = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
 
-        // Event handler for adding a campaign
+            if (pacifiersFromDb != null && pacifiersFromDb.Count > 0)
+            {
+                foreach (var pacifier in pacifiersFromDb)
+                {
+                    _pacifiers.Add(pacifier);
+                }
+
+                PacifierComboBox.ItemsSource = _pacifiers;
+            }
+            else
+            {
+                MessageBox.Show("No pacifiers found for the selected campaign.");
+            }
+        }
+
         private async void OnAddCampaignButtonClick(object sender, RoutedEventArgs e)
         {
             InputDialog inputDialog = new InputDialog("Enter Campaign Name");
@@ -133,20 +83,10 @@ namespace Smart_Pacifier___Tool.Temp
 
                 if (!string.IsNullOrWhiteSpace(newCampaignName))
                 {
-                    if (_managerCampaign != null)
-                    {
-                        await _managerCampaign.AddCampaignAsync(newCampaignName);  // Add campaign
-
-                        _campaigns.Add(newCampaignName);
-                        CampaignComboBox.ItemsSource = null;
-                        CampaignComboBox.ItemsSource = _campaigns;
-
-                        ResultsTextBox.Text += $"Added campaign: {newCampaignName}\n";
-                    }
-                    else
-                    {
-                        MessageBox.Show("Campaign manager is not initialized.");
-                    }
+                    await _managerCampaign.AddCampaignAsync(newCampaignName);
+                    _campaigns.Add(newCampaignName);
+                    CampaignComboBox.ItemsSource = _campaigns;
+                    ResultsTextBox.Text += $"Added campaign: {newCampaignName}\n";
                 }
                 else
                 {
@@ -155,7 +95,6 @@ namespace Smart_Pacifier___Tool.Temp
             }
         }
 
-        // Event handler for adding a pacifier
         private async void OnAddPacifierButtonClick(object sender, RoutedEventArgs e)
         {
             string? selectedCampaign = CampaignComboBox.SelectedItem as string;
@@ -169,19 +108,8 @@ namespace Smart_Pacifier___Tool.Temp
 
                     if (!string.IsNullOrWhiteSpace(pacifierName))
                     {
-                        if (_managerPacifiers != null)
-                        {
-                            await _managerPacifiers.AddPacifierAsync(selectedCampaign, pacifierName);
-                            ResultsTextBox.Text += $"Added pacifier: {pacifierName} to campaign: {selectedCampaign}\n";
-                        }
-                        else
-                        {
-                            MessageBox.Show("Pacifier manager is not initialized.");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("Please enter a valid pacifier name.");
+                        await _managerPacifiers.AddPacifierAsync(selectedCampaign, pacifierName);
+                        ResultsTextBox.Text += $"Added pacifier: {pacifierName} to campaign: {selectedCampaign}\n";
                     }
                 }
             }
@@ -191,7 +119,6 @@ namespace Smart_Pacifier___Tool.Temp
             }
         }
 
-        // Event handler for adding sensors to the selected pacifier
         private async void OnAddSensorButtonClick(object sender, RoutedEventArgs e)
         {
             string? selectedCampaign = CampaignComboBox.SelectedItem as string;
@@ -199,20 +126,13 @@ namespace Smart_Pacifier___Tool.Temp
 
             if (selectedCampaign != null && selectedPacifier != null)
             {
-                if (_managerSensors != null)
-                {
-                    float ppgValue = 0.85f;
-                    float imuAccelX = 0.001f;
-                    float imuAccelY = 0.002f;
-                    float imuAccelZ = 0.003f;
+                float ppgValue = 0.85f;
+                float imuAccelX = 0.001f;
+                float imuAccelY = 0.002f;
+                float imuAccelZ = 0.003f;
 
-                    await _managerSensors.AddSensorDataAsync(selectedCampaign, selectedPacifier, ppgValue, imuAccelX, imuAccelY, imuAccelZ);
-                    ResultsTextBox.Text += $"Added sensors to pacifier: {selectedPacifier} in campaign: {selectedCampaign}\n";
-                }
-                else
-                {
-                    MessageBox.Show("Sensor manager is not initialized.");
-                }
+                await _managerSensors.AddSensorDataAsync(selectedPacifier, ppgValue, imuAccelX, imuAccelY, imuAccelZ);
+                ResultsTextBox.Text += $"Added sensors to pacifier: {selectedPacifier} in campaign: {selectedCampaign}\n";
             }
             else
             {

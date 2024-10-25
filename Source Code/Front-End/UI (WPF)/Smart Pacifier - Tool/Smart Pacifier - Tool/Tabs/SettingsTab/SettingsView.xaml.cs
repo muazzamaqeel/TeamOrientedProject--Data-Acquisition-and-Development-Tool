@@ -24,6 +24,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
 
             UpdateButtonStates();
+
+            // Ensure the User Mode and Developer Mode buttons are visible by default
+            ModeButtonsPanel.Visibility = Visibility.Visible;
         }
 
         private bool isUserMode = true;
@@ -55,7 +58,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             // Force the Sidebar to update its visibility
             ((MainWindow)Application.Current.MainWindow).UpdateDeveloperTabVisibility();
         }
-
 
         private void DeveloperMode_Click(object sender, RoutedEventArgs e)
         {

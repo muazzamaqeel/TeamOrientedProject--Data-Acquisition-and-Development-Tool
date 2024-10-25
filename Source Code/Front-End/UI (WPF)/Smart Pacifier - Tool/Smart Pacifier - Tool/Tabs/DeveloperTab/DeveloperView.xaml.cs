@@ -1,6 +1,9 @@
-﻿using System;
+﻿using SmartPacifier.Interface.Services;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -8,37 +11,62 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
     public partial class DeveloperView : UserControl
     {
+        private readonly IDatabaseService _databaseService;
+        private readonly IManagerPacifiers _managerPacifiers;
         private List<SensorData> allData = new List<SensorData>();
         private List<SensorData> currentPageData = new List<SensorData>();
         private int currentPage = 1;
         private int pageSize = 10;
 
-        public DeveloperView()
+        public DeveloperView(IDatabaseService databaseService, IManagerPacifiers managerPacifiers)
         {
             InitializeComponent();
-            LoadData();
-            DisplayData();
+            _databaseService = databaseService;
+            _managerPacifiers = managerPacifiers;
+            _ = LoadDataAsync();  // Call the async method but don't await, suppressing CS4014
         }
 
-        // Load data into allData
-        private void LoadData()
+        private async Task LoadDataAsync()
         {
-            allData = new List<SensorData>
+            try
             {
-                new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_1", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 36.5 },
-                new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_3", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 311.5 },
-                new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_2", Pacifier = "pacifier_2", Sensor = "sensor_1", Value = 36.5 },
-            };
+                var campaigns = await _databaseService.GetCampaignsAsync();
+                Campaign.ItemsSource = campaigns;
+
+                allData = campaigns.Select(c => new SensorData
+                {
+                    Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                    Campaign = c,
+                    Pacifier = "pacifier_1",
+                    Sensor = "sensor_1",
+                    Value = 36.5
+                }).ToList();
+                DisplayData();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading data: {ex.Message}");
+            }
         }
 
-        // Display the current page of data
         private void DisplayData()
         {
-            currentPageData = allData?.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList() ?? new List<SensorData>();
+            currentPageData = allData.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
             DataListView.ItemsSource = currentPageData;
         }
 
-        // Pagination: Previous Button
+        // Apply Button Click Event Handler
+        private void ApplyButton_Click(object sender, RoutedEventArgs e)
+        {
+            var filteredData = allData.Where(d =>
+                d.Campaign == Campaign.SelectedItem?.ToString() &&
+                d.Pacifier == Pacifier.SelectedItem?.ToString() &&
+                d.Sensor == Sensor.SelectedItem?.ToString()).ToList();
+
+            DataListView.ItemsSource = filteredData;
+        }
+
+        // Pagination: Previous Button Click Event Handler
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentPage > 1)
@@ -48,103 +76,43 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-        // Pagination: Next Button
+        // Pagination: Next Button Click Event Handler
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentPage * pageSize < (allData?.Count ?? 0))
+            if (currentPage * pageSize < allData.Count)
             {
                 currentPage++;
                 DisplayData();
             }
         }
 
-        // Apply filters with null checks to avoid CS8602
-        private void ApplyButton_Click(object sender, RoutedEventArgs e)
+        // ComboBox Selection Changed Event Handler
+        private async void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var filteredData = allData?.Where(d => d.Campaign == Campaign.SelectedItem?.ToString() &&
-                                                   d.Pacifier == Pacifier.SelectedItem?.ToString() &&
-                                                   d.Sensor == Sensor.SelectedItem?.ToString()).ToList();
-
-            DataListView.ItemsSource = filteredData ?? new List<SensorData>();
-        }
-
-        // Delete selected entries with null check
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedItems = DataListView.SelectedItems?.Cast<SensorData>().ToList();
-
-            if (selectedItems != null && selectedItems.Count > 0)
+            if (sender == Campaign)
             {
-                // Show confirmation dialog
-                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the selected data?",
-                                                          "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                // If the user confirms deletion
-                if (result == MessageBoxResult.Yes)
+                var selectedCampaign = Campaign.SelectedItem?.ToString();
+                if (!string.IsNullOrEmpty(selectedCampaign))
                 {
-                    foreach (var item in selectedItems)
-                    {
-                        allData?.Remove(item);
-                    }
-
-                    // Refresh the display
-                    DisplayData();
+                    var pacifiers = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
+                    Pacifier.ItemsSource = pacifiers;
                 }
-                // If Cancel is chosen, do nothing.
-            }
-            else
-            {
-                MessageBox.Show("Please select at least one entry to delete.");
             }
         }
 
-        // Add button click
+        // Add Button Click Event Handler
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            AddDataWindow addDataWindow = new AddDataWindow();
-
-            // Open the window as a dialog
-            if (addDataWindow.ShowDialog() == true)
-            {
-                // Add the new data to the list if Save was clicked
-                var newData = new SensorData
-                {
-                    Timestamp = addDataWindow.Timestamp,
-                    Pacifier = addDataWindow.Pacifier,
-                    Campaign = addDataWindow.Campaign,
-                    Sensor = addDataWindow.Sensor,
-                    Value = addDataWindow.Value
-                };
-
-                allData.Add(newData);
-                DisplayData();
-            }
+            // Handle adding data logic
         }
 
-        // Edit button click
+        // Edit Button Click Event Handler
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataListView.SelectedItems.Count == 1)
             {
-                // Get the selected item
                 var selectedItem = (SensorData)DataListView.SelectedItem;
-
-                // Open the Edit Data Window with the selected item's data
-                EditDataWindow editDataWindow = new EditDataWindow(selectedItem);
-
-                // If Save is clicked, update the entry with the new data
-                if (editDataWindow.ShowDialog() == true)
-                {
-                    // Update the selected item with new values
-                    selectedItem.Timestamp = editDataWindow.Timestamp;
-                    selectedItem.Pacifier = editDataWindow.Pacifier;
-                    selectedItem.Campaign = editDataWindow.Campaign;
-                    selectedItem.Sensor = editDataWindow.Sensor;
-                    selectedItem.Value = editDataWindow.Value;
-
-                    // Refresh the data display
-                    DisplayData();
-                }
+                // Implement edit logic
             }
             else
             {
@@ -152,10 +120,23 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-        // Event handler when "Select All" checkbox is checked
+        // Delete Button Click Event Handler
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItems = DataListView.SelectedItems.Cast<SensorData>().ToList();
+            if (selectedItems.Any())
+            {
+                // Confirm and delete
+            }
+            else
+            {
+                MessageBox.Show("Please select at least one entry to delete.");
+            }
+        }
+
+        // Select All CheckBox Checked Event Handler
         private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            // Select all items in the DataListView
             foreach (var item in DataListView.Items)
             {
                 var listViewItem = DataListView.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
@@ -166,10 +147,9 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-        // Event handler when "Select All" checkbox is unchecked
+        // Select All CheckBox Unchecked Event Handler
         private void SelectAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            // Deselect all items in the DataListView
             foreach (var item in DataListView.Items)
             {
                 var listViewItem = DataListView.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
@@ -179,28 +159,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 }
             }
         }
-
-        // Handling placeholder-like behavior for ComboBox
-        private void ComboBox_Loaded(object sender, RoutedEventArgs e)
-        {
-            var comboBox = sender as ComboBox;
-            if (comboBox != null)
-            {
-                comboBox.SelectedIndex = -1;
-            }
-        }
-
-        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var comboBox = sender as ComboBox;
-            if (comboBox != null && comboBox.SelectedItem == null)
-            {
-                comboBox.SelectedIndex = -1; // Reset selection if nothing is chosen
-            }
-        }
     }
 
-    // Example data model for sensor data
     public class SensorData
     {
         public string Timestamp { get; set; } = string.Empty;

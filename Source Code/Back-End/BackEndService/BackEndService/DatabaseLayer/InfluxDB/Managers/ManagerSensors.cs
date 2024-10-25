@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers
 {
-    public partial class ManagerSensors : IDatabaseService
+    public partial class ManagerSensors : IManagerSensors
     {
         private readonly IDatabaseService _databaseService;
 
@@ -19,9 +19,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers
             await _databaseService.WriteDataAsync(measurement, fields, tags);
         }
 
-        public List<string> ReadData(string query)
+        public Task<List<string>> ReadData(string query)
         {
-            return _databaseService.ReadData(query);
+            return _databaseService.ReadData(query); // Make this async to return Task
         }
 
         public async Task<List<string>> GetCampaignsAsync()
@@ -30,12 +30,11 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers
         }
 
         // Method to add PPG_IMU and IMU sensor data
-        public async Task AddSensorDataAsync(string campaignName, string pacifierId, float ppgValue, float imuAccelX, float imuAccelY, float imuAccelZ)
+        public async Task AddSensorDataAsync(string pacifierId, float ppgValue, float imuAccelX, float imuAccelY, float imuAccelZ)
         {
             // First, add the PPG_IMU sensor data
             var ppgTags = new Dictionary<string, string>
             {
-                { "campaign_name", campaignName },
                 { "pacifier_id", pacifierId },
                 { "sensor_type", "PPG_IMU" }
             };
@@ -46,12 +45,11 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers
             };
 
             await _databaseService.WriteDataAsync("sensor_data", ppgFields, ppgTags);
-            Console.WriteLine($"Added sensor: PPG_IMU to pacifier: {pacifierId} in campaign: {campaignName}\n");
+            Console.WriteLine($"Added sensor: PPG_IMU to pacifier: {pacifierId}");
 
             // Then, add the IMU sensor data
             var imuTags = new Dictionary<string, string>
             {
-                { "campaign_name", campaignName },
                 { "pacifier_id", pacifierId },
                 { "sensor_type", "IMU_sensor" }
             };
@@ -64,7 +62,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers
             };
 
             await _databaseService.WriteDataAsync("sensor_data", imuFields, imuTags);
-            Console.WriteLine($"Added sensor: IMU_sensor to pacifier: {pacifierId} in campaign: {campaignName}\n");
+            Console.WriteLine($"Added sensor: IMU_sensor to pacifier: {pacifierId}");
         }
     }
 }
