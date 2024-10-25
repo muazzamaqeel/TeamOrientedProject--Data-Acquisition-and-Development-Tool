@@ -12,7 +12,12 @@ using MQTTnet.Packets;
 
 namespace SmartPacifier.BackEnd.IOTProtocols
 {
-    public class Broker
+    ///<summary>
+    ///Broker Class using Singleton Pattern. This class starts the
+    /// Mosquitto process uppon creation. The Prefered Way to cleanup
+    /// is to use the Dispose() method.
+    ///</summary>
+    public class Broker : IDisposable
     {
         private readonly string BROKER_ADDRESS = "localhost";
         private readonly int BROKER_PORT = 1883;
@@ -23,10 +28,10 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         private IMqttClient _mqttClient;
 
         private Process? _brokerProcess;
+	private bool disposed = false;
 	
 	// Event handler for received messages
         public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
-
         // Constructor for the Broker class
         private Broker()
         {
@@ -37,16 +42,32 @@ namespace SmartPacifier.BackEnd.IOTProtocols
             _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceived;
         }
 
-        // Destructor to clean up the Broker
+	///<summary>
+	/// Dispose Method to cleanup the methods.
+	///</summary>
+	public void Dispose()
+	{
+	    if (!disposed)
+	    {
+		StopBroker();
+		disposed = true;
+	    }
+	    // Suppress finalization to avoid calling the destructor
+	    // since we are disposing it manually
+	    GC.SuppressFinalize(this);
+	}
+
+        // Destructor (Finalizer) in case Dispose is not called manually
         ~Broker()
         {
-            StopBroker();
-	    Console.WriteLine("Destroy broker");
+	    Dispose();
         }
 
-        // Getting an Instance of the Broker. If there is no instance
-        // yet, it will create one. This is thread-safe for
-        // multithreading
+	///<summary>
+        /// Getting an Instance of the Broker. If there is no instance
+        /// yet, it will create one. This is thread-safe for
+        /// multithreading
+	///</summary>
         public static Broker Instance
         {
             get
@@ -62,7 +83,9 @@ namespace SmartPacifier.BackEnd.IOTProtocols
             }
         }
 
-        // Starting Mosquitto as a child process
+        ///<summary>
+	/// Starting Mosquitto Process
+	///</summary>
         public void  StartBroker()
         {
             var processStartInfo = new ProcessStartInfo
@@ -94,8 +117,20 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         // Stop the Mosquitto process
         public void StopBroker()
         {
-	    if(_brokerProcess != null)
+	    if(_brokerProcess != null){
+		 // Wait 5 seconds
+		bool hasExited = _brokerProcess.WaitForExit(5000);
+		// Force Kill if process is still running
+		if(!hasExited)
+		{
+		    _brokerProcess.Kill();
+		    _brokerProcess.WaitForExit();
+		    Console.WriteLine("Mosquitto closed forcefully");
+		}
 		_brokerProcess.Close();
+		_brokerProcess.Dispose();
+		
+	    }
 	    Console.WriteLine("Mosquitto Closed");
         }
 
@@ -144,7 +179,6 @@ namespace SmartPacifier.BackEnd.IOTProtocols
 
             Console.WriteLine("Subscribed to all topics");
         }
-
         // Unsubscribe from all topics
         public async Task UnsubscribeFromAll()
         {
