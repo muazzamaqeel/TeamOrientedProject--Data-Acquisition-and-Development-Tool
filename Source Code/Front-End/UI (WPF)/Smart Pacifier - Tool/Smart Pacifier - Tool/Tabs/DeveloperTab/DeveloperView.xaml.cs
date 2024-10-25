@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SmartPacifier.Interface.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -8,27 +9,41 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
     public partial class DeveloperView : UserControl
     {
+        private readonly IDatabaseService _databaseService;  // Injecting the database service
         private List<SensorData> allData = new List<SensorData>();
         private List<SensorData> currentPageData = new List<SensorData>();
         private int currentPage = 1;
         private int pageSize = 10;
 
-        public DeveloperView()
+        // Constructor with dependency injection
+        public DeveloperView(IDatabaseService databaseService)
         {
             InitializeComponent();
-            LoadData();
-            DisplayData();
+            _databaseService = databaseService; // Store the injected database service
+            LoadDataAsync(); // Make this method async to allow fetching data from the database
         }
 
-        // Load data into allData
-        private void LoadData()
+        // Load data into allData (example of async data fetching)
+        private async Task LoadDataAsync()
         {
-            allData = new List<SensorData>
+            try
             {
-                new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_1", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 36.5 },
-                new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_3", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 311.5 },
-                new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_2", Pacifier = "pacifier_2", Sensor = "sensor_1", Value = 36.5 },
-            };
+                // Replace this with actual data retrieval logic
+                var campaigns = await _databaseService.GetCampaignsAsync(); // Example of async database call
+                allData = campaigns.Select(c => new SensorData
+                {
+                    Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                    Campaign = c,
+                    Pacifier = "pacifier_1",  // Mock value
+                    Sensor = "sensor_1",      // Mock value
+                    Value = 36.5              // Mock value
+                }).ToList();
+                DisplayData(); // Display the data after loading
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading data: {ex.Message}");
+            }
         }
 
         // Display the current page of data
