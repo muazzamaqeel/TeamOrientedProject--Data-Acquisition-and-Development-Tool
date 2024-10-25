@@ -1,39 +1,73 @@
 ﻿using SmartPacifier.Interface.Services;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 {
-    public class ManagerCampaign : IDatabaseService
+    public class ManagerCampaign : IManagerCampaign
     {
         private readonly IDatabaseService _databaseService;
 
-        // Constructor to initialize the database service
         public ManagerCampaign(IDatabaseService databaseService)
         {
             _databaseService = databaseService;
         }
 
-        // Implementation of WriteDataAsync from the IDatabaseService interface
         public async Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
         {
             await _databaseService.WriteDataAsync(measurement, fields, tags);
         }
 
-        // Implementation of ReadData from the IDatabaseService interface
-        public List<string> ReadData(string query)
+        public async Task<List<string>> ReadData(string query)
         {
-            return _databaseService.ReadData(query);
+            return await _databaseService.ReadData(query);
         }
 
-        // Implementation of GetCampaignsAsync from the IDatabaseService interface
+        /// <summary>
+        /// Template function to extract distinct values from a specified column.
+        /// This method can be reused to query different data, not just campaigns.
+        /// </summary>
+        /// <param name="column">The column to get distinct values from (e.g., "campaign_name").</param>
+        /// <param name="timeRange">The time range for querying (e.g., "-30d").</param>
+        /// <returns>A list of distinct values from the specified column.</returns>
+        private async Task<List<string>> GetDistinctValuesFromDBAsync(string column, string timeRange)
+        {
+            // Define a template query that can extract distinct values from the given column
+            var fluxQuery = $"from(bucket: \"SmartPacifier-Bucket1\") " +
+                            $"|> range(start: {timeRange}) " +
+                            $"|> keep(columns: [\"{column}\"]) " +
+                            $"|> distinct(column: \"{column}\")";
+
+            // Use the database service to execute the query and process the results
+            var records = await _databaseService.ReadData(fluxQuery);
+            var distinctValues = new List<string>();
+
+            foreach (var record in records)
+            {
+                if (!string.IsNullOrEmpty(record))
+                {
+                    distinctValues.Add(record);
+                }
+            }
+
+            return distinctValues;
+        }
+
+        /// <summary>
+        /// Retrieves all distinct campaign names from the database.
+        /// This method reuses the template function to get data from the "campaign_name" column.
+        /// </summary>
+        /// <returns>A list of distinct campaign names.</returns>
         public async Task<List<string>> GetCampaignsAsync()
         {
-            return await _databaseService.GetCampaignsAsync();
+            return await GetDistinctValuesFromDBAsync("campaign_name", "-30d");
         }
 
-        // Method to add a campaign
+        /// <summary>
+        /// Adds a new campaign to the database.
+        /// </summary>
+        /// <param name="campaignName">The name of the campaign to add.</param>
+        /// <returns></returns>
         public async Task AddCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string>
@@ -43,14 +77,10 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
             var fields = new Dictionary<string, object>
             {
-                { "status", "active" }  // Example field
+                { "status", "active" }
             };
 
-            // Write campaign data to InfluxDB
             await WriteDataAsync("campaigns", fields, tags);
-
-            // Note: Removed reference to ResultsTextBox because this is a non-UI class
-            Console.WriteLine($"Added campaign: {campaignName}");
         }
     }
 }
