@@ -21,35 +21,31 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         private static readonly object _lock = new object();
 
         private IMqttClient _mqttClient;
-        //private readonly MQTTnet.Server.MqttClient _mqttServer;
 
-        private Process _brokerProcess;
-        private Task _brokerTask;
-        private bool _isBrokerRunning = false;
+        private Process? _brokerProcess;
+	
+	// Event handler for received messages
+        public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
 
-        /// <summary>
-        /// Constructor for the Broker class
-        /// </summary>
+        // Constructor for the Broker class
         private Broker()
         {
             var factory = new MqttFactory();
             _mqttClient = factory.CreateMqttClient();
             StartBroker();
-            //ConnectBroker();
+	    // Register event handler for received messages
+            _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceived;
         }
-        ///<summary>
-        /// Destructor to clean up the Broker
-        ///</summary>
+
+        // Destructor to clean up the Broker
         ~Broker()
         {
             StopBroker();
         }
 
-        /// <summary>
-	/// Gettingan Instance of the Broker. If there is no intance
-        /// yet, it will create one. This is threadsafe for
-        /// multithreading
-        /// </summary>
+        // Getting an Instance of the Broker. If there is no instance
+        // yet, it will create one. This is thread-safe for
+        // multithreading
         public static Broker Instance
         {
             get
@@ -65,51 +61,49 @@ namespace SmartPacifier.BackEnd.IOTProtocols
             }
         }
 
-        /// <summary>
-        /// Starting Mosquitto as a child process
-        /// </summary>
-        /// <returns>True if process started sucessfully, false otherwise</returns>
-        public void StartBroker()
+        // Starting Mosquitto as a child process
+        public void  StartBroker()
         {
-	    var processStartInfo = new ProcessStartInfo();
-	    processStartInfo.FileName = "mosquitto"; // path to Mosquitto executable
-	    processStartInfo.Arguments = "-v"; //Mosquitto command-line arguments
-	    processStartInfo.UseShellExecute = false;
-	    processStartInfo.RedirectStandardOutput = true;
-	    processStartInfo.RedirectStandardError = true;
+            var processStartInfo = new ProcessStartInfo
+            {
+                FileName = "mosquitto", // path to Mosquitto executable
+                Arguments = "-v", // Mosquitto command-line arguments
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
 
-	    _brokerProcess = Process.Start(processStartInfo);
+            _brokerProcess = Process.Start(processStartInfo);
 
-	    if (_brokerProcess != null)
-	    {
-		ReadBrokerOutput();
-	    }
-	    else
-	    {
-		Console.WriteLine("Failed to start Mosquitto process.");
-		_isBrokerRunning = false;
-	    }
-        } 
-	public void ReadBrokerOutput(){
-	    // Optionally, you can read the output from the Mosquitto process
-	    var output = _brokerProcess.StandardOutput.ReadToEnd();
-	    var error = _brokerProcess.StandardError.ReadToEnd();
-	    Console.WriteLine("Mosquitto output:\n" + output);
-	    Console.WriteLine("Mosquitto errors:\n" + error);
-	    
-	}
-	
-        public void StopBroker()
-        {
-            _brokerProcess.Close();
+            if (_brokerProcess == null)
+                Console.WriteLine("Failed to start Mosquitto process.");
         }
 
+        // Read the output from the Mosquitto process (optional)
+        public void ReadBrokerOutput()
+        {
+	    if (_brokerProcess == null)
+                return;
+            var output = _brokerProcess.StandardOutput.ReadToEnd();
+            var error = _brokerProcess.StandardError.ReadToEnd();
+            Console.WriteLine("Mosquitto output:\n" + output);
+            Console.WriteLine("Mosquitto errors:\n" + error);
+        }
+
+        // Stop the Mosquitto process
+        public void StopBroker()
+        {
+	    if(_brokerProcess != null)
+		_brokerProcess.Dispose();
+        }
+
+        // Connect to the MQTT broker
         public async Task ConnectBroker()
         {
             // Use TCP connection.
             var options = new MqttClientOptionsBuilder()
-            .WithTcpServer(BROKER_ADDRESS, BROKER_PORT) // Optional port
-            .Build();
+                .WithTcpServer(BROKER_ADDRESS, BROKER_PORT) // Optional port
+                .Build();
 
             try
             {
@@ -120,50 +114,85 @@ namespace SmartPacifier.BackEnd.IOTProtocols
                 Console.WriteLine("Failed to connect to MQTT broker: " + ex.Message);
                 return;
             }
-            Console.WriteLine("Sucessfully Connected to MQTT broker ");
+            Console.WriteLine("Successfully Connected to MQTT broker");
         }
 
-	public async Task SubscribeToAll()
-	{
-	    Console.WriteLine("### CONNECTED WITH SERVER ###");
+        // Subscribe to a specific topic
+        public async Task Subscribe(string topic)
+        {
+            await _mqttClient.SubscribeAsync(
+                new MqttTopicFilterBuilder().WithTopic(topic).Build());
 
-	    // Subscribe to a topic
-	    await _mqttClient.SubscribeAsync(
-		new MqttTopicFilterBuilder().WithTopic("#").Build());
+            Console.WriteLine($"Subscribed to topic: {topic}");
+        }
 
-	    Console.WriteLine("### SUBSCRIBED ###");
-	    _mqttClient.ApplicationMessageReceivedAsync += e =>
+        // Unsubscribe from a specific topic
+        public async Task Unsubscribe(string topic)
+        {
+            await _mqttClient.UnsubscribeAsync(topic);
+
+            Console.WriteLine($"Unsubscribed from topic: {topic}");
+        }
+
+        // Subscribe to all topics
+        public async Task SubscribeToAll()
+        {
+            await _mqttClient.SubscribeAsync(
+                new MqttTopicFilterBuilder().WithTopic("#").Build());
+
+            Console.WriteLine("Subscribed to all topics");
+        }
+
+        // Unsubscribe from all topics
+        public async Task UnsubscribeFromAll()
+        {
+            await _mqttClient.UnsubscribeAsync("#");
+
+            Console.WriteLine("Unsubscribed from all topics");
+        }
+
+        // Send a message to a specific topic
+        public async Task SendMessage(string topic, string message)
+        {
+            var mqttMessage = new MqttApplicationMessageBuilder()
+                .WithTopic(topic)
+                .WithPayload(message)
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                .Build();
+
+            try
             {
-                Console.WriteLine("Received application message.");
-                Console.WriteLine("### RECEIVED APPLICATION MESSAGE ###");
-		Console.WriteLine($"+ Topic = {e.ApplicationMessage.Topic}");
-		Console.WriteLine($"+ Payload = {Encoding.UTF8.GetString(e.ApplicationMessage.Payload)}");
-		Console.WriteLine($"+ QoS = {e.ApplicationMessage.QualityOfServiceLevel}");
-		Console.WriteLine($"+ Retain = {e.ApplicationMessage.Retain}");
-		Console.WriteLine();
+                await _mqttClient.PublishAsync(mqttMessage);
+                Console.WriteLine($"Message sent to topic: {topic}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to send message to topic: {topic} - {ex.Message}");
+            }
+        }
+	// Event handler for received messages
+        private async Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs e)
+        {
+            await Task.Run(() =>
+            {
+                var messageReceivedEventArgs = new MessageReceivedEventArgs(
+                e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment));
+                MessageReceived?.Invoke(this, messageReceivedEventArgs);
+            });
 
-                return Task.CompletedTask;
-            };
-	}
-	
-        // public async Task SendMessageToAllSensorNodesAsync(string message)
-        // {
-        //     var topic = "to_all_sensor_nodes"; // Adjust the topic as needed
-        //     var mqttMessage = new MqttApplicationMessageBuilder()
-        // 	.WithTopic(topic)
-        // 	.WithPayload(message)
-        // 	.WithQualityOfService(MqttQualityOfService.AtLeastOnce)
-        // 	.Build();
+        }
 
-        //     try
-        //     {
-        // 	await _mqttClient.PublishAsync(mqttMessage);
-        // 	Console.WriteLine("Message sent to all sensor nodes.");
-        //     }
-        //     catch (Exception ex)
-        //     {
-        // 	Console.WriteLine("Failed to send message to sensor nodes: " + ex.Message);
-        //     }
-        // }
+        // Event arguments for received messages
+        public class MessageReceivedEventArgs : EventArgs
+        {
+            public string Topic { get; set; }
+            public string Payload { get; set; }
+
+            public MessageReceivedEventArgs(string topic, string payload)
+            {
+                Topic = topic;
+                Payload = payload;
+            }
+        }
     }
 }
