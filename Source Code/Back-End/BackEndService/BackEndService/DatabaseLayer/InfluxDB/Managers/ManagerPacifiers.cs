@@ -1,4 +1,6 @@
 ﻿using InfluxDB.Client;
+using InfluxDB.Client.Api.Domain;
+using InfluxDB.Client.Writes;
 using SmartPacifier.Interface.Services;
 using System;
 using System.Collections.Generic;
@@ -19,22 +21,6 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             _client = client; // Inject the client from DI
         }
 
-        // Delegating to the injected _databaseService
-        public Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
-        {
-            return _databaseService.WriteDataAsync(measurement, fields, tags);
-        }
-
-        public Task<List<string>> ReadData(string query)
-        {
-            return _databaseService.ReadData(query); // Make this async to return Task
-        }
-
-        public Task<List<string>> GetCampaignsAsync()
-        {
-            return _databaseService.GetCampaignsAsync();
-        }
-
         // ManagerPacifiers-specific method to add a pacifier
         public async Task AddPacifierAsync(string campaignName, string pacifierId)
         {
@@ -49,10 +35,10 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
                 { "status", "assigned" }
             };
 
-            await WriteDataAsync("pacifiers", fields, tags);
+            await _databaseService.WriteDataAsync("pacifiers", fields, tags);
         }
 
-        // ManagerPacifiers-specific method to get pacifiers
+        // ManagerPacifiers-specific method to get pacifiers by campaign
         public async Task<List<string>> GetPacifiersAsync(string campaignName)
         {
             var pacifiers = new List<string>();
@@ -85,6 +71,90 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             }
 
             return pacifiers;
+        }
+
+        // Implementation of the GetCampaignsAsync method
+        public async Task<List<string>> GetCampaignsAsync()
+        {
+            var campaigns = new List<string>();
+            try
+            {
+                var fluxQuery = $"from(bucket: \"{_bucket}\") |> range(start: -30d) |> keep(columns: [\"campaign_name\"]) |> distinct(column: \"campaign_name\")";
+                var queryApi = _client.GetQueryApi();
+                var tables = await queryApi.QueryAsync(fluxQuery, _org);
+
+                foreach (var table in tables)
+                {
+                    foreach (var record in table.Records)
+                    {
+                        var campaignName = record.GetValueByKey("campaign_name")?.ToString();
+                        if (!string.IsNullOrEmpty(campaignName))
+                        {
+                            campaigns.Add(campaignName);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving campaigns: {ex.Message}");
+            }
+
+            return campaigns;
+        }
+
+        // ReadData method
+        public async Task<List<string>> ReadData(string query)
+        {
+            var queryApi = _client.GetQueryApi();
+            var tables = await queryApi.QueryAsync(query, _org);
+            var records = new List<string>();
+
+            foreach (var table in tables)
+            {
+                foreach (var record in table.Records)
+                {
+                    records.Add(record.GetValue().ToString());
+                }
+            }
+
+            return records;
+        }
+
+        // WriteDataAsync method
+        public async Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
+        {
+            try
+            {
+                var point = PointData.Measurement(measurement)
+                    .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
+
+                // Add tags to the point (Key-Value pairs)
+                foreach (var tag in tags)
+                {
+                    point = point.Tag(tag.Key, tag.Value);
+                }
+
+                // Add fields to the point (Key-Value pairs)
+                foreach (var field in fields)
+                {
+                    if (field.Value is float)
+                        point = point.Field(field.Key, (float)field.Value);
+                    else if (field.Value is double)
+                        point = point.Field(field.Key, (double)field.Value);
+                    else if (field.Value is int)
+                        point = point.Field(field.Key, (int)field.Value);
+                    else if (field.Value is string)
+                        point = point.Field(field.Key, (string)field.Value);
+                }
+
+                var writeApi = _client.GetWriteApiAsync();
+                await writeApi.WritePointAsync(point, _bucket, _org);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error writing data: {ex.Message}");
+            }
         }
     }
 }

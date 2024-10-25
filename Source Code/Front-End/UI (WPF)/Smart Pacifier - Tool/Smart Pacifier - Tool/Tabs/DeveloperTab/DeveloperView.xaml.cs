@@ -1,4 +1,5 @@
 ﻿using SmartPacifier.Interface.Services;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,48 +12,34 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
     public partial class DeveloperView : UserControl
     {
         private readonly IDatabaseService _databaseService;
+        private readonly IManagerPacifiers _managerPacifiers;
         private List<SensorData> allData = new List<SensorData>();
         private List<SensorData> currentPageData = new List<SensorData>();
         private int currentPage = 1;
         private int pageSize = 10;
 
-        public DeveloperView(IDatabaseService databaseService)
+        public DeveloperView(IDatabaseService databaseService, IManagerPacifiers managerPacifiers)
         {
             InitializeComponent();
             _databaseService = databaseService;
-            _ = LoadCampaignsAsync();  // Load campaigns asynchronously
-            _ = LoadDataAsync();  // Load the table data asynchronously
+            _managerPacifiers = managerPacifiers;
+            _ = LoadDataAsync();  // Call the async method but don't await, suppressing CS4014
         }
 
-        // Method to load campaigns into the Campaign ComboBox
-        private async Task LoadCampaignsAsync()
-        {
-            try
-            {
-                var campaigns = await _databaseService.GetCampaignsAsync(); // Fetch campaigns from the database
-                Campaign.ItemsSource = campaigns;
-                Campaign.SelectedIndex = 0; // Optionally select the first item by default
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading campaigns: {ex.Message}");
-            }
-        }
-
-        // Method to load data into the table
         private async Task LoadDataAsync()
         {
             try
             {
-                // Fetch your data from the database or any other source here
-                var campaigns = await _databaseService.GetCampaignsAsync(); // Example: Fetch campaigns
+                var campaigns = await _databaseService.GetCampaignsAsync();
+                Campaign.ItemsSource = campaigns;
+
                 allData = campaigns.Select(c => new SensorData
                 {
                     Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                     Campaign = c,
-                    Pacifier = "pacifier_1", // Example placeholder data
-                    Sensor = "sensor_1",     // Example placeholder data
-                    Value = 36.5             // Example placeholder data
+                    Pacifier = "pacifier_1",
+                    Sensor = "sensor_1",
+                    Value = 36.5
                 }).ToList();
                 DisplayData();
             }
@@ -60,6 +47,12 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             {
                 MessageBox.Show($"Error loading data: {ex.Message}");
             }
+        }
+
+        private void DisplayData()
+        {
+            currentPageData = allData.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+            DataListView.ItemsSource = currentPageData;
         }
 
         // Apply Button Click Event Handler
@@ -93,17 +86,18 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-        // Display the data on the current page
-        private void DisplayData()
-        {
-            currentPageData = allData.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
-            DataListView.ItemsSource = currentPageData;
-        }
-
         // ComboBox Selection Changed Event Handler
-        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Handle selection change in ComboBoxes
+            if (sender == Campaign)
+            {
+                var selectedCampaign = Campaign.SelectedItem?.ToString();
+                if (!string.IsNullOrEmpty(selectedCampaign))
+                {
+                    var pacifiers = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
+                    Pacifier.ItemsSource = pacifiers;
+                }
+            }
         }
 
         // Add Button Click Event Handler
@@ -132,7 +126,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             var selectedItems = DataListView.SelectedItems.Cast<SensorData>().ToList();
             if (selectedItems.Any())
             {
-                // Confirm and delete logic
+                // Confirm and delete
             }
             else
             {

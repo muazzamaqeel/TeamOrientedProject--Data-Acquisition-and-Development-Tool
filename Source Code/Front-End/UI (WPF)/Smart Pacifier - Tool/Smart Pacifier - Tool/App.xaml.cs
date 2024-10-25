@@ -73,6 +73,8 @@ namespace Smart_Pacifier___Tool
 
             // Register DeveloperView as a singleton
             services.AddSingleton<DeveloperView>();
+
+
         }
     }
 }

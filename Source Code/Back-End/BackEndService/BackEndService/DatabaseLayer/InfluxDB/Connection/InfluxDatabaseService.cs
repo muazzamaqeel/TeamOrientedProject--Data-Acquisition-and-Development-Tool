@@ -67,12 +67,17 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             {
                 foreach (var record in table.Records)
                 {
-                    records.Add(record.GetValue().ToString());
+                    var value = record.GetValue();
+                    if (value != null)  // Check for null
+                    {
+                        records.Add(value.ToString());
+                    }
                 }
             }
 
             return records;
         }
+
 
         public async Task<List<string>> GetCampaignsAsync()
         {
