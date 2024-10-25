@@ -41,6 +41,7 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         ~Broker()
         {
             StopBroker();
+	    Console.WriteLine("Destroy broker");
         }
 
         // Getting an Instance of the Broker. If there is no instance
@@ -94,7 +95,8 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         public void StopBroker()
         {
 	    if(_brokerProcess != null)
-		_brokerProcess.Dispose();
+		_brokerProcess.Close();
+	    Console.WriteLine("Mosquitto Closed");
         }
 
         // Connect to the MQTT broker
