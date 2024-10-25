@@ -1,41 +1,57 @@
-﻿using System;
-using System.Windows;
-using SmartPacifier.Interface.Services;  // Reference the interface services
-using SmartPacifier.BackEnd.Database.InfluxDB.Connection;  // For the database service
-using SmartPacifier.BackEnd.Database.InfluxDB.Managers;  // For managers
-using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;  // For sensor manager
+﻿using Microsoft.Extensions.DependencyInjection;
+using SmartPacifier.Interface.Services;
+using SmartPacifier.BackEnd.Database.InfluxDB.Connection;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Temp;
-
+using InfluxDB.Client;
+using System.Windows;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
     {
-        private IManagerCampaign ?_managerCampaign;
-        private IManagerPacifiers ?_managerPacifiers;
-        private IManagerSensors ?_managerSensors;
+        private IServiceProvider? _serviceProvider;
 
+        /// <summary>
+        /// The entry point of the application.
+        /// We are using the Microsoft.Extensions.DependencyInjection library to manage the dependency injection.
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            var services = new ServiceCollection();
+            ConfigureServices(services);
 
-            // Create services using the factory methods
-            IDatabaseService databaseService = CreateDatabaseService("http://localhost:8086", "Ui71geKMxY2e7R5hcknCQivDIiK7drc3jJl5WZ6nIHMpGkzKAAPxLelsWePJUCt-qLPeB6k9z8YAXkcWZGM1qA==");
-
-            // Initialize manager services using the database service
-            _managerCampaign = new ManagerCampaign(databaseService);
-            _managerPacifiers = new ManagerPacifiers(databaseService, ((InfluxDatabaseService)databaseService).GetClient());
-            _managerSensors = new ManagerSensors(databaseService);
-
-            // Open the Test window and pass the services
-            Test testWindow = new Test(_managerCampaign, _managerPacifiers, _managerSensors);
+            _serviceProvider = services.BuildServiceProvider();
+            var testWindow = _serviceProvider.GetRequiredService<Test>();
             testWindow.Show();
         }
 
-        // Factory method to create a database service
-        public IDatabaseService CreateDatabaseService(string url, string token)
+        /// <summary>
+        /// The method that registers all the services and managers that are needed for the application.
+        /// </summary>
+        /// <param name="services"></param>
+        private void ConfigureServices(IServiceCollection services)
         {
-            return InfluxDatabaseService.GetInstance(url, token);  // Use singleton pattern
+            // Register InfluxDBClient as a singleton to reuse the same instance across the app
+            services.AddSingleton(sp =>
+                new InfluxDBClient("http://localhost:8086", "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ=="));
+
+            // Register InfluxDatabaseService and inject InfluxDBClient
+            services.AddSingleton<IDatabaseService, InfluxDatabaseService>();
+
+            // Register the managers
+            services.AddSingleton<IManagerCampaign, ManagerCampaign>();
+            services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
+            services.AddSingleton<IManagerSensors, ManagerSensors>();
+
+            // Register the Test window
+            services.AddSingleton<Test>();
+
+            // Register MainWindow or other UI components if needed
+            services.AddSingleton<MainWindow>();
         }
     }
 }
