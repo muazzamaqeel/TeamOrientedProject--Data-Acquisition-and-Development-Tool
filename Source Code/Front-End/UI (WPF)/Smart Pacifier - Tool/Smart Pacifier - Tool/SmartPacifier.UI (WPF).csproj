@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
     <PackageReference Include="IronPython" Version="3.4.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.2.0" />
