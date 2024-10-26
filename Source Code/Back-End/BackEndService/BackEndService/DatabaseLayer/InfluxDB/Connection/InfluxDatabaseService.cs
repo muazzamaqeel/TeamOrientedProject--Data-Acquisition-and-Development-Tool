@@ -79,6 +79,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
                     {
                         records.Add(value.ToString());
                     }
+
                 }
             }
 

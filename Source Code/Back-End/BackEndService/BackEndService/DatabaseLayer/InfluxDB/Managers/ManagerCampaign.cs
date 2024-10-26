@@ -5,6 +5,11 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using InfluxDB.Client;
+using InfluxDB.Client.Api.Domain;
+using InfluxDB.Client.Writes;
+using Newtonsoft.Json.Linq;
+using System.Text.Json.Nodes;
+
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 {
@@ -38,10 +43,13 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         }
 
 
+
+
+
         /// <summary>
-        /// Adding a new campaign to the database with the status "created"
-        /// Start a new campaign
-        /// End a campaign
+        /// Function 1: Add a new campaign to the database
+        /// Function 2: Start a campaign to the database
+        /// Function 3: End a campaign to the database
         /// </summary>
         /// <param name="campaignName"></param>
         /// <returns></returns>
@@ -49,47 +57,50 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         public async Task AddCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string>
-        {
-            { "campaign_name", campaignName }
-        };
+                {
+                    { "campaign_name", campaignName }
+                };
 
-                var fields = new Dictionary<string, object>
-        {
-            { "status", "created" },
-            { "creation_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-        };
+            var fields = new Dictionary<string, object>
+                {
+                    { "status", "created" },
+                    { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") },
+                    { "start_time", "null" },
+                    { "end_time", "null" }
+                };
 
-            await WriteDataAsync("campaigns", fields, tags);
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
+
         public async Task StartCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string>
-        {
-            { "campaign_name", campaignName }
-        };
+            {
+                { "campaign_name", campaignName }
+            };
 
-                var fields = new Dictionary<string, object>
-        {
-            { "status", "active" },
-            { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-        };
+                    var fields = new Dictionary<string, object>
+            {
+                { "status", "started" },
+                { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+            };
 
-            await WriteDataAsync("campaigns", fields, tags);
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
         public async Task EndCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string>
-        {
-            { "campaign_name", campaignName }
-        };
+                {
+                    { "campaign_name", campaignName }
+                };
 
-                var fields = new Dictionary<string, object>
-        {
-            { "status", "completed" },
-            { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-        };
+                        var fields = new Dictionary<string, object>
+                {
+                    { "status", "stopped" },
+                    { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+                };
 
-            await WriteDataAsync("campaigns", fields, tags);
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
 
 
@@ -97,6 +108,66 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
 
 
+
+        public async Task WriteCampaignDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags, DateTime timestamp)
+        {
+            try
+            {
+                var client = _databaseService.GetClient();
+                var point = PointData.Measurement(measurement)
+                    .Timestamp(timestamp, WritePrecision.Ns);
+
+                foreach (var tag in tags)
+                {
+                    point = point.Tag(tag.Key, tag.Value);
+                }
+
+                foreach (var field in fields)
+                {
+                    if (field.Value is float floatValue)
+                        point = point.Field(field.Key, floatValue);
+                    else if (field.Value is double doubleValue)
+                        point = point.Field(field.Key, doubleValue);
+                    else if (field.Value is int intValue)
+                        point = point.Field(field.Key, intValue);
+                    else if (field.Value is string stringValue)
+                        point = point.Field(field.Key, stringValue);
+                }
+
+                var writeApi = client.GetWriteApiAsync();
+                await writeApi.WritePointAsync(point, _databaseService.Bucket, _databaseService.Org);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error writing data: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// 
+        /// ------------------------------------------------
+        /// Currently Used for the Developer Tab
+        /// ------------------------------------------------
+        /// 
+        /// Function 1+2: Update the campaign name and pacifiers associated with the campaign
+        /// </summary>
+        /// <param name="oldCampaignName"></param>
+        /// <param name="newCampaignName"></param>
+        /// <returns></returns>
         public async Task UpdateCampaignAsync(string oldCampaignName, string newCampaignName)
         {
             // Step 1: Create a new campaign entry with the updated name
@@ -122,9 +193,6 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             // Step 3: Delete old campaign data after updating to avoid duplicate entries
             await DeleteCampaignAsync(oldCampaignName);
         }
-
-
-
         public async Task DeleteCampaignAsync(string campaignName)
         {
             // Define the delete URL for InfluxDB
@@ -160,6 +228,27 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
                 Console.WriteLine($"Error during deletion of campaign '{campaignName}': {ex.Message}");
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

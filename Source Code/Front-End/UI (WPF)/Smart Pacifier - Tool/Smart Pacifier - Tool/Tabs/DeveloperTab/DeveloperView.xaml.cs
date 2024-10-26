@@ -15,6 +15,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         private readonly IDatabaseService _databaseService;
         private readonly IManagerPacifiers _managerPacifiers;
         private readonly IManagerCampaign _managerCampaign; 
+
         private List<SensorData> allData = new List<SensorData>();
         private List<SensorData> currentPageData = new List<SensorData>();
         private int currentPage = 1;
@@ -26,6 +27,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             _databaseService = databaseService;
             _managerPacifiers = managerPacifiers;
             _managerCampaign = managerCampaign;
+
             _ = LoadDataAsync();  // Call the async method but don't await, suppressing CS4014
         }
 
@@ -118,8 +120,10 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         // Add Button Click Event Handler
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            AddDataWindow addDataWindow = new AddDataWindow();
-            addDataWindow.ShowDialog();
+
+            _managerCampaign.EndCampaignAsync("Campaign 5");
+            //AddDataWindow addDataWindow = new AddDataWindow();
+            //addDataWindow.ShowDialog();
         }
 
 

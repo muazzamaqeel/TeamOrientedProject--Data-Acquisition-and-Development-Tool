@@ -12,6 +12,7 @@ namespace SmartPacifier.Interface.Services
         Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags);
         Task<List<string>> ReadData(string query);
         Task<List<string>> GetCampaignsAsync();
+
         string Token { get; } 
         string BaseUrl { get; }
     }
@@ -19,6 +20,8 @@ namespace SmartPacifier.Interface.Services
     public interface IManagerCampaign
     {
         Task AddCampaignAsync(string campaignName);
+        Task StartCampaignAsync(string campaignName);
+        Task EndCampaignAsync(string campaignName);
         Task UpdateCampaignAsync(string oldCampaignName, string newCampaignName);
         Task DeleteCampaignAsync(string campaignName);
     }
@@ -27,6 +30,7 @@ namespace SmartPacifier.Interface.Services
     {
         Task<List<string>> GetPacifiersAsync(string campaignName);
         Task AddPacifierAsync(string campaignName, string pacifierId);
+
         Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags);
 
     }
