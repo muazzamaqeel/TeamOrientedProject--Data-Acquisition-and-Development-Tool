@@ -1,9 +1,12 @@
-﻿using System;
+﻿/*
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using SmartPacifier.Interface.Services;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Components;
+using InfluxDB.Client;
+
 
 namespace Smart_Pacifier___Tool.Temp
 {
@@ -141,3 +144,4 @@ namespace Smart_Pacifier___Tool.Temp
         }
     }
 }
+*/

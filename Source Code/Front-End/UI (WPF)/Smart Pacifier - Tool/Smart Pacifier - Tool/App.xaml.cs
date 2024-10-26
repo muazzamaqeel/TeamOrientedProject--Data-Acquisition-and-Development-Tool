@@ -34,7 +34,7 @@ namespace Smart_Pacifier___Tool
             // Call the method that registers all necessary services
             ConfigureServices(services);
 
-            // Build the service provider from the service collection (This is the DI container)
+            // Build the service provider from the service collection (This is the Dependency Injection container)
             _serviceProvider = services.BuildServiceProvider();
 
             // Use the service provider to resolve (get) the Test window and show it
@@ -49,32 +49,33 @@ namespace Smart_Pacifier___Tool
         /// <param name="services">The service collection where services are registered.</param>
         private void ConfigureServices(IServiceCollection services)
         {
-            // Register InfluxDBClient as a singleton.
-            services.AddSingleton(sp =>
-                new InfluxDBClient("http://localhost:8086", "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ=="));
+            // Register InfluxDBClient with the URL and token
+            services.AddSingleton<InfluxDBClient>(sp =>
+                new InfluxDBClient("http://localhost:8086", "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ==")
+            );
 
-            // Register the InfluxDatabaseService as a singleton.
-            services.AddSingleton<IDatabaseService, InfluxDatabaseService>();
+            // Register InfluxDatabaseService as IDatabaseService
+            services.AddSingleton<IDatabaseService>(sp =>
+            {
+                var influxClient = sp.GetRequiredService<InfluxDBClient>();
+                return new InfluxDatabaseService(
+                    influxClient,
+                    "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ==", // token
+                    "http://localhost:8086", // baseUrl
+                    "thu-de" // org
+                );
+            });
 
-            // Register campaign manager as a singleton.
+            // Register the Manager classes, injecting IDatabaseService where necessary
             services.AddSingleton<IManagerCampaign, ManagerCampaign>();
-
-            // Register pacifier manager as a singleton.
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
-
-            // Register sensor manager as a singleton.
             services.AddSingleton<IManagerSensors, ManagerSensors>();
 
-            // Register the Test window as a singleton.
-            services.AddSingleton<Test>();
-
-            // Register MainWindow or any other UI components you may need as singletons.
+            // Register UI components
             services.AddSingleton<MainWindow>();
-
-            // Register DeveloperView as a singleton
             services.AddSingleton<DeveloperView>();
-
-
         }
+
+
     }
 }

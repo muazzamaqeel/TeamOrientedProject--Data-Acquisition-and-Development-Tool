@@ -1,16 +1,25 @@
 ﻿using SmartPacifier.Interface.Services;
+using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
+using InfluxDB.Client;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 {
     public class ManagerCampaign : IManagerCampaign
     {
         private readonly IDatabaseService _databaseService;
+        private readonly IManagerPacifiers _managerPacifiers;
+        private readonly HttpClient _httpClient;
 
-        public ManagerCampaign(IDatabaseService databaseService)
+        public ManagerCampaign(IDatabaseService databaseService, IManagerPacifiers managerPacifiers)
         {
             _databaseService = databaseService;
+            _managerPacifiers = managerPacifiers;
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Token {_databaseService.Token}");
         }
 
         public async Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
@@ -23,64 +32,137 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             return await _databaseService.ReadData(query);
         }
 
-        /// <summary>
-        /// Template function to extract distinct values from a specified column.
-        /// This method can be reused to query different data, not just campaigns.
-        /// </summary>
-        /// <param name="column">The column to get distinct values from (e.g., "campaign_name").</param>
-        /// <param name="timeRange">The time range for querying (e.g., "-30d").</param>
-        /// <returns>A list of distinct values from the specified column.</returns>
-        private async Task<List<string>> GetDistinctValuesFromDBAsync(string column, string timeRange)
-        {
-            // Define a template query that can extract distinct values from the given column
-            var fluxQuery = $"from(bucket: \"SmartPacifier-Bucket1\") " +
-                            $"|> range(start: {timeRange}) " +
-                            $"|> keep(columns: [\"{column}\"]) " +
-                            $"|> distinct(column: \"{column}\")";
-
-            // Use the database service to execute the query and process the results
-            var records = await _databaseService.ReadData(fluxQuery);
-            var distinctValues = new List<string>();
-
-            foreach (var record in records)
-            {
-                if (!string.IsNullOrEmpty(record))
-                {
-                    distinctValues.Add(record);
-                }
-            }
-
-            return distinctValues;
-        }
-
-        /// <summary>
-        /// Retrieves all distinct campaign names from the database.
-        /// This method reuses the template function to get data from the "campaign_name" column.
-        /// </summary>
-        /// <returns>A list of distinct campaign names.</returns>
         public async Task<List<string>> GetCampaignsAsync()
         {
-            return await GetDistinctValuesFromDBAsync("campaign_name", "-30d");
+            return await _databaseService.GetCampaignsAsync();
         }
 
+
         /// <summary>
-        /// Adds a new campaign to the database.
+        /// Adding a new campaign to the database with the status "created"
+        /// Start a new campaign
+        /// End a campaign
         /// </summary>
-        /// <param name="campaignName">The name of the campaign to add.</param>
+        /// <param name="campaignName"></param>
         /// <returns></returns>
+
         public async Task AddCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string>
-            {
-                { "campaign_name", campaignName }
-            };
+        {
+            { "campaign_name", campaignName }
+        };
 
-            var fields = new Dictionary<string, object>
-            {
-                { "status", "active" }
-            };
+                var fields = new Dictionary<string, object>
+        {
+            { "status", "created" },
+            { "creation_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+        };
 
             await WriteDataAsync("campaigns", fields, tags);
         }
+        public async Task StartCampaignAsync(string campaignName)
+        {
+            var tags = new Dictionary<string, string>
+        {
+            { "campaign_name", campaignName }
+        };
+
+                var fields = new Dictionary<string, object>
+        {
+            { "status", "active" },
+            { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+        };
+
+            await WriteDataAsync("campaigns", fields, tags);
+        }
+        public async Task EndCampaignAsync(string campaignName)
+        {
+            var tags = new Dictionary<string, string>
+        {
+            { "campaign_name", campaignName }
+        };
+
+                var fields = new Dictionary<string, object>
+        {
+            { "status", "completed" },
+            { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+        };
+
+            await WriteDataAsync("campaigns", fields, tags);
+        }
+
+
+
+
+
+
+        public async Task UpdateCampaignAsync(string oldCampaignName, string newCampaignName)
+        {
+            // Step 1: Create a new campaign entry with the updated name
+            var newCampaignTags = new Dictionary<string, string> { { "campaign_name", newCampaignName } };
+            var newCampaignFields = new Dictionary<string, object> { { "status", "active" } };
+
+            await _databaseService.WriteDataAsync("campaigns", newCampaignFields, newCampaignTags);
+
+            // Step 2: Retrieve and update pacifiers associated with the old campaign name to the new name
+            var pacifiersToUpdate = await _managerPacifiers.GetPacifiersAsync(oldCampaignName);
+            foreach (var pacifierId in pacifiersToUpdate)
+            {
+                var pacifierTags = new Dictionary<string, string>
+        {
+            { "campaign_name", newCampaignName },
+            { "pacifier_id", pacifierId }
+        };
+                var pacifierFields = new Dictionary<string, object> { { "status", "assigned" } };
+
+                await _databaseService.WriteDataAsync("pacifiers", pacifierFields, pacifierTags);
+            }
+
+            // Step 3: Delete old campaign data after updating to avoid duplicate entries
+            await DeleteCampaignAsync(oldCampaignName);
+        }
+
+
+
+        public async Task DeleteCampaignAsync(string campaignName)
+        {
+            // Define the delete URL for InfluxDB
+            var deleteUrl = $"{_databaseService.BaseUrl}/api/v2/delete?org={_databaseService.Org}&bucket={_databaseService.Bucket}";
+
+            // Set the time range and predicate for deletion
+            var deletePayload = new
+            {
+                start = "1970-01-01T00:00:00Z",
+                stop = DateTime.UtcNow.ToString("o"),
+                predicate = $"campaign_name=\"{campaignName}\""
+            };
+
+            // Serialize the payload
+            var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(deletePayload), Encoding.UTF8, "application/json");
+
+            try
+            {
+                // Send the delete request
+                var response = await _httpClient.PostAsync(deleteUrl, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Successfully deleted campaign '{campaignName}' from InfluxDB.");
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to delete campaign '{campaignName}': {response.ReasonPhrase}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during deletion of campaign '{campaignName}': {ex.Message}");
+            }
+        }
+
+
+
+
     }
 }
