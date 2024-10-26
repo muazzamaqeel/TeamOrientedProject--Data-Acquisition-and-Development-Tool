@@ -122,6 +122,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         {
 
             _managerCampaign.EndCampaignAsync("Campaign 5");
+
+
             //AddDataWindow addDataWindow = new AddDataWindow();
             //addDataWindow.ShowDialog();
         }

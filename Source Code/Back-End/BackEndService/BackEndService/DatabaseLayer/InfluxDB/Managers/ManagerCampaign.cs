@@ -9,6 +9,11 @@ using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
 using Newtonsoft.Json.Linq;
 using System.Text.Json.Nodes;
+using ClosedXML.Excel;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
@@ -18,6 +23,8 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         private readonly IDatabaseService _databaseService;
         private readonly IManagerPacifiers _managerPacifiers;
         private readonly HttpClient _httpClient;
+        private readonly string _filePath = @"C:\programming\TeamOrientedProject---Smart-Pacifier\Source Code\Back-End\BackEndService\BackEndService\DatabaseLayer\InfluxDB\LoadFiles\Code\CampaignData.xlsx";
+
 
         public ManagerCampaign(IDatabaseService databaseService, IManagerPacifiers managerPacifiers)
         {
@@ -56,58 +63,98 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
         public async Task AddCampaignAsync(string campaignName)
         {
-            var tags = new Dictionary<string, string>
-                {
-                    { "campaign_name", campaignName }
-                };
-
+            var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-                {
-                    { "status", "created" },
-                    { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-                    { "start_time", "null" },
-                    { "end_time", "null" }
-                };
-
-            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
+            {
+                { "status", "created" },
+                { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") },
+                { "start_time", "null" },
+                { "end_time", "null" }
+            };
+            await WriteCampaignDataToExcel("campaigns", fields, tags);
         }
-
         public async Task StartCampaignAsync(string campaignName)
         {
-            var tags = new Dictionary<string, string>
-            {
-                { "campaign_name", campaignName }
-            };
-
-                    var fields = new Dictionary<string, object>
-            {
-                { "status", "started" },
-                { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-            };
-
-            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
+            var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
+            var fields = new Dictionary<string, object>
+                {
+                    { "status", "started" },
+                    { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+                };
+            await WriteCampaignDataToExcel("campaigns", fields, tags);
         }
         public async Task EndCampaignAsync(string campaignName)
         {
-            var tags = new Dictionary<string, string>
-                {
-                    { "campaign_name", campaignName }
-                };
-
-                        var fields = new Dictionary<string, object>
+            var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
+            var fields = new Dictionary<string, object>
                 {
                     { "status", "stopped" },
                     { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
                 };
-
-            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
+            await WriteCampaignDataToExcel("campaigns", fields, tags);
         }
 
 
+        public async Task WriteCampaignDataToExcel(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
+        {
+            await Task.Run(() =>
+            {
+                // Check if the file exists; create it if not
+                using (var workbook = System.IO.File.Exists(_filePath) ? new XLWorkbook(_filePath) : new XLWorkbook())
+                {
+                    // Check if the worksheet for the measurement exists; if not, create it
+                    var worksheet = workbook.Worksheets.Contains(measurement)
+                        ? workbook.Worksheet(measurement)
+                        : workbook.AddWorksheet(measurement);
 
+                    // Add header if this is a new worksheet
+                    if (worksheet.LastRowUsed() == null)
+                    {
+                        int headerCol = 1;
+                        worksheet.Cell(1, headerCol++).Value = "campaign_name";
+                        worksheet.Cell(1, headerCol++).Value = "status";
+                        worksheet.Cell(1, headerCol++).Value = "creation";
+                        worksheet.Cell(1, headerCol++).Value = "start_time";
+                        worksheet.Cell(1, headerCol++).Value = "end_time";
+                    }
 
+                    // Check if a campaign with the same name and status already exists
+                    bool campaignExists = false;
+                    foreach (var row in worksheet.RowsUsed())
+                    {
+                        var campaignName = row.Cell(1).GetString();
+                        var status = row.Cell(2).GetString();
 
+                        if (campaignName == tags["campaign_name"] && status == fields["status"].ToString())
+                        {
+                            campaignExists = true;
+                            break;
+                        }
+                    }
 
+                    if (campaignExists)
+                    {
+                        Console.WriteLine("Sorry, a campaign with the same name and status already exists.");
+                        return;
+                    }
+
+                    // Find the next available row
+                    var newRow = worksheet.LastRowUsed()?.RowNumber() + 1 ?? 2;
+
+                    // Write campaign_name from tags
+                    worksheet.Cell(newRow, 1).Value = tags.ContainsKey("campaign_name") ? tags["campaign_name"].ToString() : "Unknown";
+
+                    // Write status, creation, start_time, end_time fields from fields dictionary
+                    worksheet.Cell(newRow, 2).Value = fields.ContainsKey("status") ? fields["status"].ToString() : "Unknown";
+                    worksheet.Cell(newRow, 3).Value = fields.ContainsKey("creation") ? fields["creation"].ToString() : "null";
+                    worksheet.Cell(newRow, 4).Value = fields.ContainsKey("start_time") ? fields["start_time"].ToString() : "null";
+                    worksheet.Cell(newRow, 5).Value = fields.ContainsKey("end_time") ? fields["end_time"].ToString() : "null";
+
+                    // Save the workbook
+                    workbook.SaveAs(_filePath);
+                }
+            });
+        }
 
         public async Task WriteCampaignDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags, DateTime timestamp)
         {
