@@ -103,74 +103,6 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
 
 
-        /// <summary>
-        /// Template to store campaign data in an Excel file
-        /// </summary>
-        /// <param name="measurement"></param>
-        /// <param name="fields"></param>
-        /// <param name="tags"></param>
-        /// <returns></returns>
-
-        public async Task WriteCampaignDataToExcel(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
-        {
-            await Task.Run(() =>
-            {
-                // Check if the file exists; create it if not
-                using (var workbook = System.IO.File.Exists(_filePath) ? new XLWorkbook(_filePath) : new XLWorkbook())
-                {
-                    // Check if the worksheet for the measurement exists; if not, create it
-                    var worksheet = workbook.Worksheets.Contains(measurement)
-                        ? workbook.Worksheet(measurement)
-                        : workbook.AddWorksheet(measurement);
-
-                    // Add header if this is a new worksheet
-                    if (worksheet.LastRowUsed() == null)
-                    {
-                        int headerCol = 1;
-                        worksheet.Cell(1, headerCol++).Value = "campaign_name";
-                        worksheet.Cell(1, headerCol++).Value = "status";
-                        worksheet.Cell(1, headerCol++).Value = "creation";
-                        worksheet.Cell(1, headerCol++).Value = "start_time";
-                        worksheet.Cell(1, headerCol++).Value = "end_time";
-                    }
-
-                    // Check if a campaign with the same name and status already exists
-                    bool campaignExists = false;
-                    foreach (var row in worksheet.RowsUsed())
-                    {
-                        var campaignName = row.Cell(1).GetString();
-                        var status = row.Cell(2).GetString();
-
-                        if (campaignName == tags["campaign_name"] && status == fields["status"].ToString())
-                        {
-                            campaignExists = true;
-                            break;
-                        }
-                    }
-
-                    if (campaignExists)
-                    {
-                        Console.WriteLine("Sorry, a campaign with the same name and status already exists.");
-                        return;
-                    }
-
-                    // Find the next available row
-                    var newRow = worksheet.LastRowUsed()?.RowNumber() + 1 ?? 2;
-
-                    // Write campaign_name from tags
-                    worksheet.Cell(newRow, 1).Value = tags.ContainsKey("campaign_name") ? tags["campaign_name"].ToString() : "Unknown";
-
-                    // Write status, creation, start_time, end_time fields from fields dictionary
-                    worksheet.Cell(newRow, 2).Value = fields.ContainsKey("status") ? fields["status"].ToString() : "Unknown";
-                    worksheet.Cell(newRow, 3).Value = fields.ContainsKey("creation") ? fields["creation"].ToString() : "null";
-                    worksheet.Cell(newRow, 4).Value = fields.ContainsKey("start_time") ? fields["start_time"].ToString() : "null";
-                    worksheet.Cell(newRow, 5).Value = fields.ContainsKey("end_time") ? fields["end_time"].ToString() : "null";
-
-                    // Save the workbook
-                    workbook.SaveAs(_filePath);
-                }
-            });
-        }
 
 
         /// <summary>
@@ -241,10 +173,6 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
                 Console.WriteLine($"Error writing data: {ex.Message}");
             }
         }
-
-
-
-
 
 
 
@@ -357,6 +285,95 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+        ///-------------------------------------------------------------------------------------------------
+        ///Please ignore the following code snippets. They are only for reference purposes.
+        ///-------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+        /// <summary>
+        /// Template to store campaign data in an Excel file
+        /// </summary>
+        /// <param name="measurement"></param>
+        /// <param name="fields"></param>
+        /// <param name="tags"></param>
+        /// <returns></returns>
+
+        public async Task WriteCampaignDataToExcel(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
+        {
+            await Task.Run(() =>
+            {
+                // Check if the file exists; create it if not
+                using (var workbook = System.IO.File.Exists(_filePath) ? new XLWorkbook(_filePath) : new XLWorkbook())
+                {
+                    // Check if the worksheet for the measurement exists; if not, create it
+                    var worksheet = workbook.Worksheets.Contains(measurement)
+                        ? workbook.Worksheet(measurement)
+                        : workbook.AddWorksheet(measurement);
+
+                    // Add header if this is a new worksheet
+                    if (worksheet.LastRowUsed() == null)
+                    {
+                        int headerCol = 1;
+                        worksheet.Cell(1, headerCol++).Value = "campaign_name";
+                        worksheet.Cell(1, headerCol++).Value = "status";
+                        worksheet.Cell(1, headerCol++).Value = "creation";
+                        worksheet.Cell(1, headerCol++).Value = "start_time";
+                        worksheet.Cell(1, headerCol++).Value = "end_time";
+                    }
+
+                    // Check if a campaign with the same name and status already exists
+                    bool campaignExists = false;
+                    foreach (var row in worksheet.RowsUsed())
+                    {
+                        var campaignName = row.Cell(1).GetString();
+                        var status = row.Cell(2).GetString();
+
+                        if (campaignName == tags["campaign_name"] && status == fields["status"].ToString())
+                        {
+                            campaignExists = true;
+                            break;
+                        }
+                    }
+
+                    if (campaignExists)
+                    {
+                        Console.WriteLine("Sorry, a campaign with the same name and status already exists.");
+                        return;
+                    }
+
+                    // Find the next available row
+                    var newRow = worksheet.LastRowUsed()?.RowNumber() + 1 ?? 2;
+
+                    // Write campaign_name from tags
+                    worksheet.Cell(newRow, 1).Value = tags.ContainsKey("campaign_name") ? tags["campaign_name"].ToString() : "Unknown";
+
+                    // Write status, creation, start_time, end_time fields from fields dictionary
+                    worksheet.Cell(newRow, 2).Value = fields.ContainsKey("status") ? fields["status"].ToString() : "Unknown";
+                    worksheet.Cell(newRow, 3).Value = fields.ContainsKey("creation") ? fields["creation"].ToString() : "null";
+                    worksheet.Cell(newRow, 4).Value = fields.ContainsKey("start_time") ? fields["start_time"].ToString() : "null";
+                    worksheet.Cell(newRow, 5).Value = fields.ContainsKey("end_time") ? fields["end_time"].ToString() : "null";
+
+                    // Save the workbook
+                    workbook.SaveAs(_filePath);
+                }
+            });
+        }
 
 
 
