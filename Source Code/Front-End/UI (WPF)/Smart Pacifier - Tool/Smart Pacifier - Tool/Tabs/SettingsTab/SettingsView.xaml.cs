@@ -1,5 +1,8 @@
-﻿using System.Windows;
+﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Web.WebView2.Wpf;
 using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
@@ -8,8 +11,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
     {
         private const string UserModeKey = "UserMode";
         private const string DeveloperTabVisibleKey = "DeveloperTabVisible";
-        private const string CorrectPin = "1234"; // Replace this with the actual PIN
+        private const string CorrectPin = "1234";
         private readonly ILocalHost localHostService;
+        private bool isUserMode = true;
 
         public SettingsView(ILocalHost localHost)
         {
@@ -23,13 +27,11 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
             else
             {
-                isUserMode = true;  // Default to User Mode if no state was saved
+                isUserMode = true;
             }
 
             UpdateButtonStates();
         }
-
-        private bool isUserMode = true;
 
         private void SwitchMode_Click(object sender, RoutedEventArgs e)
         {
@@ -52,14 +54,37 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void DockerStart_Click(object sender, RoutedEventArgs e)
         {
-            // Start Docker functionality
             localHostService.StartDocker();
+            Task.Delay(2000).ContinueWith(_ =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    InfluxDbWebView.Source = new Uri("http://localhost:8086");
+                    InfluxDbWebView.Visibility = Visibility.Visible;
+                    ApiKeyInput.Visibility = Visibility.Visible;
+                    SubmitApiButton.Visibility = Visibility.Visible;
+                });
+            });
         }
 
         private void DockerStop_Click(object sender, RoutedEventArgs e)
         {
-            // Stop Docker functionality
             localHostService.StopDocker();
+            Task.Delay(2000).ContinueWith(_ =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    InfluxDbWebView.Visibility = Visibility.Collapsed;
+                    ApiKeyInput.Visibility = Visibility.Collapsed;
+                    SubmitApiButton.Visibility = Visibility.Collapsed;
+                });
+            });
+        }
+
+        private void SubmitApiKey_Click(object sender, RoutedEventArgs e)
+        {
+            var apiKey = ApiKeyInput.Text;
+            MessageBox.Show($"API Key submitted: {apiKey}", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void UserMode_Click(object sender, RoutedEventArgs e)
@@ -97,16 +122,8 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void UpdateButtonStates()
         {
-            if (isUserMode)
-            {
-                UserModeStatus.Visibility = Visibility.Visible;
-                DeveloperModeStatus.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                UserModeStatus.Visibility = Visibility.Collapsed;
-                DeveloperModeStatus.Visibility = Visibility.Visible;
-            }
+            UserModeStatus.Visibility = isUserMode ? Visibility.Visible : Visibility.Collapsed;
+            DeveloperModeStatus.Visibility = !isUserMode ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }
