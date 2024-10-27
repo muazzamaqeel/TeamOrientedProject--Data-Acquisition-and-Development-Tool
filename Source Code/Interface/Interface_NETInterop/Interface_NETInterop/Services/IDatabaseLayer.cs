@@ -17,6 +17,15 @@ namespace SmartPacifier.Interface.Services
         string BaseUrl { get; }
     }
 
+
+    public interface ILocalHost
+    {
+        void StartDocker();
+        void StopDocker();
+    }
+
+
+
     public interface IManagerCampaign
     {
         Task AddCampaignAsync(string campaignName);

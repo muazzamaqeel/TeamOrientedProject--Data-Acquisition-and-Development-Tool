@@ -1,12 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SmartPacifier.Interface.Services;
 using SmartPacifier.BackEnd.Database.InfluxDB.Connection;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Temp;
 using InfluxDB.Client;
+using System;
 using System.Windows;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab; // Add the DeveloperTab namespace
+using Smart_Pacifier___Tool.Tabs.SettingsTab; // Add the SettingsTab namespace for SettingsView
 
 namespace Smart_Pacifier___Tool
 {
@@ -71,11 +74,13 @@ namespace Smart_Pacifier___Tool
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
             services.AddSingleton<IManagerSensors, ManagerSensors>();
 
+            // Register ILocalHost with its implementation
+            services.AddSingleton<ILocalHost, LocalHostSetup>();
+
             // Register UI components
             services.AddSingleton<MainWindow>();
             services.AddSingleton<DeveloperView>();
+            services.AddTransient<SettingsView>();
         }
-
-
     }
 }

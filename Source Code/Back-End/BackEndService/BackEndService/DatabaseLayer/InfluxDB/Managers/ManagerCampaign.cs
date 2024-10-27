@@ -95,6 +95,21 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         }
 
 
+
+
+
+
+
+
+
+        /// <summary>
+        /// Template to store campaign data in an Excel file
+        /// </summary>
+        /// <param name="measurement"></param>
+        /// <param name="fields"></param>
+        /// <param name="tags"></param>
+        /// <returns></returns>
+
         public async Task WriteCampaignDataToExcel(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
         {
             await Task.Run(() =>
@@ -156,6 +171,15 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             });
         }
 
+
+        /// <summary>
+        /// Template to store campaign data in a database
+        /// </summary>
+        /// <param name="measurement"></param>
+        /// <param name="fields"></param>
+        /// <param name="tags"></param>
+        /// <param name="timestamp"></param>
+        /// <returns></returns>
         public async Task WriteCampaignDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags, DateTime timestamp)
         {
             try
