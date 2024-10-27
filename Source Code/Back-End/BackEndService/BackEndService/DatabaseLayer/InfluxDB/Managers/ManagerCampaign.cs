@@ -65,35 +65,36 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-            {
-                { "status", "created" },
-                { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-                { "start_time", "null" },
-                { "end_time", "null" }
-            };
-            await WriteCampaignDataToExcel("campaigns", fields, tags);
+    {
+        { "status", "created" },
+        { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") },
+        { "start_time", "null" },
+        { "end_time", "null" }
+    };
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
+
         public async Task StartCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-                {
-                    { "status", "started" },
-                    { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-                };
-            await WriteCampaignDataToExcel("campaigns", fields, tags);
+    {
+        { "status", "started" },
+        { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+    };
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow); 
         }
+
         public async Task EndCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-                {
-                    { "status", "stopped" },
-                    { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-                };
-            await WriteCampaignDataToExcel("campaigns", fields, tags);
+    {
+        { "status", "stopped" },
+        { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+    };
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow); 
         }
-
 
 
 
@@ -180,33 +181,60 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         /// <param name="tags"></param>
         /// <param name="timestamp"></param>
         /// <returns></returns>
+
         public async Task WriteCampaignDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags, DateTime timestamp)
         {
             try
             {
                 var client = _databaseService.GetClient();
+                var query = $"from(bucket:\"{_databaseService.Bucket}\") |> range(start: -1y) |> filter(fn: (r) => r[\"_measurement\"] == \"{measurement}\" and r[\"campaign_name\"] == \"{tags["campaign_name"]}\" and r[\"status\"] == \"{fields["status"]}\")";
+
+                // Check if campaign with same name and status already exists
+                var existingData = await _databaseService.ReadData(query);
+                if (existingData.Count > 0)
+                {
+                    Console.WriteLine("A campaign with the same name and status already exists in the database.");
+                    return;
+                }
+
+                // Create PointData object with measurement and timestamp
                 var point = PointData.Measurement(measurement)
                     .Timestamp(timestamp, WritePrecision.Ns);
 
+                // Add tags to PointData
                 foreach (var tag in tags)
                 {
                     point = point.Tag(tag.Key, tag.Value);
                 }
 
+                // Add fields to PointData
                 foreach (var field in fields)
                 {
-                    if (field.Value is float floatValue)
-                        point = point.Field(field.Key, floatValue);
-                    else if (field.Value is double doubleValue)
-                        point = point.Field(field.Key, doubleValue);
-                    else if (field.Value is int intValue)
-                        point = point.Field(field.Key, intValue);
-                    else if (field.Value is string stringValue)
-                        point = point.Field(field.Key, stringValue);
+                    switch (field.Value)
+                    {
+                        case float floatValue:
+                            point = point.Field(field.Key, floatValue);
+                            break;
+                        case double doubleValue:
+                            point = point.Field(field.Key, doubleValue);
+                            break;
+                        case int intValue:
+                            point = point.Field(field.Key, intValue);
+                            break;
+                        case string stringValue:
+                            point = point.Field(field.Key, stringValue);
+                            break;
+                        default:
+                            Console.WriteLine($"Unsupported field type for {field.Key}: {field.Value.GetType()}");
+                            break;
+                    }
                 }
 
+                // Write the data point asynchronously
                 var writeApi = client.GetWriteApiAsync();
                 await writeApi.WritePointAsync(point, _databaseService.Bucket, _databaseService.Org);
+
+                Console.WriteLine("Data successfully written to InfluxDB.");
             }
             catch (Exception ex)
             {
@@ -319,6 +347,65 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        ///-------------------------------------------------------------------------------------------------
+        ///Please ignore the following code snippets. They are only for reference purposes.
+        ///-------------------------------------------------------------------------------------------------
+
+        /*
+         
+
+                public async Task WriteCampaignDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags, DateTime timestamp)
+        {
+            try
+            {
+                var client = _databaseService.GetClient();
+                var point = PointData.Measurement(measurement)
+                    .Timestamp(timestamp, WritePrecision.Ns);
+
+                foreach (var tag in tags)
+                {
+                    point = point.Tag(tag.Key, tag.Value);
+                }
+
+                foreach (var field in fields)
+                {
+                    if (field.Value is float floatValue)
+                        point = point.Field(field.Key, floatValue);
+                    else if (field.Value is double doubleValue)
+                        point = point.Field(field.Key, doubleValue);
+                    else if (field.Value is int intValue)
+                        point = point.Field(field.Key, intValue);
+                    else if (field.Value is string stringValue)
+                        point = point.Field(field.Key, stringValue);
+                }
+
+                var writeApi = client.GetWriteApiAsync();
+                await writeApi.WritePointAsync(point, _databaseService.Bucket, _databaseService.Org);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error writing data: {ex.Message}");
+            }
+        }
+
+
+        */
 
 
 
