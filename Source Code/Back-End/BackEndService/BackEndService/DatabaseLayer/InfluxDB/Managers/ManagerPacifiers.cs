@@ -22,21 +22,83 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         }
 
         // ManagerPacifiers-specific method to add a pacifier
-        public async Task AddPacifierAsync(string campaignName, string pacifierId)
+        public async Task AddPacifierAsync(string pacifierName)
         {
-            var tags = new Dictionary<string, string>
-            {
-                { "campaign_name", campaignName },
-                { "pacifier_id", pacifierId }
-            };
-
+            var tags = new Dictionary<string, string> { { "pacifier_name", pacifierName } };
             var fields = new Dictionary<string, object>
             {
-                { "status", "assigned" }
+                { "campaign_name", "Campaign 5" },
+                { "sensors", "null" },
+                { "status", "active" }
             };
 
-            await _databaseService.WriteDataAsync("pacifiers", fields, tags);
+            await WritePacifierDataAsync("pacifiers", fields, tags, DateTime.UtcNow);
         }
+
+
+
+
+
+
+
+
+
+        private async Task WritePacifierDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags, DateTime timestamp)
+        {
+            try
+            {
+                var point = PointData.Measurement(measurement)
+                    .Timestamp(timestamp, WritePrecision.Ns);
+
+                // Add tags
+                foreach (var tag in tags)
+                {
+                    point = point.Tag(tag.Key, tag.Value);
+                }
+
+                // Add fields
+                foreach (var field in fields)
+                {
+                    switch (field.Value)
+                    {
+                        case float floatValue:
+                            point = point.Field(field.Key, floatValue);
+                            break;
+                        case double doubleValue:
+                            point = point.Field(field.Key, doubleValue);
+                            break;
+                        case int intValue:
+                            point = point.Field(field.Key, intValue);
+                            break;
+                        case string stringValue:
+                            point = point.Field(field.Key, stringValue);
+                            break;
+                        default:
+                            Console.WriteLine($"Unsupported field type for {field.Key}: {field.Value.GetType()}");
+                            break;
+                    }
+                }
+
+                // Write data to InfluxDB
+                var writeApi = _client.GetWriteApiAsync();
+                await writeApi.WritePointAsync(point, _bucket, _org);
+
+                Console.WriteLine($"Pacifier '{tags["pacifier_name"]}' added successfully with initial status.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error writing pacifier data: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
+
+
 
         // ManagerPacifiers-specific method to get pacifiers by campaign
         public async Task<List<string>> GetPacifiersAsync(string campaignName)
@@ -156,5 +218,51 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
                 Console.WriteLine($"Error writing data: {ex.Message}");
             }
         }
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Need More Information before implementing this method!!!!
+        /// </summary>
+        /// <param name="pacifierName"></param>
+        /// <param name="campaignName"></param>
+        /// <param name="sensorType"></param>
+        /// <returns></returns>
+
+
+        public async Task LinkPacifierToCampaignAsync(string pacifierName, string campaignName, string sensorType)
+            {
+                var tags = new Dictionary<string, string>
+                    {
+                        { "pacifier_name", pacifierName }
+                    };
+
+                                var fields = new Dictionary<string, object>
+                    {
+                        { "campaign_name", campaignName },
+                        { "sensors", sensorType },
+                        { "status", "active" } // Keep status active
+                    };
+
+                await WritePacifierDataAsync("pacifiers", fields, tags, DateTime.UtcNow);
+            }
+
+
+
+
+        }
 }
+

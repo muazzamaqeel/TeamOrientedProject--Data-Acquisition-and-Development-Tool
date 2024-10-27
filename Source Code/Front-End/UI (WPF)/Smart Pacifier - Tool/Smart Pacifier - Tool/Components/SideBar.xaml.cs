@@ -47,7 +47,9 @@ namespace Smart_Pacifier___Tool
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            ((MainWindow)Application.Current.MainWindow).NavigateTo(new SettingsView());
+            // Resolve SettingsView from the service provider
+            var settingsView = ((App)Application.Current).ServiceProvider.GetRequiredService<SettingsView>();
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(settingsView);
         }
         private void DeveloperButton_Click(object sender, RoutedEventArgs e)
         {

@@ -1,12 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SmartPacifier.Interface.Services;
 using SmartPacifier.BackEnd.Database.InfluxDB.Connection;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Temp;
 using InfluxDB.Client;
+using System;
 using System.Windows;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab; // Add the DeveloperTab namespace
+using Smart_Pacifier___Tool.Tabs.SettingsTab; // Add the SettingsTab namespace for SettingsView
 
 namespace Smart_Pacifier___Tool
 {
@@ -34,7 +37,7 @@ namespace Smart_Pacifier___Tool
             // Call the method that registers all necessary services
             ConfigureServices(services);
 
-            // Build the service provider from the service collection (This is the DI container)
+            // Build the service provider from the service collection (This is the Dependency Injection container)
             _serviceProvider = services.BuildServiceProvider();
 
             // Use the service provider to resolve (get) the Test window and show it
@@ -49,32 +52,42 @@ namespace Smart_Pacifier___Tool
         /// <param name="services">The service collection where services are registered.</param>
         private void ConfigureServices(IServiceCollection services)
         {
-            // Register InfluxDBClient as a singleton.
-            services.AddSingleton(sp =>
-                new InfluxDBClient("http://localhost:8086", "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ=="));
+            // Register ILocalHost with its implementation
+            services.AddSingleton<ILocalHost, LocalHostSetup>();
 
-            // Register the InfluxDatabaseService as a singleton.
-            services.AddSingleton<IDatabaseService, InfluxDatabaseService>();
+            // Register InfluxDBClient with the URL and token from ILocalHost
+            services.AddSingleton<InfluxDBClient>(sp =>
+            {
+                var localHostService = sp.GetRequiredService<ILocalHost>();
+                string apiKey = localHostService.GetApiKey();
 
-            // Register campaign manager as a singleton.
+                return new InfluxDBClient("http://localhost:8086", apiKey);
+            });
+
+            // Register InfluxDatabaseService as IDatabaseService
+            services.AddSingleton<IDatabaseService>(sp =>
+            {
+                var influxClient = sp.GetRequiredService<InfluxDBClient>();
+                var localHostService = sp.GetRequiredService<ILocalHost>();
+                string apiKey = localHostService.GetApiKey();
+
+                return new InfluxDatabaseService(
+                    influxClient,
+                    apiKey, // API key retrieved through ILocalHost
+                    "http://localhost:8086", // baseUrl
+                    "thu-de" // org
+                );
+            });
+
+            // Register the Manager classes, injecting IDatabaseService where necessary
             services.AddSingleton<IManagerCampaign, ManagerCampaign>();
-
-            // Register pacifier manager as a singleton.
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
-
-            // Register sensor manager as a singleton.
             services.AddSingleton<IManagerSensors, ManagerSensors>();
 
-            // Register the Test window as a singleton.
-            services.AddSingleton<Test>();
-
-            // Register MainWindow or any other UI components you may need as singletons.
+            // Register UI components
             services.AddSingleton<MainWindow>();
-
-            // Register DeveloperView as a singleton
             services.AddSingleton<DeveloperView>();
-
-
+            services.AddTransient<SettingsView>();
         }
     }
 }
