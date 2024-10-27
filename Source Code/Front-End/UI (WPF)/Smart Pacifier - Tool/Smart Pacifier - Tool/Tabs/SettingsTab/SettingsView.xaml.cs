@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Web.WebView2.Wpf;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
@@ -83,8 +84,18 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void SubmitApiKey_Click(object sender, RoutedEventArgs e)
         {
-            var apiKey = ApiKeyInput.Text;
-            MessageBox.Show($"API Key submitted: {apiKey}", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            string apiKey = ApiKeyInput.Text;
+
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                // Save the API key using the localHostService instance
+                ((LocalHostSetup)localHostService).SaveApiKey(apiKey);
+                MessageBox.Show("API Key submitted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void UserMode_Click(object sender, RoutedEventArgs e)
@@ -125,5 +136,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             UserModeStatus.Visibility = isUserMode ? Visibility.Visible : Visibility.Collapsed;
             DeveloperModeStatus.Visibility = !isUserMode ? Visibility.Visible : Visibility.Collapsed;
         }
+
+
+
+
     }
 }

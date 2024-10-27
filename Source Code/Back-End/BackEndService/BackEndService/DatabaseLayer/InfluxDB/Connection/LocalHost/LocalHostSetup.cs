@@ -10,6 +10,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
     {
         // Dynamically sets the path to the `docker-compose.yml` in the Release directory
         private readonly string dockerComposeFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LocalHost", "docker-compose.yml");
+        private readonly string apiKeyFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apikey.txt");
+
 
         public LocalHostSetup()
         {
@@ -105,6 +107,42 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
             return message.Contains("Creating") || message.Contains("Started") || message.Contains("Stopping") ||
                    message.Contains("Removing") || message.Contains("Created") || message.Contains("Started") ||
                    message.Contains("Network") || message.Contains("Container");
+        }
+
+        // Store API Key in a text file
+        public void SaveApiKey(string apiKey)
+        {
+            try
+            {
+                File.WriteAllText(apiKeyFilePath, apiKey);
+                MessageBox.Show("API Key saved successfully.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save API Key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // Retrieve API Key from the text file
+        public string GetApiKey()
+        {
+            try
+            {
+                if (File.Exists(apiKeyFilePath))
+                {
+                    return File.ReadAllText(apiKeyFilePath);
+                }
+                else
+                {
+                    MessageBox.Show("API Key file not found.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return string.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to retrieve API Key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return string.Empty;
+            }
         }
     }
 }
