@@ -39,7 +39,7 @@ namespace SmartPacifier.Interface.Services
     public interface IManagerPacifiers
     {
         Task<List<string>> GetPacifiersAsync(string campaignName);
-        Task AddPacifierAsync(string campaignName, string pacifierId);
+        Task AddPacifierAsync(string campaignName);
 
         Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags);
 
