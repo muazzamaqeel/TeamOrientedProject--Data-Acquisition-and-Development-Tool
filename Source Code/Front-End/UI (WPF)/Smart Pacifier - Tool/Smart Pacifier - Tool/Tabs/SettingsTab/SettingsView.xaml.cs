@@ -32,6 +32,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
 
             UpdateButtonStates();
+
+            // Ensure the User Mode and Developer Mode buttons are visible by default
+            ModeButtonsPanel.Visibility = Visibility.Visible;
         }
 
         private void SwitchMode_Click(object sender, RoutedEventArgs e)
@@ -111,13 +114,11 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
 
 
-
         /// <summary>
         /// Developers and User Mode Doings
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-
         private void DeveloperMode_Click(object sender, RoutedEventArgs e)
         {
             PinEntryPanel.Visibility = Visibility.Visible;

@@ -1,26 +1,51 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
-    public partial class RawDataView : UserControl
+    public partial class RawDataView : UserControl, INotifyPropertyChanged
     {
         private UserControl backLocation;
+        private bool activeMonitoring;
+
         public string PacifierName { get; private set; }
 
+        public bool ActiveMonitoring
+        {
+            get => activeMonitoring;
+            set
+            {
+                if (activeMonitoring != value)
+                {
+                    activeMonitoring = value;
+                    OnPropertyChanged(nameof(ActiveMonitoring));
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="RawDataView"/> class.
+        /// Initializes a new instance of the Raw Data view, with a table.
         /// </summary>
-        /// <param name="pacifierName">The name of the pacifier to be displayed.</param>
-        /// <param name="backLocation">The view to navigate back to when the back button is clicked.</param>
-        public RawDataView(string pacifierName, UserControl backLocation)
+        /// <param name="pacifierName">Name of the pacifier.</param>
+        /// <param name="backLocation">The back location.</param>
+        /// <param name="activeMonitoring">Set to true if active Monitoring otherwise to false</param>
+        public RawDataView(string pacifierName, UserControl backLocation, bool activeMonitoring)
         {
             InitializeComponent();
             DataContext = this;
             PacifierName = pacifierName;
             this.backLocation = backLocation;
+            ActiveMonitoring = !activeMonitoring;
             LoadData();
         }
 
@@ -34,7 +59,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         }
 
         public List<SensorData> SensorEntries { get; set; }
-
 
         // Dummy data
         private void LoadData()

@@ -112,7 +112,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             string pacifierName = "Pacifier 01";
 
             // Create an instance of RawDataView with the properties and a reference to this view
-            var rawDataView = new RawDataView(pacifierName, this);
+            var rawDataView = new RawDataView(pacifierName, this, true);
 
             // Replace the current view with RawDataView
             var parent = this.Parent as ContentControl;
