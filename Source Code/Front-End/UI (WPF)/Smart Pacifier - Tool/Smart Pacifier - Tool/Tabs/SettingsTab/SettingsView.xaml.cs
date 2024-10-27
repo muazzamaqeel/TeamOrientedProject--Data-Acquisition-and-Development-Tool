@@ -108,6 +108,16 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             ((MainWindow)Application.Current.MainWindow).UpdateDeveloperTabVisibility();
         }
 
+
+
+
+
+        /// <summary>
+        /// Developers and User Mode Doings
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+
         private void DeveloperMode_Click(object sender, RoutedEventArgs e)
         {
             PinEntryPanel.Visibility = Visibility.Visible;

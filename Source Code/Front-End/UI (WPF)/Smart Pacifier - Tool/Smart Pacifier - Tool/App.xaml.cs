@@ -52,18 +52,28 @@ namespace Smart_Pacifier___Tool
         /// <param name="services">The service collection where services are registered.</param>
         private void ConfigureServices(IServiceCollection services)
         {
-            // Register InfluxDBClient with the URL and token
+            // Register ILocalHost with its implementation
+            services.AddSingleton<ILocalHost, LocalHostSetup>();
+
+            // Register InfluxDBClient with the URL and token from ILocalHost
             services.AddSingleton<InfluxDBClient>(sp =>
-                new InfluxDBClient("http://localhost:8086", "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ==")
-            );
+            {
+                var localHostService = sp.GetRequiredService<ILocalHost>();
+                string apiKey = localHostService.GetApiKey();
+
+                return new InfluxDBClient("http://localhost:8086", apiKey);
+            });
 
             // Register InfluxDatabaseService as IDatabaseService
             services.AddSingleton<IDatabaseService>(sp =>
             {
                 var influxClient = sp.GetRequiredService<InfluxDBClient>();
+                var localHostService = sp.GetRequiredService<ILocalHost>();
+                string apiKey = localHostService.GetApiKey();
+
                 return new InfluxDatabaseService(
                     influxClient,
-                    "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ==", // token
+                    apiKey, // API key retrieved through ILocalHost
                     "http://localhost:8086", // baseUrl
                     "thu-de" // org
                 );
@@ -73,9 +83,6 @@ namespace Smart_Pacifier___Tool
             services.AddSingleton<IManagerCampaign, ManagerCampaign>();
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
             services.AddSingleton<IManagerSensors, ManagerSensors>();
-
-            // Register ILocalHost with its implementation
-            services.AddSingleton<ILocalHost, LocalHostSetup>();
 
             // Register UI components
             services.AddSingleton<MainWindow>();
