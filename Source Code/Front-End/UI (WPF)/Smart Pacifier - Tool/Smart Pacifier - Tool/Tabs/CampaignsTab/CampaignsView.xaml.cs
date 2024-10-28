@@ -6,12 +6,15 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
+using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 {
     public partial class CampaignsView : UserControl, INotifyPropertyChanged
     {
         private ICollectionView _filteredCampaigns;
+        private readonly IDatabaseService _databaseService;
+
         public List<Campaign> Campaigns { get; set; } = new List<Campaign>();
         public string SearchName { get; set; } = string.Empty;
         public string ActualSearchName { get; set; } = string.Empty; // New property
@@ -28,14 +31,16 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             }
         }
 
-        public CampaignsView()
+        // Use the dependency injection here
+        public CampaignsView(IDatabaseService databaseService)
         {
             InitializeComponent();
+            _databaseService = databaseService; // Assign the injected service to the field
             GenerateCampaigns();
             FilteredCampaigns = CollectionViewSource.GetDefaultView(Campaigns);
             FilteredCampaigns.Filter = FilterCampaigns;
             FilteredCampaigns.Refresh();
-            DataContext = this; // Set DataContext for binding
+            DataContext = this;
             isLoaded = true;
         }
 

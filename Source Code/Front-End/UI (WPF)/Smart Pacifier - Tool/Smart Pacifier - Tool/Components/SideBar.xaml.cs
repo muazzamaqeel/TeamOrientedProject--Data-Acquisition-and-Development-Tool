@@ -37,8 +37,10 @@ namespace Smart_Pacifier___Tool
 
         private void CampaignsButton_Click(object sender, RoutedEventArgs e)
         {
-            ((MainWindow)Application.Current.MainWindow).NavigateTo(new CampaignsView());
+            var campaignsView = ((App)Application.Current).ServiceProvider.GetRequiredService<CampaignsView>();
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(campaignsView);
         }
+
 
         private void MonitoringButton_Click(object sender, RoutedEventArgs e)
         {
