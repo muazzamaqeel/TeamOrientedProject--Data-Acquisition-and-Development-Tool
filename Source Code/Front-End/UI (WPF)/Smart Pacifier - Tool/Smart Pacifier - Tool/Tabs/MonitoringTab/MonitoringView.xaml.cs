@@ -353,18 +353,38 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         {
             if (pacifierGrid == null) return;
 
+            // Find the scroll viewer that contains the graphs for the sensor item
             foreach (var child in pacifierGrid.Children)
             {
-                if (child is ScrollViewer scrollViewer &&
-                    scrollViewer.Content is StackPanel panel &&
-                    panel.Children[0] is Border placeholder &&
-                    placeholder.Name.StartsWith(sensorItem.ButtonText))
+                if (child is ScrollViewer scrollViewer)
                 {
-                    pacifierGrid.Children.Remove(scrollViewer);
-                    break;
+                    // Check if the scrollViewer contains the graphs related to the sensor
+                    bool containsSensorGraphs = false;
+
+                    if (scrollViewer.Content is WrapPanel graphPanel)
+                    {
+                        foreach (var graph in graphPanel.Children)
+                        {
+                            // Assuming the graphs are named consistently with the sensor item
+                            if (graph is LineChartGraph lineChartGraph &&
+                                lineChartGraph.Name.Contains(sensorItem.ButtonText.Replace(" ", "_")))
+                            {
+                                containsSensorGraphs = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // If the scrollViewer contains graphs for the sensor, remove it
+                    if (containsSensorGraphs)
+                    {
+                        pacifierGrid.Children.Remove(scrollViewer);
+                        break; // Exit after removing the correct scroll viewer
+                    }
                 }
             }
         }
+
 
         private bool DoesSensorRowExist(Grid pacifierGrid, string sensorName)
         {
