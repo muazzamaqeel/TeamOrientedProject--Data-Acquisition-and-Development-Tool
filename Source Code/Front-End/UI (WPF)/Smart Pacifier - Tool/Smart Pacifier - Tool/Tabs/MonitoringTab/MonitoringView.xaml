@@ -17,6 +17,9 @@
             <TextBlock x:Name="headerTextBlock" Text="Active Monitoring" 
                        HorizontalAlignment="Center" VerticalAlignment="Center" 
                        Foreground="White" FontSize="24" FontWeight="Bold"/>
+            <Button Content="End Campaign" HorizontalAlignment="Left" Height="25" Margin="10,0,0,0" VerticalAlignment="Center" Width="90" Click="EndCampaign_Button"/>
+            <Button Content="Add Pacifier" HorizontalAlignment="Right" Height="25" Margin="0,0,10,0" VerticalAlignment="Center" Width="70" Click="AddPacifier_Button"/>
+            <Button Content="Intervals" HorizontalAlignment="Right" Height="25" Margin="0,0,90,0" VerticalAlignment="Center" Width="70" Click="Intervals_Button"/>
         </Grid>
 
         <!-- Pacifier Filters Grid (Components) - Horizontal Scroll -->
@@ -46,22 +49,17 @@
         </ScrollViewer>
 
         <!-- Pacifier Sections Grid (Components) - Vertical Scroll -->
-        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,5,0,0">
-            <Grid Background="White">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <StackPanel x:Name="pacifierSectionsPanel" Orientation="Vertical" />
-                <local:LineChartGraph x:Name="lineChartGraph" Grid.Row="1" />
+        <ScrollViewer x:Name="PacifierSections" Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,5,0,0">
+            <StackPanel x:Name="pacifierSectionsPanel">
                 <Button Content="Open Raw Data View"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 FontSize="16"
                 Padding="10"
                 Click="OpenRawDataView_Click"/>
-            </Grid>
+                <!-- Use StackPanel to allow scrolling -->
+                <!-- Grids will be added here dynamically -->
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </UserControl>

@@ -1,0 +1,24 @@
+﻿<Window x:Class="Smart_Pacifier___Tool.Components.IntervalSettingsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Smart_Pacifier___Tool.Components"
+        mc:Ignorable="d"
+        Title="Interval Settings" Width="400" Height="500">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <!-- Scrollable area -->
+            <RowDefinition Height="Auto" />
+            <!-- Button area -->
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="SensorSettingsPanel" />
+        </ScrollViewer>
+
+        <Button Content="Save" Click="SaveButton_Click" HorizontalAlignment="Right" Margin="10" Width="70" Height="25" Grid.Row="1"/>
+    </Grid>
+</Window>
