@@ -85,6 +85,8 @@ namespace SmartPacifier___TestingFramework
             // Arrange
             string campaignName = "Campaign1";
             var expectedPacifiers = new List<string> { "Pacifier1", "Pacifier2" };
+
+            // Setup the mock to return the expected list when the method is called
             _mockManagerPacifiers.Setup(p => p.GetPacifiersAsync(campaignName))
                                  .ReturnsAsync(expectedPacifiers);
 
@@ -94,6 +96,7 @@ namespace SmartPacifier___TestingFramework
             // Assert
             Assert.Equal(expectedPacifiers, result);
         }
+
 
         [Fact]
         public async Task GetPacifiersInCampaign_ShouldReturnEmptyList_WhenCampaignHasNoPacifiers()
