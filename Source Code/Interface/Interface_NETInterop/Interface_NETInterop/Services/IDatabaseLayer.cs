@@ -49,4 +49,10 @@ namespace SmartPacifier.Interface.Services
     {
         Task AddSensorDataAsync(string pacifierId, float ppgValue, float imuAccelX, float imuAccelY, float imuAccelZ);
     }
+
+    public interface IInfluxDBParser
+    {
+
+
+    }
 }
