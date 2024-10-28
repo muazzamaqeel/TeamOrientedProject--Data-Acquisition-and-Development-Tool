@@ -14,7 +14,7 @@ namespace SmartPacifier___TestingFramework
     public class Main_UnitTests
     {
         private readonly IUnitTestDB _unitTest;
-        private readonly ManagerCampaignWrapper _managerCampaignWrapper;
+        private readonly CampaignWrap _managerCampaignWrapper;
         private readonly Mock<IDatabaseService> _mockDatabaseService;
         private readonly Mock<IManagerPacifiers> _mockManagerPacifiers;
 
@@ -29,7 +29,7 @@ namespace SmartPacifier___TestingFramework
 
             // Create an instance of ManagerCampaign and wrap it with ManagerCampaignWrapper
             var managerCampaign = new ManagerCampaign(_mockDatabaseService.Object, _mockManagerPacifiers.Object);
-            _managerCampaignWrapper = new ManagerCampaignWrapper(managerCampaign, "SmartPacifier-Bucket1");
+            _managerCampaignWrapper = new CampaignWrap(managerCampaign, "SmartPacifier-Bucket1");
         }
 
         [Fact]

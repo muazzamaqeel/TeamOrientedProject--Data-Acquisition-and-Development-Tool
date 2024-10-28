@@ -17,7 +17,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers
     {
         private readonly Mock<IDatabaseService> _mockDatabaseService;
         private readonly Mock<IManagerPacifiers> _mockManagerPacifiers;
-        private readonly ManagerCampaignWrapper _managerCampaignWrapper;
+        private readonly CampaignWrap _managerCampaignWrapper;
 
         public UnitTestMAN()
         {
@@ -27,7 +27,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers
             // Create ManagerCampaign instance with mocked dependencies
             var managerCampaign = new ManagerCampaign(_mockDatabaseService.Object, _mockManagerPacifiers.Object);
             // Wrap ManagerCampaign in the ManagerCampaignWrapper
-            _managerCampaignWrapper = new ManagerCampaignWrapper(managerCampaign, "SmartPacifier-Bucket1");
+            _managerCampaignWrapper = new CampaignWrap(managerCampaign, "SmartPacifier-Bucket1");
         }
 
         [Fact]

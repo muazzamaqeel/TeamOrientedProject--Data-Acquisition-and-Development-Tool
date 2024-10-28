@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers
 {
-    public class ManagerCampaignWrapper
+    public class CampaignWrap
     {
         private readonly ManagerCampaign _managerCampaign;
         private readonly string _bucket;
 
-        public ManagerCampaignWrapper(ManagerCampaign managerCampaign, string bucket)
+        public CampaignWrap(ManagerCampaign managerCampaign, string bucket)
         {
             _managerCampaign = managerCampaign;
             _bucket = bucket; // Explicitly set the bucket name in the wrapper
