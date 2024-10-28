@@ -50,38 +50,69 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         private async void LoadCampaignData()
         {
             var csvData = await _managerCampaign.GetCampaignDataAsCSVAsync();
-            var lines = csvData.Split(Environment.NewLine);
+            var lines = csvData.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
 
-            // Skip header row and parse the remaining rows
+            // Dictionary to hold campaign data by unique campaign names
+            var campaignDataMap = new Dictionary<string, Campaign>();
+            StringBuilder outputLog = new StringBuilder("Processing Campaign Data:\n");
+
             foreach (var line in lines.Skip(1))
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
                 var columns = line.Split(',');
 
-                // Parse start and end dates, handling null or empty values
-                DateTime? startDate = !string.IsNullOrWhiteSpace(columns[2]) && columns[2] != "null"
-                    ? DateTime.Parse(columns[2])
-                    : (DateTime?)null;
+                // Ensure we have enough columns for parsing
+                if (columns.Length < 4) continue;
 
-                DateTime? endDate = !string.IsNullOrWhiteSpace(columns[3]) && columns[3] != "null"
-                    ? DateTime.Parse(columns[3])
-                    : (DateTime?)null;
+                var campaignName = columns[0];
+                var status = columns[1];
+                var startTimeStr = columns[2];
+                var endTimeStr = columns[3];
 
-                string timeRange = startDate.HasValue && endDate.HasValue
-                    ? $"{startDate.Value.ToString("hh:mm tt")} - {endDate.Value.ToString("hh:mm tt")}"
-                    : "N/A";
-
-                Campaigns.Add(new Campaign
+                // Get or create the Campaign object for this campaign name
+                if (!campaignDataMap.ContainsKey(campaignName))
                 {
-                    CampaignName = columns[0],
-                    Date = startDate?.ToString("MM/dd/yyyy") ?? "N/A",
-                    TimeRange = timeRange,
-                    PacifierCount = 0 // Set to 0 or retrieve count if necessary
-                });
+                    campaignDataMap[campaignName] = new Campaign
+                    {
+                        CampaignName = campaignName,
+                        PacifierCount = 0,
+                        Date = "N/A",
+                        TimeRange = "N/A"
+                    };
+                }
+
+                var campaign = campaignDataMap[campaignName];
+                outputLog.AppendLine($"Processing {campaignName} with status {status}");
+
+                // Set values based on status
+                if (status == "created" && DateTime.TryParse(startTimeStr, out var creationDate))
+                {
+                    campaign.Date = creationDate.ToString("MM/dd/yyyy");
+                }
+                else if (status == "started" && DateTime.TryParse(startTimeStr, out var campaignStart))
+                {
+                    campaign.TimeRange = $"{campaignStart.ToString("hh:mm tt")} -";
+                }
+                else if (status == "stopped" && DateTime.TryParse(endTimeStr, out var campaignEnd))
+                {
+                    if (campaign.TimeRange.EndsWith("-"))
+                    {
+                        campaign.TimeRange += $" {campaignEnd.ToString("hh:mm tt")}";
+                    }
+                }
             }
 
+            // Update the observable list and refresh UI
+            Campaigns.Clear();
+            foreach (var campaign in campaignDataMap.Values)
+            {
+                Campaigns.Add(campaign);
+            }
             FilteredCampaigns.Refresh();
+
+            // Display consolidated output in one message box
+            MessageBox.Show(outputLog.ToString(), "Load Campaign Data Output", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
 

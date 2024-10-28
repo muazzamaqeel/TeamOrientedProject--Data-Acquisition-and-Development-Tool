@@ -60,7 +60,8 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
                         "|> range(start: -1y) " +
                         "|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\") " +
-                        "|> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")";
+                        "|> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\") " +
+                        "|> sort(columns: [\"_time\"], desc: true)";  // Fetch in descending order by time
 
             // Fetch data from InfluxDB
             var rawCampaignData = await _databaseService.ReadData(query);
@@ -73,7 +74,6 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
             return csvData;
         }
-
 
 
 
