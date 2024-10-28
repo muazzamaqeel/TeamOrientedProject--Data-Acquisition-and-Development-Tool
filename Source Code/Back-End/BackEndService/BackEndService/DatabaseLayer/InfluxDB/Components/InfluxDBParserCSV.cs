@@ -24,8 +24,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Components
                 {
                     var campaignName = data["campaign_name"]?.ToString();
                     var status = data["status"]?.ToString();
-                    var startTime = data["start_time"]?.ToString();
-                    var endTime = data["end_time"]?.ToString();
+                    var startTime = data["start_time"]?.ToString()?.Replace("Z", ""); // Remove "Z" from start time
+                    var endTime = data["end_time"]?.ToString()?.Replace("Z", ""); // Remove "Z" from end time
 
                     if (!string.IsNullOrEmpty(campaignName))
                     {
@@ -35,14 +35,18 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Components
                         }
 
                         // Update start or stop time based on status
-                        if (status == "started" && campaignDataMap[campaignName].StartTime == "N/A")
+                        var currentCampaign = campaignDataMap[campaignName];
+
+                        if (status == "started")
                         {
-                            campaignDataMap[campaignName] = (Status: status, StartTime: startTime, EndTime: campaignDataMap[campaignName].EndTime);
+                            currentCampaign = (Status: status, StartTime: startTime ?? currentCampaign.StartTime, EndTime: currentCampaign.EndTime);
                         }
-                        else if (status == "stopped" && campaignDataMap[campaignName].EndTime == "N/A")
+                        else if (status == "stopped")
                         {
-                            campaignDataMap[campaignName] = (Status: status, StartTime: campaignDataMap[campaignName].StartTime, EndTime: endTime);
+                            currentCampaign = (Status: status, StartTime: currentCampaign.StartTime, EndTime: endTime ?? currentCampaign.EndTime);
                         }
+
+                        campaignDataMap[campaignName] = currentCampaign;
                     }
                 }
             }
@@ -58,6 +62,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Components
 
             return csv.ToString();
         }
+
+
 
 
 

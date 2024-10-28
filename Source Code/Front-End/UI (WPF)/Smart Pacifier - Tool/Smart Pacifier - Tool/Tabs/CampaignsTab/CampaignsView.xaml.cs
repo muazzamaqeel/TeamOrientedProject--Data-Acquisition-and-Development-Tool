@@ -22,6 +22,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         public string ActualSearchName { get; set; } = string.Empty; // New property
         public DateTime? SearchDate { get; set; }
         public bool isLoaded = false;
+        private Dictionary<string, Campaign> campaignDataMap = new Dictionary<string, Campaign>(); // Define campaignDataMap at class level
 
         public ICollectionView FilteredCampaigns
         {
@@ -47,13 +48,15 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             DataContext = this;
             isLoaded = true;
         }
+
+
+
         private async void LoadCampaignData()
         {
             var csvData = await _managerCampaign.GetCampaignDataAsCSVAsync();
             var lines = csvData.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
 
-            // Dictionary to hold campaign data by unique campaign names
-            var campaignDataMap = new Dictionary<string, Campaign>();
+            campaignDataMap.Clear();
             StringBuilder outputLog = new StringBuilder("Processing Campaign Data:\n");
 
             foreach (var line in lines.Skip(1))
@@ -62,7 +65,6 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
                 var columns = line.Split(',');
 
-                // Ensure we have enough columns for parsing
                 if (columns.Length < 4) continue;
 
                 var campaignName = columns[0];
@@ -70,7 +72,6 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 var startTimeStr = columns[2];
                 var endTimeStr = columns[3];
 
-                // Get or create the Campaign object for this campaign name
                 if (!campaignDataMap.ContainsKey(campaignName))
                 {
                     campaignDataMap[campaignName] = new Campaign
@@ -85,35 +86,44 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 var campaign = campaignDataMap[campaignName];
                 outputLog.AppendLine($"Processing {campaignName} with status {status}");
 
-                // Set values based on status
-                if (status == "created" && DateTime.TryParse(startTimeStr, out var creationDate))
+                // Format and set TimeRange based on start and end times
+                DateTime.TryParse(startTimeStr, out var campaignStart);
+                DateTime.TryParse(endTimeStr, out var campaignEnd);
+
+                if (!string.IsNullOrWhiteSpace(startTimeStr) && !string.IsNullOrWhiteSpace(endTimeStr))
                 {
-                    campaign.Date = creationDate.ToString("MM/dd/yyyy");
+                    campaign.TimeRange = $"{campaignStart:MM/dd/yyyy HH:mm:ss} - {campaignEnd:MM/dd/yyyy HH:mm:ss}";
                 }
-                else if (status == "started" && DateTime.TryParse(startTimeStr, out var campaignStart))
+                else if (!string.IsNullOrWhiteSpace(startTimeStr))
                 {
-                    campaign.TimeRange = $"{campaignStart.ToString("hh:mm tt")} -";
+                    campaign.TimeRange = $"{campaignStart:MM/dd/yyyy HH:mm:ss} - N/A";
                 }
-                else if (status == "stopped" && DateTime.TryParse(endTimeStr, out var campaignEnd))
+                else if (!string.IsNullOrWhiteSpace(endTimeStr))
                 {
-                    if (campaign.TimeRange.EndsWith("-"))
-                    {
-                        campaign.TimeRange += $" {campaignEnd.ToString("hh:mm tt")}";
-                    }
+                    campaign.TimeRange = $"N/A - {campaignEnd:MM/dd/yyyy HH:mm:ss}";
                 }
             }
 
-            // Update the observable list and refresh UI
+            UpdateCampaignsList();
+            MessageBox.Show(outputLog.ToString(), "Load Campaign Data Output", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+
+
+
+        private void UpdateCampaignsList()
+        {
             Campaigns.Clear();
             foreach (var campaign in campaignDataMap.Values)
             {
                 Campaigns.Add(campaign);
             }
-            FilteredCampaigns.Refresh();
 
-            // Display consolidated output in one message box
-            MessageBox.Show(outputLog.ToString(), "Load Campaign Data Output", MessageBoxButton.OK, MessageBoxImage.Information);
+            OnPropertyChanged(nameof(Campaigns));         // Notify UI about Campaigns change
+            OnPropertyChanged(nameof(FilteredCampaigns)); // Notify UI about FilteredCampaigns change
+            FilteredCampaigns.Refresh();
         }
+
 
 
 

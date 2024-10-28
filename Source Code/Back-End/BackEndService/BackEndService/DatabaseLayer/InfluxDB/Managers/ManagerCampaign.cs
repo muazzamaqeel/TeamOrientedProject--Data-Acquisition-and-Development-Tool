@@ -90,12 +90,10 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-    {
-        { "status", "created" },
-        { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-        { "start_time", "null" },
-        { "end_time", "null" }
-    };
+            {
+                { "status", "created" },
+                { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+            };
             await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
 
@@ -103,22 +101,22 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-    {
-        { "status", "started" },
-        { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-    };
-            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow); 
+            {
+                { "status", "started" },
+                { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+            };
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
 
         public async Task EndCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-    {
-        { "status", "stopped" },
-        { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-    };
-            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow); 
+            {
+                { "status", "stopped" },
+                { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+            };
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
 
 

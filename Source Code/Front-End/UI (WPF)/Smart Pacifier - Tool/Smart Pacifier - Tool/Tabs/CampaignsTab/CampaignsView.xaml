@@ -26,7 +26,7 @@
 
 		<!-- Campaigns Section -->
 		<ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10,80,10,10">
-			<ItemsControl ItemsSource="{Binding FilteredCampaigns}">
+            <ItemsControl ItemsSource="{Binding Campaigns}">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
 						<Border BorderThickness="0" Margin="5" Padding="10" Background="{StaticResource MainViewSecondaryBackgroundColor}" MouseLeftButtonUp="Campaign_Click" CornerRadius="8">
@@ -46,8 +46,8 @@
 									<Run Text="{Binding PacifierCount}" FontSize="14"/>
 								</TextBlock>
 								<TextBlock Text="{Binding Date}" FontSize="14" HorizontalAlignment="Center" Foreground="{StaticResource MainViewForegroundColor}"/>
-								<TextBlock Text="{Binding TimeRange}" FontSize="14" HorizontalAlignment="Center" Foreground="{StaticResource MainViewForegroundColor}"/>
-							</StackPanel>
+                                <TextBlock Text="{Binding TimeRange}" FontSize="14" HorizontalAlignment="Center" Foreground="{StaticResource MainViewForegroundColor}"/>
+                            </StackPanel>
 						</Border>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>
