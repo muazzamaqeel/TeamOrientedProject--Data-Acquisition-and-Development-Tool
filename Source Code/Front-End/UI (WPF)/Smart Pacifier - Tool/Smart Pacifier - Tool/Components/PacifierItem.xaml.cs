@@ -42,6 +42,12 @@ namespace Smart_Pacifier___Tool.Components
             DataContext = this;
         }
 
+        public Grid AssociatedGrid 
+        {
+            get;
+            set;
+        }
+
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
             var toggleButton = sender as ToggleButton;
