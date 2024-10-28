@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
@@ -14,7 +16,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
     {
         private ICollectionView _filteredCampaigns;
         private readonly IDatabaseService _databaseService;
-
+        private readonly IManagerCampaign _managerCampaign;
         public List<Campaign> Campaigns { get; set; } = new List<Campaign>();
         public string SearchName { get; set; } = string.Empty;
         public string ActualSearchName { get; set; } = string.Empty; // New property
@@ -32,17 +34,59 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         }
 
         // Use the dependency injection here
-        public CampaignsView(IDatabaseService databaseService)
+        public CampaignsView(IDatabaseService databaseService, IManagerCampaign managerCampaign)
         {
             InitializeComponent();
-            _databaseService = databaseService; // Assign the injected service to the field
-            GenerateCampaigns();
+            _databaseService = databaseService;
+            _managerCampaign = managerCampaign;
+
+            LoadCampaignData();
             FilteredCampaigns = CollectionViewSource.GetDefaultView(Campaigns);
             FilteredCampaigns.Filter = FilterCampaigns;
             FilteredCampaigns.Refresh();
             DataContext = this;
             isLoaded = true;
         }
+        private async void LoadCampaignData()
+        {
+            var csvData = await _managerCampaign.GetCampaignDataAsCSVAsync();
+            var lines = csvData.Split(Environment.NewLine);
+
+            // Skip header row and parse the remaining rows
+            foreach (var line in lines.Skip(1))
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                var columns = line.Split(',');
+
+                // Parse start and end dates, handling null or empty values
+                DateTime? startDate = !string.IsNullOrWhiteSpace(columns[2]) && columns[2] != "null"
+                    ? DateTime.Parse(columns[2])
+                    : (DateTime?)null;
+
+                DateTime? endDate = !string.IsNullOrWhiteSpace(columns[3]) && columns[3] != "null"
+                    ? DateTime.Parse(columns[3])
+                    : (DateTime?)null;
+
+                string timeRange = startDate.HasValue && endDate.HasValue
+                    ? $"{startDate.Value.ToString("hh:mm tt")} - {endDate.Value.ToString("hh:mm tt")}"
+                    : "N/A";
+
+                Campaigns.Add(new Campaign
+                {
+                    CampaignName = columns[0],
+                    Date = startDate?.ToString("MM/dd/yyyy") ?? "N/A",
+                    TimeRange = timeRange,
+                    PacifierCount = 0 // Set to 0 or retrieve count if necessary
+                });
+            }
+
+            FilteredCampaigns.Refresh();
+        }
+
+
+
+
 
         private void GenerateCampaigns()
         {

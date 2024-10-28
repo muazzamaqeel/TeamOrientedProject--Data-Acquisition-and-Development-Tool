@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Windows;
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
@@ -74,17 +75,25 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             {
                 foreach (var record in table.Records)
                 {
-                    var value = record.GetValue();
-                    if (value != null)
+                    var recordData = new Dictionary<string, object>();
+
+                    foreach (var key in record.Values.Keys)
                     {
-                        records.Add(value.ToString());
+                        recordData[key] = record.GetValueByKey(key);
                     }
 
+                    // Convert the record dictionary to JSON
+                    var json = System.Text.Json.JsonSerializer.Serialize(recordData);
+                    records.Add(json);
                 }
             }
 
+            // Optional: Show message box to verify the JSON records
+            System.Windows.MessageBox.Show(string.Join("\n\n", records), "Raw JSON Data", MessageBoxButton.OK, MessageBoxImage.Information);
+
             return records;
         }
+
 
         public async Task<List<string>> GetCampaignsAsync()
         {

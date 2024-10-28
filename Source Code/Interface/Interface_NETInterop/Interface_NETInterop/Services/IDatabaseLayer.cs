@@ -34,7 +34,12 @@ namespace SmartPacifier.Interface.Services
         Task EndCampaignAsync(string campaignName);
         Task UpdateCampaignAsync(string oldCampaignName, string newCampaignName);
         Task DeleteCampaignAsync(string campaignName);
+
+        // Return CSV data as a string
+        Task<string> GetCampaignDataAsCSVAsync();
+        Task<List<string>> GetCampaignsAsync();
     }
+
 
     public interface IManagerPacifiers
     {
