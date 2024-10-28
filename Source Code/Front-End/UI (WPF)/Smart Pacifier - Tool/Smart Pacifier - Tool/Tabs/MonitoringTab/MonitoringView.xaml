@@ -51,12 +51,6 @@
         <!-- Pacifier Sections Grid (Components) - Vertical Scroll -->
         <ScrollViewer x:Name="PacifierSections" Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,5,0,0">
             <StackPanel x:Name="pacifierSectionsPanel">
-                <Button Content="Open Raw Data View"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                FontSize="16"
-                Padding="10"
-                Click="OpenRawDataView_Click"/>
                 <!-- Use StackPanel to allow scrolling -->
                 <!-- Grids will be added here dynamically -->
             </StackPanel>

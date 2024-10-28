@@ -163,22 +163,24 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         }
 
 
-        // for Vincent Raw Data View Testing
         private void OpenRawDataView_Click(object sender, RoutedEventArgs e)
         {
-            // Define the properties to pass
-            string pacifierName = "Pacifier 01";
-
-            // Create an instance of RawDataView with the properties and a reference to this view
-            var rawDataView = new RawDataView(pacifierName, this, true);
-
-            // Replace the current view with RawDataView
-            var parent = this.Parent as ContentControl;
-            if (parent != null)
+            // Cast the sender back to a Button to access the Tag or Content
+            var button = sender as Button;
+            if (button != null && button.Tag is string pacifierName)
             {
-                parent.Content = rawDataView;
+                // Create an instance of RawDataView with the properties and a reference to this view
+                var rawDataView = new RawDataView(pacifierName, this, true);
+
+                // Replace the current view with RawDataView
+                var parent = this.Parent as ContentControl;
+                if (parent != null)
+                {
+                    parent.Content = rawDataView;
+                }
             }
         }
+
 
         private void AddPacifierGrid(PacifierItem pacifierItem)
         {
@@ -206,11 +208,12 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
             // Create the first TextBlock for pacifier name
             TextBlock pacifierNameTextBox = new TextBlock
             {
                 Text = pacifierItem.ButtonText,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center, // Stretch horizontally
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
                 FontSize = 16,
                 Foreground = Brushes.White,
@@ -223,7 +226,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             TextBlock additionalTextBox = new TextBlock
             {
                 Text = "Status",
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center, // Stretch horizontally
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
                 FontSize = 16,
                 Foreground = Brushes.White,
@@ -238,13 +241,16 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 Content = "Debug",
                 Width = 50,
                 Height = 25,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center, // Stretch horizontally
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
-                Margin = new Thickness(5)
+                Margin = new Thickness(5),
+                Tag = pacifierItem.ButtonText // Use Tag to hold the pacifier name
             };
             Grid.SetRow(debugButton, 0);
             Grid.SetColumn(debugButton, 2);
+            debugButton.Click += OpenRawDataView_Click; // Directly attach the event handler
             pacifierGrid.Children.Add(debugButton);
+
         }
 
 
