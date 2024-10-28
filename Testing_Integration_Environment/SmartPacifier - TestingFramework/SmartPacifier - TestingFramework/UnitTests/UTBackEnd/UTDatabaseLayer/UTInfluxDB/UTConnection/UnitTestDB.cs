@@ -11,7 +11,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.Unit_Tes
     public class UnitTestDB : IUnitTestDB
     {
         private readonly string _url = "http://localhost:8086";  
-        private readonly string _validToken = "k-U_edQtQNhAFOwwjclwGCfh3seVBR6S64aKBPh46ZoDjW_ZI9DtWUAPa81IlMIKyMs8mjvMT58Tl33tCOm4hQ==";
+        private readonly string _validToken = "v0AsUfz15SKM5ez16l3iZRiDRxd_mbDTaYXluLBqXSvrorhtmgSGul6j-5GZ0ryL9avBfun4Ho1vbv6CKt0FeA==";
         private readonly string _bucket = "SmartPacifier-Bucket1";  
         private readonly string _org = "thu-de";  
 
