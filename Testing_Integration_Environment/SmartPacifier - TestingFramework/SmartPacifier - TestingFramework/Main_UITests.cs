@@ -3,9 +3,9 @@ using System.Diagnostics;
 using FlaUI.Core;
 using FlaUI.UIA3;
 using Xunit;
-
-using SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Tests_SettingsTab;
 using SmartPacifier_UITests;
+using SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Tests_SettingsTab;
+using SmartPacifier___TestingFramework.UITests.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Test_Sidebar;
 
 namespace SmartPacifier___TestingFramework
 {
@@ -50,13 +50,46 @@ namespace SmartPacifier___TestingFramework
                 Assert.True(settingsTests.CheckButtonsExistenceInSettingsTab(), "Buttons existence test failed.");
                 Assert.True(settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab(), "Text blocks existence and behavior test failed.");
                 //Assert.True(settingsTests.CheckCheckBoxesExistenceInSettingsTab(), "Check boxes existence test failed.");
-
+          
             }
             finally
             {
                 app.Close();
             }
         }
+
+        /// <summary>
+        /// Runs the header matching validation tests for the User Mode
+        /// </summary>
+        [Fact]
+        public void SideBarButtonsHeaderMatchValidationTests()
+        {
+            app = LaunchApplication();
+            try
+            {
+                // Pass the launched FlaUI Application to the HeaderCheck class
+                var userHeaderTests = new HeaderCheck(app);
+
+                // Assert each function returns true for USER MODE
+                Assert.True(userHeaderTests.ButtonClick_USERMODEShouldOpenNewActiveMonitoringWindow(), "Active Monitoring button header match test failed.");
+                Assert.True(userHeaderTests.ButtonClick_USERMODEShouldOpenNewCampaignsWindow(), "Campaigns button header match test failed.");
+                Assert.True(userHeaderTests.ButtonClick_USERMODEShouldOpenNewSettingsWindow(), "Settings button header match test failed.");
+
+                // Assert each function returns true for DEVELOPER MODE
+                // Uncomment and implement similar checks for developer mode if needed
+                // Assert.True(userHeaderTests.ButtonClick_ShouldOpenNewDEVELOPERWindow(), "Developer Mode Buttons header match test failed.");
+            }
+            finally
+            {
+                app.Close();
+            }
+        }
+
+
+
+
+
+
 
 
     }
