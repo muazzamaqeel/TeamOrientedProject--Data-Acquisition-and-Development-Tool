@@ -4,10 +4,8 @@ using FlaUI.Core;
 using FlaUI.UIA3;
 using Xunit;
 
-using SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab;
-using SmartPacifier_UITests;
-
 using SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Tests_SettingsTab;
+using SmartPacifier_UITests;
 
 namespace SmartPacifier___TestingFramework
 {
