@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Back-End\BackEndService\BackEndService\SmartPacifier.BackEnd.csproj" />
+    <ProjectReference Include="..\..\..\..\Back-End\BrokerConsoleApp\BrokerConsoleApp.csproj" />
     <ProjectReference Include="..\..\..\..\Interface\Interface_NETInterop\Interface_NETInterop\SmartPacifier.Interface.csproj" />
   </ItemGroup>
 
@@ -32,5 +33,21 @@
       <HintPath>..\..\..\..\AlgorithmLayer\AlgorithmLayer\AlgorithmLayer\lib\Python.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+	<Target Name="PostBuildCopy" AfterTargets="PostBuildEvent">
+		<Copy
+			SourceFiles="Resources\OutputResources\docker-compose.yml"
+			DestinationFiles="$(OutputPath)docker-compose.yml"
+			Condition="Exists('Resources\OutputResources\docker-compose.yml')"
+			SkipUnchangedFiles="true" />
+
+		<Copy
+			SourceFiles="Resources\OutputResources\mosquitto.conf"
+			DestinationFiles="$(OutputPath)mosquitto.conf"
+			Condition="Exists('Resources\OutputResources\mosquitto.conf')"
+			SkipUnchangedFiles="true" />
+	</Target>
+
+
 
 </Project>

@@ -8,14 +8,17 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
 {
     public class LocalHostSetup : ILocalHost
     {
-        // Dynamically sets the path to the `docker-compose.yml` in the Release directory
-        private readonly string dockerComposeFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LocalHost", "docker-compose.yml");
-        private readonly string apiKeyFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apikey.txt");
+        // Define the paths to docker-compose.yml and mosquitto.conf, assuming they are copied to the output directory on build
+        private readonly string dockerComposeFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docker-compose.yml");
+        private readonly string mosquittoConfigFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mosquitto.conf");
 
+
+        // Define the path for the API key file
+        private readonly string apiKeyFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apikey.txt");
 
         public LocalHostSetup()
         {
-            // Check if file exists and display the path for debugging
+            // Check if docker-compose.yml file exists and display a message for debugging
             if (File.Exists(dockerComposeFilePath))
             {
                 MessageBox.Show($"docker-compose.yml found at: {dockerComposeFilePath}", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -24,6 +27,11 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
             {
                 MessageBox.Show($"docker-compose.yml NOT found at: {dockerComposeFilePath}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+
+            //string[] filesInOutput = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory);
+            //MessageBox.Show($"Files in output directory:\n{string.Join("\n", filesInOutput)}", "Debug Info", MessageBoxButton.OK, MessageBoxImage.Information);
+
         }
 
         public void StartDocker()
@@ -105,8 +113,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
         private bool IsNormalDockerOutput(string message)
         {
             return message.Contains("Creating") || message.Contains("Started") || message.Contains("Stopping") ||
-                   message.Contains("Removing") || message.Contains("Created") || message.Contains("Started") ||
-                   message.Contains("Network") || message.Contains("Container");
+                   message.Contains("Removing") || message.Contains("Created") || message.Contains("Network") ||
+                   message.Contains("Container");
         }
 
         // Store API Key in a text file
