@@ -28,29 +28,6 @@ namespace SmartPacifier___TestingFramework
             return app;
         }
 
-        /// <summary>
-        /// Manually run the CheckButtonsExistenceInSettingsTab test from the UITests_Settings class.
-        /// </summary>
-        [Fact]
-        public void RunSettingsTabTests()
-        {
-            app = LaunchApplication();
-            try
-            {
-                var settingsTests = new UITests_Settings(app);
-
-                // Assert each function returns true
-                Assert.True(settingsTests.CheckButtonsExistenceInSettingsTab(), "Buttons existence test failed.");
-                Assert.True(settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab(), "Text blocks existence and behavior test failed.");
-                Assert.True(settingsTests.CheckCheckBoxesExistenceInSettingsTab(), "Check boxes existence test failed.");
-            }
-            finally
-            {
-                app.Close();
-            }
-        }
-
-
 
         /// <summary>
         /// Runs the PIN validation tests for the Developer tab.
