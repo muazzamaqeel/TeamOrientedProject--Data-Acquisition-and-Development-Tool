@@ -42,7 +42,7 @@ namespace Smart_Pacifier___Tool
 
         private void MonitoringButton_Click(object sender, RoutedEventArgs e)
         {
-            ((MainWindow)Application.Current.MainWindow).NavigateTo(new MonitoringView());
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(new PacifierSelectionView());
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
