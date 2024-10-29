@@ -3,19 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Smart_Pacifier___Tool"
              StartupUri="MainWindow.xaml">
-    <Application.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <!-- Reference to the ButtonStyle resource dictionary -->
-                <ResourceDictionary Source="Resources/ButtonStyle.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-
-            <!-- Global Colors -->
-            <SolidColorBrush x:Key="PrimaryBackgroundColor" Color="#333333"/>
-            <SolidColorBrush x:Key="SidebarBackgroundColor" Color="#1b1c1b"/>
-            <SolidColorBrush x:Key="ButtonHoverColor" Color="#555555"/>
-            <SolidColorBrush x:Key="ButtonPressedColor" Color="#777777"/>
-            <SolidColorBrush x:Key="TextColor" Color="White"/>
-        </ResourceDictionary>
-    </Application.Resources>
+	<Application.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<!-- Colors -->
+				<ResourceDictionary Source="Resources/Colors.xaml"/>
+				<!-- Reference to the styles resource dictionary -->
+				<ResourceDictionary Source="Resources/ButtonStyle.xaml" />
+				<ResourceDictionary Source="Resources/ScrollBar.xaml"/>
+				<ResourceDictionary Source="Resources/TextBoxStyle.xaml"/>
+				<ResourceDictionary Source="Resources/DatePickerStyle.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Application.Resources>
 </Application>

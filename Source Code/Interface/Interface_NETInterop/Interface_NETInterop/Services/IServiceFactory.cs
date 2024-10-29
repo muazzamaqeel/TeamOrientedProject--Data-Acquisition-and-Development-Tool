@@ -1,13 +1,10 @@
-﻿namespace SmartPacifier.Interface.Services
+﻿using SmartPacifier.Interface.Services;
+
+namespace SmartPacifier.BackEnd
 {
-
-
-    /// <summary>
-    /// The IServiceFactory interface is used to create the services that are needed by the backend
-    /// </summary>
     public interface IServiceFactory
     {
         IAlgorithmLayer CreateAlgorithmService();
-        IDatabaseService CreateDatabaseService(string url, string token);
+        IDatabaseService CreateDatabaseService(string url, string token, string bucket, string org);
     }
 }

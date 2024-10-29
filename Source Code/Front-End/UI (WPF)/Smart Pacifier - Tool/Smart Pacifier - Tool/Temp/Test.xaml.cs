@@ -1,61 +1,147 @@
-﻿using System;
+﻿/*
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using SmartPacifier.Interface.Services;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
+using Smart_Pacifier___Tool.Components;
+using InfluxDB.Client;
+
 
 namespace Smart_Pacifier___Tool.Temp
 {
     public partial class Test : Window
     {
-        private readonly IDatabaseService _databaseService;
+        private readonly IManagerCampaign _managerCampaign;
+        private readonly IManagerPacifiers _managerPacifiers;
+        private readonly IManagerSensors _managerSensors;
+        private readonly List<string> _campaigns = new List<string>();
+        private readonly List<string> _pacifiers = new List<string>();
 
-        public Test(IDatabaseService databaseService)
+        public Test(IManagerCampaign managerCampaign, IManagerPacifiers managerPacifiers, IManagerSensors managerSensors)
         {
             InitializeComponent();
-            _databaseService = databaseService;
+            _managerCampaign = managerCampaign;
+            _managerPacifiers = managerPacifiers;
+            _managerSensors = managerSensors;
+            LoadExistingCampaigns();
         }
 
-        private void OnWriteDataButtonClick(object sender, RoutedEventArgs e)
+        public async void LoadExistingCampaigns()
         {
-            try
+            _campaigns.Clear();
+            var campaignsFromDb = await _managerCampaign.GetCampaignsAsync();
+
+            if (campaignsFromDb != null && campaignsFromDb.Count > 0)
             {
-                var fields = new Dictionary<string, object>
+                foreach (var campaign in campaignsFromDb)
                 {
-                    { "temperature", 37.2 },
-                    { "humidity", 55 }
-                };
+                    _campaigns.Add(campaign);
+                }
 
-                var tags = new Dictionary<string, string>
-                {
-                    { "sensor", "pacifier1" }
-                };
-
-                _databaseService.WriteData("environment", fields, tags);
-                MessageBox.Show("Data written to SmartPacifier-Bucket1.");
+                CampaignComboBox.ItemsSource = _campaigns;
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"Error writing data: {ex.Message}");
+                MessageBox.Show("No campaigns found in the database.");
             }
         }
 
-        private void OnReadDataButtonClick(object sender, RoutedEventArgs e)
+        private async void CampaignComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            try
-            {
-                string fluxQuery = @"
-                    from(bucket: ""SmartPacifier-Bucket1"")
-                    |> range(start: -1h)
-                    |> filter(fn: (r) => r._measurement == ""environment"")
-                ";
+            string? selectedCampaign = CampaignComboBox.SelectedItem as string;
 
-                var results = _databaseService.ReadData(fluxQuery);
-                ResultsTextBox.Text = string.Join(Environment.NewLine, results);
-            }
-            catch (Exception ex)
+            if (!string.IsNullOrWhiteSpace(selectedCampaign))
             {
-                MessageBox.Show($"Error reading data: {ex.Message}");
+                await LoadPacifiers(selectedCampaign);
+            }
+        }
+
+        public async Task LoadPacifiers(string selectedCampaign)
+        {
+            _pacifiers.Clear();
+            var pacifiersFromDb = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
+
+            if (pacifiersFromDb != null && pacifiersFromDb.Count > 0)
+            {
+                foreach (var pacifier in pacifiersFromDb)
+                {
+                    _pacifiers.Add(pacifier);
+                }
+
+                PacifierComboBox.ItemsSource = _pacifiers;
+            }
+            else
+            {
+                MessageBox.Show("No pacifiers found for the selected campaign.");
+            }
+        }
+
+        private async void OnAddCampaignButtonClick(object sender, RoutedEventArgs e)
+        {
+            InputDialog inputDialog = new InputDialog("Enter Campaign Name");
+            if (inputDialog.ShowDialog() == true)
+            {
+                string newCampaignName = inputDialog.InputText;
+
+                if (!string.IsNullOrWhiteSpace(newCampaignName))
+                {
+                    await _managerCampaign.AddCampaignAsync(newCampaignName);
+                    _campaigns.Add(newCampaignName);
+                    CampaignComboBox.ItemsSource = _campaigns;
+                    ResultsTextBox.Text += $"Added campaign: {newCampaignName}\n";
+                }
+                else
+                {
+                    MessageBox.Show("Please enter a valid campaign name.");
+                }
+            }
+        }
+
+        private async void OnAddPacifierButtonClick(object sender, RoutedEventArgs e)
+        {
+            string? selectedCampaign = CampaignComboBox.SelectedItem as string;
+
+            if (selectedCampaign != null)
+            {
+                InputDialog inputDialog = new InputDialog("Enter Pacifier Name");
+                if (inputDialog.ShowDialog() == true)
+                {
+                    string pacifierName = inputDialog.InputText;
+
+                    if (!string.IsNullOrWhiteSpace(pacifierName))
+                    {
+                        await _managerPacifiers.AddPacifierAsync(selectedCampaign, pacifierName);
+                        ResultsTextBox.Text += $"Added pacifier: {pacifierName} to campaign: {selectedCampaign}\n";
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a campaign.");
+            }
+        }
+
+        private async void OnAddSensorButtonClick(object sender, RoutedEventArgs e)
+        {
+            string? selectedCampaign = CampaignComboBox.SelectedItem as string;
+            string? selectedPacifier = PacifierComboBox.SelectedItem as string;
+
+            if (selectedCampaign != null && selectedPacifier != null)
+            {
+                float ppgValue = 0.85f;
+                float imuAccelX = 0.001f;
+                float imuAccelY = 0.002f;
+                float imuAccelZ = 0.003f;
+
+                await _managerSensors.AddSensorDataAsync(selectedPacifier, ppgValue, imuAccelX, imuAccelY, imuAccelZ);
+                ResultsTextBox.Text += $"Added sensors to pacifier: {selectedPacifier} in campaign: {selectedCampaign}\n";
+            }
+            else
+            {
+                MessageBox.Show("Please select a campaign and pacifier.");
             }
         }
     }
 }
+*/

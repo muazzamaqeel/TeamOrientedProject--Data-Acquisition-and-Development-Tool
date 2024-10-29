@@ -33,9 +33,16 @@ Emma and Moosbauer, Sebastian.
 
 # Installation
 *TODO*
-
 # Setup
+## Requirements
+- Mosquitto
+- MQTTnet
+- InfluxDB
 
+Installing MQTTnet via nuget:
+```
+Install-Package MQTTnet
+```
 
 # Documentation
 For Documentation see: [Documentation](/Documentation)
@@ -45,7 +52,7 @@ We have 4 individual projects:
 - Smart Pacifier: The Frontent Project
 - BackEndService: Providing access to Sensor data, DataBase & MQTT
   Protocoll
-- AlogirthmLayer: Providing the capabilities for implementing
+- AlgorithmLayer: Providing the capabilities for implementing
   Algorithms
 - Interface: Providing the Interfaces to the FrontEnd/AlogrithmLayer
 
@@ -122,7 +129,10 @@ A line may exceed 80 characters if it is:
   - Single-line comments: Use //.
   - Multi-line comments: Use /* */.
   - XML comments: Use /// for documentation.
-  
+
+For detailed information click
+[here](https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/developer/devenv-xml-comments)
+
 ## Example
 ```c#
 // Good code example

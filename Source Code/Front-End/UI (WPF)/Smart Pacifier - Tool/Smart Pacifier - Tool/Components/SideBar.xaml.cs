@@ -4,6 +4,7 @@ using Smart_Pacifier___Tool.Tabs.CampaignsTab;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Smart_Pacifier___Tool
 {
@@ -46,13 +47,19 @@ namespace Smart_Pacifier___Tool
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            ((MainWindow)Application.Current.MainWindow).NavigateTo(new SettingsView());
+            // Resolve SettingsView from the service provider
+            var settingsView = ((App)Application.Current).ServiceProvider.GetRequiredService<SettingsView>();
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(settingsView);
         }
         private void DeveloperButton_Click(object sender, RoutedEventArgs e)
         {
-            // Navigate to the Developer tab
-            ((MainWindow)Application.Current.MainWindow).NavigateTo(new DeveloperView());
+            // Resolve the DeveloperView from the service provider and navigate to it
+            var developerView = ((App)Application.Current).ServiceProvider.GetRequiredService<DeveloperView>();
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(developerView);
         }
+
+
+
 
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
@@ -7,42 +8,30 @@ using SmartPacifier.Interface.Services;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 {
-
-    //<summary>
-    //This class is a service class that connects to the InfluxDB database
-    //It implements the IDatabaseService interface
-    //The WriteData method writes data to the InfluxDB database
-    //The ReadData method reads data from the InfluxDB database
-    //</summary>
     public class InfluxDatabaseService : IDatabaseService
     {
-        private static InfluxDatabaseService? _instance;
-        private static readonly object _lock = new object();
         private readonly InfluxDBClient _client;
         private readonly string _bucket = "SmartPacifier-Bucket1";
-        private readonly string _org = "thu-de";  // Replace with your actual organization name
-
-        private InfluxDatabaseService(string url, string token)
+        private readonly string _org = "thu-de";
+        private readonly string _token;
+        private readonly string _baseUrl;
+        public InfluxDatabaseService(InfluxDBClient client, string token, string baseUrl, string org)
         {
-            _client = new InfluxDBClient(url, token);
+            _client = client;
+            _token = token;
+            _baseUrl = baseUrl;
+            _org = org;
+
         }
 
-        public static InfluxDatabaseService GetInstance(string url, string token)
-        {
-            if (_instance == null)
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new InfluxDatabaseService(url, token);
-                    }
-                }
-            }
-            return _instance;
-        }
+        public InfluxDBClient GetClient() => _client;
 
-        public void WriteData(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
+        public string Bucket => _bucket;
+        public string Org => _org;
+        public string Token => _token; // Implement Token
+        public string BaseUrl => _baseUrl; // Implement BaseUrl
+
+        public async Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
         {
             try
             {
@@ -56,41 +45,68 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 
                 foreach (var field in fields)
                 {
-                    point = point.Field(field.Key, field.Value);
+                    if (field.Value is float)
+                        point = point.Field(field.Key, (float)field.Value);
+                    else if (field.Value is double)
+                        point = point.Field(field.Key, (double)field.Value);
+                    else if (field.Value is int)
+                        point = point.Field(field.Key, (int)field.Value);
+                    else if (field.Value is string)
+                        point = point.Field(field.Key, (string)field.Value);
                 }
 
-                using (var writeApi = _client.GetWriteApi())
-                {
-                    writeApi.WritePoint(point, _bucket, _org);
-                }
+                var writeApi = _client.GetWriteApiAsync();
+                await writeApi.WritePointAsync(point, _bucket, _org);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error writing data: {ex.Message}");
+                Console.WriteLine($"Error writing data: {ex.Message}");
             }
         }
 
-        public List<string> ReadData(string query)
+        public async Task<List<string>> ReadData(string query)
         {
-            try
-            {
-                var queryApi = _client.GetQueryApi();
-                var tables = queryApi.QueryAsync(query, _org).Result;
+            var queryApi = _client.GetQueryApi();
+            var tables = await queryApi.QueryAsync(query, _org);
+            var records = new List<string>();
 
-                var results = new List<string>();
-                foreach (var table in tables)
+            foreach (var table in tables)
+            {
+                foreach (var record in table.Records)
                 {
-                    foreach (var record in table.Records)
+                    var value = record.GetValue();
+                    if (value != null)
                     {
-                        results.Add(record.ToString());
+                        records.Add(value.ToString());
+                    }
+
+                }
+            }
+
+            return records;
+        }
+
+        public async Task<List<string>> GetCampaignsAsync()
+        {
+            var campaigns = new List<string>();
+            var fluxQuery = $"from(bucket: \"{_bucket}\") |> range(start: -30d) |> keep(columns: [\"campaign_name\"]) |> distinct(column: \"campaign_name\")";
+
+            var queryApi = _client.GetQueryApi();
+            var tables = await queryApi.QueryAsync(fluxQuery, _org);
+
+            foreach (var table in tables)
+            {
+                foreach (var record in table.Records)
+                {
+                    var campaignName = record.GetValueByKey("campaign_name")?.ToString();
+                    if (!string.IsNullOrEmpty(campaignName))
+                    {
+                        campaigns.Add(campaignName);
                     }
                 }
-                return results;
             }
-            catch (Exception ex)
-            {
-                throw new UnauthorizedAccessException("Unauthorized access. Check token and permissions.", ex);
-            }
+
+            return campaigns;
         }
     }
 }
