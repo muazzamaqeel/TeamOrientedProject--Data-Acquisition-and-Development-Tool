@@ -6,11 +6,13 @@ using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Temp;
 using InfluxDB.Client;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
-using Smart_Pacifier___Tool.Tabs.DeveloperTab; // Add the DeveloperTab namespace
-using Smart_Pacifier___Tool.Tabs.SettingsTab; // Add the SettingsTab namespace for SettingsView
-using Smart_Pacifier___Tool.Tabs.CampaignsTab; // Add the CampaignsTab namespace for CampaignsView
+using Smart_Pacifier___Tool.Tabs.DeveloperTab;
+using Smart_Pacifier___Tool.Tabs.SettingsTab;
+using Smart_Pacifier___Tool.Tabs.CampaignsTab;
+using SmartPacifier.BackEnd.CommunicationLayer;
 
 namespace Smart_Pacifier___Tool
 {
@@ -28,7 +30,7 @@ namespace Smart_Pacifier___Tool
         /// We use the Microsoft.Extensions.DependencyInjection library to set up Dependency Injection (DI).
         /// </summary>
         /// <param name="e">Startup event arguments.</param>
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
@@ -41,9 +43,9 @@ namespace Smart_Pacifier___Tool
             // Build the service provider from the service collection (This is the Dependency Injection container)
             _serviceProvider = services.BuildServiceProvider();
 
-            // Use the service provider to resolve (get) the Test window and show it
-            //var testWindow = _serviceProvider.GetRequiredService<Test>();
-            //testWindow.Show();
+            // Run BrokerMain asynchronously to avoid blocking the main UI thread
+            var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
+            await Task.Run(() => brokerMain.StartAsync(null)); // Run asynchronously in background
         }
 
         /// <summary>
@@ -91,6 +93,8 @@ namespace Smart_Pacifier___Tool
             services.AddTransient<SettingsView>();
             services.AddTransient<CampaignsView>();
 
+            // Register the BrokerMain class
+            services.AddSingleton<IBrokerMain, BrokerMain>();
         }
     }
 }

@@ -4,4 +4,16 @@
     {
         string ExecuteScript(string pythonCode);
     }
+
+
+    public interface IBrokerMain
+    {
+
+
+
+        Task StartAsync(string[] args);
+
+
+
+    }
 }

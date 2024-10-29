@@ -1,21 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
-
 using MQTTnet;
-using MQTTnet.Protocol;
 using MQTTnet.Client;
 using MQTTnet.Packets;
+using MQTTnet.Protocol;
 
 namespace SmartPacifier.BackEnd.IOTProtocols
 {
     ///<summary>
-    ///Broker Class using Singleton Pattern. This class starts the
-    /// Mosquitto process uppon creation. The Prefered Way to cleanup
-    /// is to use the Dispose() method.
+    /// Broker Class using Singleton Pattern. Connects to the Docker Mosquitto broker.
     ///</summary>
     public class Broker : IDisposable
     {
@@ -26,48 +20,43 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         private static readonly object _lock = new object();
 
         private IMqttClient _mqttClient;
+        private bool disposed = false;
 
-        private Process? _brokerProcess;
-	private bool disposed = false;
-	
-	// Event handler for received messages
+        // Event handler for received messages
         public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
+
         // Constructor for the Broker class
         private Broker()
         {
             var factory = new MqttFactory();
             _mqttClient = factory.CreateMqttClient();
-            StartBroker();
-	    // Register event handler for received messages
             _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceived;
         }
 
-	///<summary>
-	/// Dispose Method to cleanup the methods.
-	///</summary>
-	public void Dispose()
-	{
-	    if (!disposed)
-	    {
-		StopBroker();
-		disposed = true;
-	    }
-	    // Suppress finalization to avoid calling the destructor
-	    // since we are disposing it manually
-	    GC.SuppressFinalize(this);
-	}
+        ///<summary>
+        /// Dispose Method to cleanup resources.
+        ///</summary>
+        public void Dispose()
+        {
+            if (!disposed)
+            {
+                _mqttClient?.Dispose();
+                disposed = true;
+            }
+            GC.SuppressFinalize(this);
+        }
 
         // Destructor (Finalizer) in case Dispose is not called manually
         ~Broker()
         {
-	    Dispose();
+            Dispose();
         }
 
-	///<summary>
+        ///<summary>
         /// Getting an Instance of the Broker. If there is no instance
         /// yet, it will create one. This is thread-safe for
-        /// multithreading
-	///</summary>
+        /// multithreading.
+        ///</summary>
         public static Broker Instance
         {
             get
@@ -83,75 +72,22 @@ namespace SmartPacifier.BackEnd.IOTProtocols
             }
         }
 
-        ///<summary>
-	/// Starting Mosquitto Process
-	///</summary>
-        public void  StartBroker()
-        {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = "mosquitto", // path to Mosquitto executable
-                Arguments = "-v", // Mosquitto command-line arguments
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            _brokerProcess = Process.Start(processStartInfo);
-
-            if (_brokerProcess == null)
-                Console.WriteLine("Failed to start Mosquitto process.");
-        }
-
-        // Read the output from the Mosquitto process (optional)
-        public void ReadBrokerOutput()
-        {
-	    if (_brokerProcess == null)
-                return;
-            var output = _brokerProcess.StandardOutput.ReadToEnd();
-            var error = _brokerProcess.StandardError.ReadToEnd();
-            Console.WriteLine("Mosquitto output:\n" + output);
-            Console.WriteLine("Mosquitto errors:\n" + error);
-        }
-
-        // Stop the Mosquitto process
-        public void StopBroker()
-        {
-	    if(_brokerProcess != null){
-		 // Wait 5 seconds
-		bool hasExited = _brokerProcess.WaitForExit(5000);
-		// Force Kill if process is still running
-		if(!hasExited)
-		{
-		    _brokerProcess.Kill();
-		    _brokerProcess.WaitForExit();
-		    Console.WriteLine("Mosquitto closed forcefully");
-		}
-		_brokerProcess.Close();
-		_brokerProcess.Dispose();
-		
-	    }
-	    Console.WriteLine("Mosquitto Closed");
-        }
-
         // Connect to the MQTT broker
         public async Task ConnectBroker()
         {
-            // Use TCP connection.
             var options = new MqttClientOptionsBuilder()
-                .WithTcpServer(BROKER_ADDRESS, BROKER_PORT) // Optional port
+                .WithTcpServer(BROKER_ADDRESS, BROKER_PORT) // Connect to Docker Mosquitto
                 .Build();
 
             try
             {
                 await _mqttClient.ConnectAsync(options);
+                Console.WriteLine("Successfully connected to Docker MQTT broker.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Failed to connect to MQTT broker: " + ex.Message);
-                return;
             }
-            Console.WriteLine("Successfully Connected to MQTT broker");
         }
 
         // Subscribe to a specific topic
@@ -167,7 +103,6 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         public async Task Unsubscribe(string topic)
         {
             await _mqttClient.UnsubscribeAsync(topic);
-
             Console.WriteLine($"Unsubscribed from topic: {topic}");
         }
 
@@ -179,11 +114,11 @@ namespace SmartPacifier.BackEnd.IOTProtocols
 
             Console.WriteLine("Subscribed to all topics");
         }
+
         // Unsubscribe from all topics
         public async Task UnsubscribeFromAll()
         {
             await _mqttClient.UnsubscribeAsync("#");
-
             Console.WriteLine("Unsubscribed from all topics");
         }
 
@@ -206,7 +141,8 @@ namespace SmartPacifier.BackEnd.IOTProtocols
                 Console.WriteLine($"Failed to send message to topic: {topic} - {ex.Message}");
             }
         }
-	// Event handler for received messages
+
+        // Event handler for received messages
         private async Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
             await Task.Run(() =>
@@ -215,7 +151,6 @@ namespace SmartPacifier.BackEnd.IOTProtocols
                 e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment));
                 MessageReceived?.Invoke(this, messageReceivedEventArgs);
             });
-
         }
 
         // Event arguments for received messages
