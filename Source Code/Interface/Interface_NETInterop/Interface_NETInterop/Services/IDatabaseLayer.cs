@@ -34,7 +34,12 @@ namespace SmartPacifier.Interface.Services
         Task EndCampaignAsync(string campaignName);
         Task UpdateCampaignAsync(string oldCampaignName, string newCampaignName);
         Task DeleteCampaignAsync(string campaignName);
+
+        // Return CSV data as a string
+        Task<string> GetCampaignDataAsCSVAsync();
+        Task<List<string>> GetCampaignsAsync();
     }
+
 
     public interface IManagerPacifiers
     {
@@ -48,5 +53,11 @@ namespace SmartPacifier.Interface.Services
     public interface IManagerSensors
     {
         Task AddSensorDataAsync(string pacifierId, float ppgValue, float imuAccelX, float imuAccelY, float imuAccelZ);
+    }
+
+    public interface IInfluxDBParser
+    {
+
+
     }
 }

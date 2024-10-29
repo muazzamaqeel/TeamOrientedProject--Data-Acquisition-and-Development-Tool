@@ -121,7 +121,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
 
-            _managerPacifiers.AddPacifierAsync("Pacifier-1");
+            _managerCampaign.EndCampaignAsync("Campaign 10");
 
 
             //AddDataWindow addDataWindow = new AddDataWindow();

@@ -10,6 +10,7 @@ using System.Windows;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab; // Add the DeveloperTab namespace
 using Smart_Pacifier___Tool.Tabs.SettingsTab; // Add the SettingsTab namespace for SettingsView
+using Smart_Pacifier___Tool.Tabs.CampaignsTab; // Add the CampaignsTab namespace for CampaignsView
 
 namespace Smart_Pacifier___Tool
 {
@@ -88,6 +89,8 @@ namespace Smart_Pacifier___Tool
             services.AddSingleton<MainWindow>();
             services.AddSingleton<DeveloperView>();
             services.AddTransient<SettingsView>();
+            services.AddTransient<CampaignsView>();
+
         }
     }
 }

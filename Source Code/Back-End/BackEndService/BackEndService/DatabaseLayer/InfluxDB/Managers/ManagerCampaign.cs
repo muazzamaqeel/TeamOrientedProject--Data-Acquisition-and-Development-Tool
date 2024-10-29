@@ -14,6 +14,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Components;
+using System.Windows;
 
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
@@ -24,6 +26,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         private readonly IManagerPacifiers _managerPacifiers;
         private readonly HttpClient _httpClient;
         private readonly string _filePath = @"C:\programming\TeamOrientedProject---Smart-Pacifier\Source Code\Back-End\BackEndService\BackEndService\DatabaseLayer\InfluxDB\LoadFiles\Code\CampaignData.xlsx";
+        private readonly InfluxDBParserCSV _parser; // Add InfluxDBParserCSV
 
 
         public ManagerCampaign(IDatabaseService databaseService, IManagerPacifiers managerPacifiers)
@@ -32,6 +35,8 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             _managerPacifiers = managerPacifiers;
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Token {_databaseService.Token}");
+            _parser = new InfluxDBParserCSV(); // Initialize InfluxDBParserCSV
+
         }
 
         public async Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
@@ -50,6 +55,26 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         }
 
 
+        public async Task<string> GetCampaignDataAsCSVAsync()
+        {
+            var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
+                        "|> range(start: -1y) " +
+                        "|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\") " +
+                        "|> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\") " +
+                        "|> sort(columns: [\"_time\"], desc: true)";  // Fetch in descending order by time
+
+            // Fetch data from InfluxDB
+            var rawCampaignData = await _databaseService.ReadData(query);
+
+            // Convert the raw data to CSV format
+            var csvData = _parser.ConvertToCSV(rawCampaignData);
+
+            // Show a message box with the CSV data for verification
+            MessageBox.Show(csvData, "CSV Data Generated", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            return csvData;
+        }
+
 
 
 
@@ -65,12 +90,10 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-    {
-        { "status", "created" },
-        { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-        { "start_time", "null" },
-        { "end_time", "null" }
-    };
+            {
+                { "status", "created" },
+                { "creation", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+            };
             await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
 
@@ -78,22 +101,22 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-    {
-        { "status", "started" },
-        { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-    };
-            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow); 
+            {
+                { "status", "started" },
+                { "start_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+            };
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
 
         public async Task EndCampaignAsync(string campaignName)
         {
             var tags = new Dictionary<string, string> { { "campaign_name", campaignName } };
             var fields = new Dictionary<string, object>
-    {
-        { "status", "stopped" },
-        { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
-    };
-            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow); 
+            {
+                { "status", "stopped" },
+                { "end_time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") }
+            };
+            await WriteCampaignDataAsync("campaigns", fields, tags, DateTime.UtcNow);
         }
 
 
@@ -424,6 +447,59 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
         */
 
+
+
+
+        public async Task<List<CampaignData>> GetCampaignDataAsync()
+        {
+            var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
+                        "|> range(start: -1y) " +
+                        "|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\") " +
+                        "|> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")";
+
+            var rawCampaignData = await _databaseService.ReadData(query);
+
+            var campaignDataList = ParseCampaignData(rawCampaignData);
+            return campaignDataList;
+        }
+
+
+        public class CampaignData
+        {
+            public string CampaignName { get; set; }
+            public int PacifierCount { get; set; }
+            public string Date { get; set; }
+            public string TimeRange { get; set; }
+        }
+
+
+        private List<CampaignData> ParseCampaignData(List<string> rawData)
+        {
+            var campaigns = new List<CampaignData>();
+
+            foreach (var entry in rawData)
+            {
+                var data = JsonNode.Parse(entry);
+
+                // Ensure data contains necessary fields
+                if (data["campaign_name"] != null && data["start_time"] != null && data["end_time"] != null)
+                {
+                    var campaign = new CampaignData
+                    {
+                        CampaignName = data["campaign_name"]?.ToString(),
+                        Date = DateTime.Parse(data["start_time"]?.ToString() ?? DateTime.MinValue.ToString())
+                            .ToString("MM/dd/yyyy"),
+                        TimeRange = $"{DateTime.Parse(data["start_time"]?.ToString() ?? DateTime.MinValue.ToString()).ToString("hh:mm tt")} - " +
+                                    $"{DateTime.Parse(data["end_time"]?.ToString() ?? DateTime.MinValue.ToString()).ToString("hh:mm tt")}",
+                        //PacifierCount = GetPacifierCount(data["campaign_name"]?.ToString())
+                    };
+
+                    campaigns.Add(campaign);
+                }
+            }
+
+            return campaigns;
+        }
 
 
 

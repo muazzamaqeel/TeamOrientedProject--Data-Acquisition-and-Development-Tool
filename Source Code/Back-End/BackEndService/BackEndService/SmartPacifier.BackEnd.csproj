@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
+    <EmbeddedResource Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
+    <None Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
+    <Page Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.1" />
     <PackageReference Include="InfluxData.Net" Version="8.0.1" />
     <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
