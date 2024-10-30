@@ -5,8 +5,9 @@ using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Packets;
 using MQTTnet.Protocol;
+using Protos;
 
-namespace SmartPacifier.BackEnd.IOTProtocols
+namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
     ///<summary>
     /// Broker Class using Singleton Pattern. Connects to the Docker Mosquitto broker.
