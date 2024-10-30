@@ -12,7 +12,7 @@ using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.CampaignsTab;
-using SmartPacifier.BackEnd.CommunicationLayer;
+using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 
 namespace Smart_Pacifier___Tool
 {

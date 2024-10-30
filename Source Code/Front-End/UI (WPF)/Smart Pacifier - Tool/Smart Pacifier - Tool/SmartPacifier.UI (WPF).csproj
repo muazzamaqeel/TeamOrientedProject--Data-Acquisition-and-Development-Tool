@@ -12,6 +12,11 @@
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.28.3" />
+    <PackageReference Include="Grpc.Tools" Version="2.67.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="InfluxData.Net" Version="8.0.1" />
     <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
     <PackageReference Include="IronPython" Version="3.4.1" />
@@ -35,17 +40,9 @@
   </ItemGroup>
 
 	<Target Name="PostBuildCopy" AfterTargets="PostBuildEvent">
-		<Copy
-			SourceFiles="Resources\OutputResources\docker-compose.yml"
-			DestinationFiles="$(OutputPath)docker-compose.yml"
-			Condition="Exists('Resources\OutputResources\docker-compose.yml')"
-			SkipUnchangedFiles="true" />
+		<Copy SourceFiles="Resources\OutputResources\docker-compose.yml" DestinationFiles="$(OutputPath)docker-compose.yml" Condition="Exists('Resources\OutputResources\docker-compose.yml')" SkipUnchangedFiles="true" />
 
-		<Copy
-			SourceFiles="Resources\OutputResources\mosquitto.conf"
-			DestinationFiles="$(OutputPath)mosquitto.conf"
-			Condition="Exists('Resources\OutputResources\mosquitto.conf')"
-			SkipUnchangedFiles="true" />
+		<Copy SourceFiles="Resources\OutputResources\mosquitto.conf" DestinationFiles="$(OutputPath)mosquitto.conf" Condition="Exists('Resources\OutputResources\mosquitto.conf')" SkipUnchangedFiles="true" />
 	</Target>
 
 

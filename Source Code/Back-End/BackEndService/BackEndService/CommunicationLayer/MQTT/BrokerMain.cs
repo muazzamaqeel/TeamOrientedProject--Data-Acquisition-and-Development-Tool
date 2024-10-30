@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows; // For MessageBox
 using SmartPacifier.Interface.Services;
 using System.IO;
-namespace SmartPacifier.BackEnd.CommunicationLayer
+namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
     public class BrokerMain : IBrokerMain
     {
@@ -49,7 +49,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer
                 var pathToDll = Path.Combine(baseDirectory, dllName);
 
                 // Check if the file exists before attempting to run
-                if (!System.IO.File.Exists(pathToDll))
+                if (!File.Exists(pathToDll))
                 {
                     debugLog.AppendLine($"Error: DLL file not found at path: {pathToDll}");
                     return false;
