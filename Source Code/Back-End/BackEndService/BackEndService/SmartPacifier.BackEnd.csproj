@@ -1,24 +1,57 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="CommunicationLayer\NewFolder\**" />
+    <Compile Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
+    <Compile Remove="NewFolder\**" />
+    <EmbeddedResource Remove="CommunicationLayer\NewFolder\**" />
+    <EmbeddedResource Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
+    <EmbeddedResource Remove="NewFolder\**" />
+    <None Remove="CommunicationLayer\NewFolder\**" />
+    <None Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
+    <None Remove="NewFolder\**" />
+    <Page Remove="CommunicationLayer\NewFolder\**" />
+    <Page Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
+    <Page Remove="NewFolder\**" />
+  </ItemGroup>
+
+ 
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.104.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.28.3" />
+    <PackageReference Include="Grpc.Tools" Version="2.67.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="InfluxData.Net" Version="8.0.1" />
     <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
     <PackageReference Include="IronPython" Version="3.4.1" />
+    <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2849.39" />
     <PackageReference Include="Python.Runtime" Version="2.7.9" />
+    <PackageReference Include="YamlDotNet" Version="16.1.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="CommunicationLayer\MQTT\" />
+    <Folder Include="DatabaseLayer\InfluxDB\LoadFiles\ExcelFiles\" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Interface\Interface_NETInterop\Interface_NETInterop\SmartPacifier.Interface.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+		<!-- Specify the .proto file location and output path for generated files -->
+	<Protobuf Include="CommunicationLayer\Protobuf\sensor_data.proto" ProtoOutputPath="GeneratedProtos" />
+  </ItemGroup>
+	
+	
 </Project>

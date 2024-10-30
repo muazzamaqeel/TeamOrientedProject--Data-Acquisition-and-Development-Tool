@@ -109,11 +109,10 @@
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"/>
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-
 
                     <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Timestamp}" 
                         Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 

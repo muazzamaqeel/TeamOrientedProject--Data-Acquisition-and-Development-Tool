@@ -39,12 +39,12 @@
 
 	<ItemGroup>
 	  <Folder Include="UITests\UI_Tests-BackEnd\" />
-	  <Folder Include="UnitTests\Unit_Templates\" />
-	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\" />
-	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_MonitoringTab\" />
-	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_SettingsTab\" />
-	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_DeveloperTab\" />
-	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_CampaignsTab\" />
+	  <Folder Include="UnitTests\UTTemplates\" />
+	  <Folder Include="UnitTests\UTFrontEnd\Unit_Tests_Tabs\" />
+	  <Folder Include="UnitTests\UTFrontEnd\Unit_Tests_Tabs\UTMonitoringTab\" />
+	  <Folder Include="UnitTests\UTFrontEnd\Unit_Tests_Tabs\UTSettingsTab\" />
+	  <Folder Include="UnitTests\UTFrontEnd\Unit_Tests_Tabs\UTDeveloperTab\" />
+	  <Folder Include="UnitTests\UTFrontEnd\Unit_Tests_Tabs\UTCampaignsTab\" />
 	</ItemGroup>
 
 	<ItemGroup>

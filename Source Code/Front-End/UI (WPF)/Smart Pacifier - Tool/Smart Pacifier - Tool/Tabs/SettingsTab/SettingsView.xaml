@@ -1,73 +1,106 @@
 ﻿<UserControl x:Class="Smart_Pacifier___Tool.Tabs.SettingsTab.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:av="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="av">
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             mc:Ignorable="mc">
 
-	<Grid Background="{StaticResource MainViewBackgroundColor}">
-		<!-- Row definitions for organizing the layout -->
-		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="*"/>
-		</Grid.RowDefinitions>
-
-		<!-- Header Section -->
-		<Grid Background="{StaticResource AccentColor}" Height="70" VerticalAlignment="Top" Grid.Row="0">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-			</Grid.ColumnDefinitions>
-			<StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
-				<TextBlock Text="Settings"
+    <Grid Background="{StaticResource MainViewBackgroundColor}">
+        <!-- Header Section -->
+        <Grid Background="{StaticResource AccentColor}" Height="70" VerticalAlignment="Top">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="Settings"
                            Foreground="{StaticResource MainViewForegroundColor}" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
-			</StackPanel>
-		</Grid>
+            </StackPanel>
+        </Grid>
 
-		<!-- Content Section -->
-		<Grid Margin="10,80,10,10" Grid.Row="1">
-			<!-- Row definitions for organizing the layout -->
-			<Grid.RowDefinitions>
-				<RowDefinition Height="Auto"/>
-				<RowDefinition Height="*"/>
-			</Grid.RowDefinitions>
+        <!-- Content Section -->
+        <Grid Margin="10,90,10,10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-			<!-- Tabs Section (Top Buttons) -->
-			<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="0" Margin="0,20,0,20">
-				<Button x:Name="SwitchModeButton" Style="{StaticResource ModernButtonStyle}" Width="121" Height="45" Margin="10,0,10,0" Click="SwitchMode_Click">
-					<TextBlock Text="Switch Mode" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-				</Button>
-				<Button x:Name="ThemeButton" Style="{StaticResource ModernButtonStyle}" Width="121" Height="45" Margin="10,0,10,0" Click="Theme_Click">
-					<TextBlock Text="Theme" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-				</Button>
-			</StackPanel>
+            <!-- Top Buttons Section -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,20" Grid.Row="0">
+                <Button x:Name="SwitchModeButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="SwitchMode_Click">
+                    <TextBlock Text="Switch Mode" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+                <Button x:Name="ThemeButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="Theme_Click">
+                    <TextBlock Text="Theme" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+                <Button x:Name="LocalHostButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="LocalHost_Click">
+                    <TextBlock Text="Local Host" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+                <Button x:Name="ServerButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="Theme_Click">
+                    <TextBlock Text="Server" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+            </StackPanel>
 
-			<!-- Buttons Section (Hidden until Switch Mode is clicked) -->
-			<StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Orientation="Vertical" Visibility="Collapsed">
-				<StackPanel Orientation="Horizontal" Width="486">
-					<!-- User Mode Button -->
-					<Button x:Name="UserModeButton" Width="180" Height="75" FontSize="16" Margin="30,0,30,0" Style="{StaticResource ModernButtonStyle}" Click="UserMode_Click">
-						<StackPanel>
-							<TextBlock x:Name="UserModeText" Text="User Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
-							<TextBlock x:Name="UserModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Visible"/>
-						</StackPanel>
-					</Button>
+            <!-- Main Content Panels -->
+            <Grid Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-					<!-- Developer Mode Button -->
-					<Button x:Name="DeveloperModeButton" Width="180" Height="75" Margin="30,0,30,0" Style="{StaticResource ModernButtonStyle}" Click="DeveloperMode_Click">
-						<StackPanel>
-							<TextBlock x:Name="DeveloperModeText" Text="Developer Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
-							<TextBlock x:Name="DeveloperModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Collapsed"/>
-						</StackPanel>
-					</Button>
-				</StackPanel>
+                <!-- Localhost Interface Section with Border and Scrollable WebView2 -->
+                <Border x:Name="LocalHostPanel" BorderThickness="1" BorderBrush="Gray" CornerRadius="10" Padding="10" Margin="10,0,10,20" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-				<!-- PIN Entry Section, initially hidden -->
-				<StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="Collapsed" Margin="0,10,0,0">
-					<TextBlock Text="Enter PIN:" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Margin="0,10" Foreground="White"/>
-					<PasswordBox x:Name="PinInput" Width="200" HorizontalAlignment="Center" Margin="0,10" />
-					<Button Content="Continue" Style="{StaticResource SmallModernButtonStyle}" Click="PinSubmit_Click" HorizontalAlignment="Center" Margin="10"/>
-				</StackPanel>
-			</StackPanel>
-		</Grid>
-	</Grid>
+                        <!-- Heading -->
+                        <TextBlock Text="InfluxDB Localhost Interface" Foreground="White" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10"/>
+
+                        <!-- Scrollable and Resizable WebView2 with Increased Dimensions -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Grid.Row="1">
+                            <wv2:WebView2 x:Name="InfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="1200" MinHeight="500" Visibility="Visible"/>
+                        </ScrollViewer>
+
+                        <!-- Docker Controls and API Key Entry Section -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Grid.Row="2">
+                            <Button x:Name="IntializeDockerImage" Content="Initialize Image" Width="130" Margin="10" Click="DockerInitialize" Style="{StaticResource ModernButtonStyle}"/>
+                            <Button x:Name="DockerStartButton" Content="Start Docker" Width="120" Margin="10" Click="DockerStart_Click" Style="{StaticResource ModernButtonStyle}"/>
+                            <Button x:Name="DockerStopButton" Content="Stop Docker" Width="120" Margin="10" Click="DockerStop_Click" Style="{StaticResource ModernButtonStyle}"/>
+
+                            <!-- API Key Input without Placeholder -->
+                            <TextBox x:Name="ApiKeyInput" Width="300" Margin="20,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Button x:Name="SubmitApiButton" Content="Submit API" Style="{StaticResource ModernButtonStyle}" Click="SubmitApiKey_Click" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0" Visibility="Visible"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+
+
+                <!-- Mode Selection Panel -->
+                <StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Visibility="Collapsed" Margin="0,20,0,0">
+                    <!-- User Mode Button -->
+                    <Button x:Name="UserModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="UserMode_Click">
+                        <StackPanel>
+                            <TextBlock x:Name="UserModeText" Text="User Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
+                            <TextBlock x:Name="UserModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Visible"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Developer Mode Button -->
+                    <Button x:Name="DeveloperModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="DeveloperMode_Click">
+                        <StackPanel>
+                            <TextBlock x:Name="DeveloperModeText" Text="Developer Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
+                            <TextBlock x:Name="DeveloperModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- PIN Entry Section -->
+                <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" Visibility="Collapsed" Margin="0,10,0,0">
+                    <TextBlock Text="Enter PIN:" HorizontalAlignment="Center" FontSize="16" Margin="0,10" Foreground="White"/>
+                    <PasswordBox x:Name="PinInput" Width="200" HorizontalAlignment="Center" Margin="10"/>
+                    <Button Content="Continue" Style="{StaticResource SmallModernButtonStyle}" Click="PinSubmit_Click" HorizontalAlignment="Center" Margin="10"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Grid>
 </UserControl>

@@ -1,22 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
+using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 {
     public partial class CampaignsView : UserControl, INotifyPropertyChanged
     {
         private ICollectionView _filteredCampaigns;
+        private readonly IDatabaseService _databaseService;
+        private readonly IManagerCampaign _managerCampaign;
         public List<Campaign> Campaigns { get; set; } = new List<Campaign>();
         public string SearchName { get; set; } = string.Empty;
         public string ActualSearchName { get; set; } = string.Empty; // New property
         public DateTime? SearchDate { get; set; }
         public bool isLoaded = false;
+        private Dictionary<string, Campaign> campaignDataMap = new Dictionary<string, Campaign>(); // Define campaignDataMap at class level
 
         public ICollectionView FilteredCampaigns
         {
@@ -28,16 +34,100 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             }
         }
 
-        public CampaignsView()
+        // Use the dependency injection here
+        public CampaignsView(IDatabaseService databaseService, IManagerCampaign managerCampaign)
         {
             InitializeComponent();
-            GenerateCampaigns();
+            _databaseService = databaseService;
+            _managerCampaign = managerCampaign;
+
+            LoadCampaignData();
             FilteredCampaigns = CollectionViewSource.GetDefaultView(Campaigns);
             FilteredCampaigns.Filter = FilterCampaigns;
             FilteredCampaigns.Refresh();
-            DataContext = this; // Set DataContext for binding
+            DataContext = this;
             isLoaded = true;
         }
+
+
+
+        private async void LoadCampaignData()
+        {
+            var csvData = await _managerCampaign.GetCampaignDataAsCSVAsync();
+            var lines = csvData.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
+            campaignDataMap.Clear();
+            StringBuilder outputLog = new StringBuilder("Processing Campaign Data:\n");
+
+            foreach (var line in lines.Skip(1))
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                var columns = line.Split(',');
+
+                if (columns.Length < 4) continue;
+
+                var campaignName = columns[0];
+                var status = columns[1];
+                var startTimeStr = columns[2];
+                var endTimeStr = columns[3];
+
+                if (!campaignDataMap.ContainsKey(campaignName))
+                {
+                    campaignDataMap[campaignName] = new Campaign
+                    {
+                        CampaignName = campaignName,
+                        PacifierCount = 0,
+                        Date = "N/A",
+                        TimeRange = "N/A"
+                    };
+                }
+
+                var campaign = campaignDataMap[campaignName];
+                outputLog.AppendLine($"Processing {campaignName} with status {status}");
+
+                // Format and set TimeRange based on start and end times
+                DateTime.TryParse(startTimeStr, out var campaignStart);
+                DateTime.TryParse(endTimeStr, out var campaignEnd);
+
+                if (!string.IsNullOrWhiteSpace(startTimeStr) && !string.IsNullOrWhiteSpace(endTimeStr))
+                {
+                    campaign.TimeRange = $"{campaignStart:MM/dd/yyyy HH:mm:ss} - {campaignEnd:MM/dd/yyyy HH:mm:ss}";
+                }
+                else if (!string.IsNullOrWhiteSpace(startTimeStr))
+                {
+                    campaign.TimeRange = $"{campaignStart:MM/dd/yyyy HH:mm:ss} - N/A";
+                }
+                else if (!string.IsNullOrWhiteSpace(endTimeStr))
+                {
+                    campaign.TimeRange = $"N/A - {campaignEnd:MM/dd/yyyy HH:mm:ss}";
+                }
+            }
+
+            UpdateCampaignsList();
+            MessageBox.Show(outputLog.ToString(), "Load Campaign Data Output", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+
+
+
+        private void UpdateCampaignsList()
+        {
+            Campaigns.Clear();
+            foreach (var campaign in campaignDataMap.Values)
+            {
+                Campaigns.Add(campaign);
+            }
+
+            OnPropertyChanged(nameof(Campaigns));         // Notify UI about Campaigns change
+            OnPropertyChanged(nameof(FilteredCampaigns)); // Notify UI about FilteredCampaigns change
+            FilteredCampaigns.Refresh();
+        }
+
+
+
+
+
 
         private void GenerateCampaigns()
         {

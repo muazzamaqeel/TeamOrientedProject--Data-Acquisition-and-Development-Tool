@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Windows;
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
@@ -13,29 +14,36 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         private readonly InfluxDBClient _client;
         private readonly string _bucket = "SmartPacifier-Bucket1";
         private readonly string _org = "thu-de";
-
-        // Inject InfluxDBClient instead of URL and Token
-        public InfluxDatabaseService(InfluxDBClient client)
+        private readonly string _token;
+        private readonly string _baseUrl;
+        public InfluxDatabaseService(InfluxDBClient client, string token, string baseUrl, string org)
         {
             _client = client;
+            _token = token;
+            _baseUrl = baseUrl;
+            _org = org;
+
         }
 
         public InfluxDBClient GetClient() => _client;
+
+        public string Bucket => _bucket;
+        public string Org => _org;
+        public string Token => _token; // Implement Token
+        public string BaseUrl => _baseUrl; // Implement BaseUrl
 
         public async Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
         {
             try
             {
                 var point = PointData.Measurement(measurement)
-                    .Timestamp(DateTime.UtcNow, WritePrecision.Ns); // Add timestamp first
+                    .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
 
-                // Add tags to the point (Key-Value pairs)
                 foreach (var tag in tags)
                 {
-                    point = point.Tag(tag.Key, tag.Value); // Correctly pass both key and value
+                    point = point.Tag(tag.Key, tag.Value);
                 }
 
-                // Add fields to the point (Key-Value pairs)
                 foreach (var field in fields)
                 {
                     if (field.Value is float)
@@ -67,13 +75,21 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             {
                 foreach (var record in table.Records)
                 {
-                    var value = record.GetValue();
-                    if (value != null)  // Check for null
+                    var recordData = new Dictionary<string, object>();
+
+                    foreach (var key in record.Values.Keys)
                     {
-                        records.Add(value.ToString());
+                        recordData[key] = record.GetValueByKey(key);
                     }
+
+                    // Convert the record dictionary to JSON
+                    var json = System.Text.Json.JsonSerializer.Serialize(recordData);
+                    records.Add(json);
                 }
             }
+
+            // Optional: Show message box to verify the JSON records
+            System.Windows.MessageBox.Show(string.Join("\n\n", records), "Raw JSON Data", MessageBoxButton.OK, MessageBoxImage.Information);
 
             return records;
         }
@@ -101,8 +117,5 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 
             return campaigns;
         }
-
-
-
     }
 }
