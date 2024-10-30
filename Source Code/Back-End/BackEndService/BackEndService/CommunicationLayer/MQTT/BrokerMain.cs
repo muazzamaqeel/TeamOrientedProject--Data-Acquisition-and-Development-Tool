@@ -19,7 +19,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
             if (!isBrokerRunning)
             {
-                bool brokerStarted = StartBrokerConsoleApp(debugLog);
+                bool brokerStarted = await Task.Run(() => StartBrokerConsoleApp(debugLog));
                 isBrokerRunning = brokerStarted; // Set the flag if broker started successfully
 
                 if (brokerStarted)
@@ -38,6 +38,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
             MessageBox.Show(debugLog.ToString(), "Broker Debug Log", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
 
         private bool StartBrokerConsoleApp(StringBuilder debugLog)
         {

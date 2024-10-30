@@ -56,6 +56,12 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             LocalHostPanel.Visibility = Visibility.Visible;
         }
 
+        private void DockerInitialize(object sender, RoutedEventArgs e)
+        {
+            localHostService.DockerInitialize();
+        }
+
+
         private void DockerStart_Click(object sender, RoutedEventArgs e)
         {
             localHostService.StartDocker();

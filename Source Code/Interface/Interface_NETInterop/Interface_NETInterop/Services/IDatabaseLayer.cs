@@ -23,6 +23,8 @@ namespace SmartPacifier.Interface.Services
         void StartDocker();
         void StopDocker();
         string GetApiKey();
+        void DockerInitialize();
+
     }
 
 
