@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows; // For MessageBox
 using SmartPacifier.Interface.Services;
-
+using System.IO;
 namespace SmartPacifier.BackEnd.CommunicationLayer
 {
     public class BrokerMain : IBrokerMain
@@ -44,7 +44,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer
             try
             {
                 // Path to the DLL file of BrokerConsoleApp
-                var pathToDll = @"C:\programming\TeamOrientedProject---Smart-Pacifier\Source Code\Front-End\UI (WPF)\Smart Pacifier - Tool\Smart Pacifier - Tool\bin\Release\net8.0-windows\BrokerConsoleApp.dll";
+                var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                var dllName = "BrokerConsoleApp.dll";
+                var pathToDll = Path.Combine(baseDirectory, dllName);
 
                 // Check if the file exists before attempting to run
                 if (!System.IO.File.Exists(pathToDll))
