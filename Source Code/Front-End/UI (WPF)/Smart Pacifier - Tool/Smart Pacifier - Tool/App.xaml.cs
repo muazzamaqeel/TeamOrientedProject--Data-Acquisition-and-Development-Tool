@@ -45,7 +45,8 @@ namespace Smart_Pacifier___Tool
 
             // Run BrokerMain asynchronously to avoid blocking the main UI thread
             var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
-            await Task.Run(() => brokerMain.StartAsync(null)); // Run asynchronously in background
+            await Task.Run(() => brokerMain.StartAsync(Array.Empty<string>())); // Provide an empty array instead of null
+
         }
 
         /// <summary>

@@ -62,6 +62,7 @@
 
                         <!-- Docker Controls and API Key Entry Section -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Grid.Row="2">
+                            <Button x:Name="IntializeDockerImage" Content="Initialize Image" Width="130" Margin="10" Click="DockerInitialize" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="DockerStartButton" Content="Start Docker" Width="120" Margin="10" Click="DockerStart_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="DockerStopButton" Content="Stop Docker" Width="120" Margin="10" Click="DockerStop_Click" Style="{StaticResource ModernButtonStyle}"/>
 
