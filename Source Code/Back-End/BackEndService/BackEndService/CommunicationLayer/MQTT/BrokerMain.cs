@@ -63,6 +63,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
         private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
+            // This method will now receive messages without verbose logs
+            // You can process the message here as needed
+            // For now, we log the received message
             Console.WriteLine($"Received message on topic '{e.Topic}': {e.Payload}");
         }
     }

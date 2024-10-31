@@ -28,6 +28,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         private Broker()
         {
             var factory = new MqttFactory();
+
+            // Create the MQTT client without the verbose logger
             _mqttClient = factory.CreateMqttClient();
 
             // Set up event handlers
@@ -99,13 +101,18 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         // Subscribe to a specific topic
         public async Task Subscribe(string topic)
         {
-            await _mqttClient.SubscribeAsync(
-                new MqttTopicFilterBuilder()
-                    .WithTopic(topic)
-                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce) // QoS 2
-                    .Build());
+            var topicFilter = new MqttTopicFilterBuilder()
+                .WithTopic(topic)
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce) // QoS 0
+                .Build();
 
-            Console.WriteLine($"Subscribed to topic: {topic} with QoS 2");
+            var subscribeResult = await _mqttClient.SubscribeAsync(topicFilter);
+
+            Console.WriteLine($"Subscribed to topic: {topic} with QoS {topicFilter.QualityOfServiceLevel}");
+            foreach (var result in subscribeResult.Items)
+            {
+                Console.WriteLine($"Subscription result for topic '{result.TopicFilter.Topic}': {result.ResultCode}");
+            }
         }
 
         // Send a message to a specific topic
@@ -114,7 +121,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             var mqttMessage = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(message)
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce) // QoS 2
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce) // QoS 0
                 .Build();
 
             try
@@ -131,6 +138,10 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         // Event handler for received messages
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
+            // Log received message
+            Console.WriteLine($"Received message on topic '{e.ApplicationMessage.Topic}': {Encoding.UTF8.GetString(e.ApplicationMessage.Payload)}");
+
+            // Raise the MessageReceived event
             var messageReceivedEventArgs = new MessageReceivedEventArgs(
                 e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.Payload));
             MessageReceived?.Invoke(this, messageReceivedEventArgs);
