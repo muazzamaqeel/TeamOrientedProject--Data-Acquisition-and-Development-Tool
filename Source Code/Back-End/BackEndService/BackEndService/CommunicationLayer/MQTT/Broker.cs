@@ -92,7 +92,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             catch (Exception ex)
             {
                 Console.WriteLine("Failed to connect to MQTT broker: " + ex.Message);
-                throw new Exception("The MQTT client is not connected.");
+                throw; // Re-throw exception to be handled by caller
             }
         }
 
@@ -148,7 +148,17 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         private async Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs e)
         {
             Console.WriteLine("Disconnected from MQTT Broker.");
-            await Task.CompletedTask;
+
+            // Optionally, attempt to reconnect
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            try
+            {
+                await _mqttClient.ReconnectAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Reconnection failed: " + ex.Message);
+            }
         }
 
         // Event arguments for received messages
