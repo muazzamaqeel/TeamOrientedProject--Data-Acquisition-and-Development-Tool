@@ -19,7 +19,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         public async Task StartAsync(string[] args)
         {
             StringBuilder debugLog = new StringBuilder();
-            debugLog.AppendLine("Starting MQTT Broker...");
+            debugLog.AppendLine("Starting MQTT Client...");
 
             if (!isBrokerRunning)
             {
@@ -35,13 +35,14 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                         // Attempt to connect to the Docker Mosquitto broker
                         await broker.ConnectBroker();
                         await broker.Subscribe("Pacifier/#");
-                        debugLog.AppendLine("Broker connected and subscribed to 'Pacifier/#' topic.");
+                        debugLog.AppendLine("Client connected and subscribed to 'Pacifier/#' topic.");
                         connected = true;
                     }
                     catch (Exception ex)
                     {
                         retryCount++;
                         debugLog.AppendLine($"Connection attempt {retryCount} failed: {ex.Message}");
+                        Console.WriteLine($"Connection attempt {retryCount} failed: {ex.Message}");
                         await Task.Delay(2000);  // Wait 2 seconds before retrying
                     }
                 }
@@ -49,11 +50,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 if (!connected)
                 {
                     debugLog.AppendLine("Failed to connect to the MQTT Broker after multiple attempts.");
+                    Console.WriteLine("Failed to connect to the MQTT Broker after multiple attempts.");
                 }
             }
             else
             {
-                debugLog.AppendLine("Broker is already running. Skipping duplicate start.");
+                debugLog.AppendLine("Client is already running. Skipping duplicate start.");
             }
 
             Console.WriteLine(debugLog.ToString()); // Write logs to the console
@@ -61,6 +63,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
         private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
+            // This method will now receive messages without verbose logs
+            // You can process the message here as needed
+            // For now, we log the received message
             Console.WriteLine($"Received message on topic '{e.Topic}': {e.Payload}");
         }
     }

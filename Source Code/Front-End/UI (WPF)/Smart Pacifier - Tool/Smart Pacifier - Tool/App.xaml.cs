@@ -5,7 +5,6 @@ using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
 using InfluxDB.Client;
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +32,9 @@ namespace Smart_Pacifier___Tool
         [DllImport("kernel32.dll")]
         private static extern bool AllocConsole();
 
+        [DllImport("kernel32.dll")]
+        private static extern bool FreeConsole();
+
         /// <summary>
         /// The entry point of the application.
         /// This method is executed when the application starts.
@@ -53,13 +55,13 @@ namespace Smart_Pacifier___Tool
                 return;
             }
 
-            // Ensure only one instance of the MQTT broker
+            // Ensure only one instance of the MQTT client
             bool isBrokerNewInstance;
             brokerMutex = new Mutex(true, "SmartPacifierBrokerMutex", out isBrokerNewInstance);
 
             if (!isBrokerNewInstance)
             {
-                MessageBox.Show("The MQTT broker is already running.");
+                MessageBox.Show("The MQTT client is already running.");
                 Shutdown();
                 return;
             }
@@ -79,6 +81,8 @@ namespace Smart_Pacifier___Tool
             // Run BrokerMain asynchronously to avoid blocking the main UI thread
             var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
             await brokerMain.StartAsync(Array.Empty<string>()); // Await the task directly
+
+            // Start the main window to keep the application running
 
         }
 
@@ -141,8 +145,5 @@ namespace Smart_Pacifier___Tool
             // Free the console when the application exits
             FreeConsole();
         }
-
-        [DllImport("kernel32.dll")]
-        private static extern bool FreeConsole();
     }
 }
