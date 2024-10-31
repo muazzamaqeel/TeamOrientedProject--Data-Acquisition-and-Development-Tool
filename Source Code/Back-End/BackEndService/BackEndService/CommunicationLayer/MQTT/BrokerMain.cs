@@ -1,34 +1,54 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows; // For MessageBox
 using SmartPacifier.Interface.Services;
-using System.IO;
+
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
     public class BrokerMain : IBrokerMain
     {
-        private static bool isBrokerRunning = false; // Static flag to prevent duplicate starts
+        private static bool isBrokerRunning = false;
+        private readonly Broker broker;
+
+        public BrokerMain()
+        {
+            broker = Broker.Instance;
+            broker.MessageReceived += OnMessageReceived;
+        }
 
         public async Task StartAsync(string[] args)
         {
             StringBuilder debugLog = new StringBuilder();
-            debugLog.AppendLine("Starting Broker in a new console window...");
+            debugLog.AppendLine("Starting MQTT Broker...");
 
             if (!isBrokerRunning)
             {
-                bool brokerStarted = await Task.Run(() => StartBrokerConsoleApp(debugLog));
-                isBrokerRunning = brokerStarted; // Set the flag if broker started successfully
+                isBrokerRunning = true;
+                bool connected = false;
+                int retryCount = 0;
+                const int maxRetries = 5;
 
-                if (brokerStarted)
+                while (!connected && retryCount < maxRetries)
                 {
-                    debugLog.AppendLine("Broker started successfully.");
+                    try
+                    {
+                        // Attempt to connect to the Docker Mosquitto broker
+                        await broker.ConnectBroker();
+                        await broker.Subscribe("Pacifier/#");
+                        debugLog.AppendLine("Broker connected and subscribed to 'Pacifier/#' topic.");
+                        connected = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        retryCount++;
+                        debugLog.AppendLine($"Connection attempt {retryCount} failed: {ex.Message}");
+                        await Task.Delay(2000);  // Wait 2 seconds before retrying
+                    }
                 }
-                else
+
+                if (!connected)
                 {
-                    debugLog.AppendLine("Failed to start Broker.");
+                    debugLog.AppendLine("Failed to connect to the MQTT Broker after multiple attempts.");
                 }
             }
             else
@@ -36,53 +56,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 debugLog.AppendLine("Broker is already running. Skipping duplicate start.");
             }
 
-            MessageBox.Show(debugLog.ToString(), "Broker Debug Log", MessageBoxButton.OK, MessageBoxImage.Information);
+            Console.WriteLine(debugLog.ToString()); // Write logs to the console
         }
 
-
-        private bool StartBrokerConsoleApp(StringBuilder debugLog)
+        private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
-            try
-            {
-                // Path to the DLL file of BrokerConsoleApp
-                var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                var dllName = "BrokerConsoleApp.dll";
-                var pathToDll = Path.Combine(baseDirectory, dllName);
-
-                // Check if the file exists before attempting to run
-                if (!File.Exists(pathToDll))
-                {
-                    debugLog.AppendLine($"Error: DLL file not found at path: {pathToDll}");
-                    return false;
-                }
-
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = "dotnet",
-                    Arguments = $"\"{pathToDll}\"", // Run the DLL directly
-                    CreateNoWindow = false, // Show the console window
-                    UseShellExecute = true // Allows the console window to remain open
-                };
-
-                var process = Process.Start(startInfo);
-                debugLog.AppendLine("Console window for Broker attempted to start.");
-
-                // Check if process started successfully
-                if (process == null || process.HasExited)
-                {
-                    debugLog.AppendLine("Error: Process failed to start or exited immediately.");
-                    return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                debugLog.AppendLine($"Error starting Broker: {ex.Message}");
-                return false;
-            }
+            Console.WriteLine($"Received message on topic '{e.Topic}': {e.Payload}");
         }
-
-
     }
 }

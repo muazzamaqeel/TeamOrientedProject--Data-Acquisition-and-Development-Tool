@@ -3,19 +3,17 @@ using System.Text;
 using System.Threading.Tasks;
 using MQTTnet;
 using MQTTnet.Client;
-using MQTTnet.Packets;
 using MQTTnet.Protocol;
-using Protos;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
-    ///<summary>
+    /// <summary>
     /// Broker Class using Singleton Pattern. Connects to the Docker Mosquitto broker.
-    ///</summary>
+    /// </summary>
     public class Broker : IDisposable
     {
-        private readonly string BROKER_ADDRESS = "localhost";
-        private readonly int BROKER_PORT = 1883;
+        private readonly string BROKER_ADDRESS = "localhost";  // Docker Mosquitto broker address
+        private readonly int BROKER_PORT = 1883;               // Default MQTT port
 
         private static Broker? _brokerInstance;
         private static readonly object _lock = new object();
@@ -31,12 +29,16 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         {
             var factory = new MqttFactory();
             _mqttClient = factory.CreateMqttClient();
-            _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceived;
+
+            // Set up event handlers
+            _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceivedAsync;
+            _mqttClient.ConnectedAsync += OnConnectedAsync;
+            _mqttClient.DisconnectedAsync += OnDisconnectedAsync;
         }
 
-        ///<summary>
+        /// <summary>
         /// Dispose Method to cleanup resources.
-        ///</summary>
+        /// </summary>
         public void Dispose()
         {
             if (!disposed)
@@ -53,11 +55,11 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             Dispose();
         }
 
-        ///<summary>
+        /// <summary>
         /// Getting an Instance of the Broker. If there is no instance
         /// yet, it will create one. This is thread-safe for
         /// multithreading.
-        ///</summary>
+        /// </summary>
         public static Broker Instance
         {
             get
@@ -78,6 +80,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         {
             var options = new MqttClientOptionsBuilder()
                 .WithTcpServer(BROKER_ADDRESS, BROKER_PORT) // Connect to Docker Mosquitto
+                .WithKeepAlivePeriod(TimeSpan.FromSeconds(20))
+                .WithCleanSession(false)
                 .Build();
 
             try
@@ -88,6 +92,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             catch (Exception ex)
             {
                 Console.WriteLine("Failed to connect to MQTT broker: " + ex.Message);
+                throw new Exception("The MQTT client is not connected.");
             }
         }
 
@@ -95,32 +100,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         public async Task Subscribe(string topic)
         {
             await _mqttClient.SubscribeAsync(
-                new MqttTopicFilterBuilder().WithTopic(topic).Build());
+                new MqttTopicFilterBuilder()
+                    .WithTopic(topic)
+                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce) // QoS 2
+                    .Build());
 
-            Console.WriteLine($"Subscribed to topic: {topic}");
-        }
-
-        // Unsubscribe from a specific topic
-        public async Task Unsubscribe(string topic)
-        {
-            await _mqttClient.UnsubscribeAsync(topic);
-            Console.WriteLine($"Unsubscribed from topic: {topic}");
-        }
-
-        // Subscribe to all topics
-        public async Task SubscribeToAll()
-        {
-            await _mqttClient.SubscribeAsync(
-                new MqttTopicFilterBuilder().WithTopic("#").Build());
-
-            Console.WriteLine("Subscribed to all topics");
-        }
-
-        // Unsubscribe from all topics
-        public async Task UnsubscribeFromAll()
-        {
-            await _mqttClient.UnsubscribeAsync("#");
-            Console.WriteLine("Unsubscribed from all topics");
+            Console.WriteLine($"Subscribed to topic: {topic} with QoS 2");
         }
 
         // Send a message to a specific topic
@@ -129,7 +114,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             var mqttMessage = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(message)
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.ExactlyOnce) // QoS 2
                 .Build();
 
             try
@@ -144,14 +129,26 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         }
 
         // Event handler for received messages
-        private async Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs e)
+        private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
-            await Task.Run(() =>
-            {
-                var messageReceivedEventArgs = new MessageReceivedEventArgs(
-                e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment));
-                MessageReceived?.Invoke(this, messageReceivedEventArgs);
-            });
+            var messageReceivedEventArgs = new MessageReceivedEventArgs(
+                e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.Payload));
+            MessageReceived?.Invoke(this, messageReceivedEventArgs);
+            await Task.CompletedTask;
+        }
+
+        // Event handler for successful connection
+        private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)
+        {
+            Console.WriteLine("Connected successfully with MQTT Broker.");
+            await Task.CompletedTask;
+        }
+
+        // Event handler for disconnection
+        private async Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs e)
+        {
+            Console.WriteLine("Disconnected from MQTT Broker.");
+            await Task.CompletedTask;
         }
 
         // Event arguments for received messages
