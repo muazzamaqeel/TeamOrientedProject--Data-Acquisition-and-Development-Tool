@@ -3,9 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MQTTnet;
 using MQTTnet.Client;
-using MQTTnet.Packets;
 using MQTTnet.Protocol;
-using Protos;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
@@ -14,8 +12,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
     ///</summary>
     public class Broker : IDisposable
     {
-        private readonly string BROKER_ADDRESS = "localhost";
-        private readonly int BROKER_PORT = 1883;
+        private readonly string BROKER_ADDRESS = "localhost";  // Docker Mosquitto broker address
+        private readonly int BROKER_PORT = 1883;               // Default MQTT port
 
         private static Broker? _brokerInstance;
         private static readonly object _lock = new object();
@@ -88,8 +86,10 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             catch (Exception ex)
             {
                 Console.WriteLine("Failed to connect to MQTT broker: " + ex.Message);
+                throw new Exception("The MQTT client is not connected.");
             }
         }
+
 
         // Subscribe to a specific topic
         public async Task Subscribe(string topic)
@@ -98,29 +98,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 new MqttTopicFilterBuilder().WithTopic(topic).Build());
 
             Console.WriteLine($"Subscribed to topic: {topic}");
-        }
-
-        // Unsubscribe from a specific topic
-        public async Task Unsubscribe(string topic)
-        {
-            await _mqttClient.UnsubscribeAsync(topic);
-            Console.WriteLine($"Unsubscribed from topic: {topic}");
-        }
-
-        // Subscribe to all topics
-        public async Task SubscribeToAll()
-        {
-            await _mqttClient.SubscribeAsync(
-                new MqttTopicFilterBuilder().WithTopic("#").Build());
-
-            Console.WriteLine("Subscribed to all topics");
-        }
-
-        // Unsubscribe from all topics
-        public async Task UnsubscribeFromAll()
-        {
-            await _mqttClient.UnsubscribeAsync("#");
-            Console.WriteLine("Unsubscribed from all topics");
         }
 
         // Send a message to a specific topic
@@ -144,14 +121,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         }
 
         // Event handler for received messages
-        private async Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs e)
+        private Task OnMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
-            await Task.Run(() =>
-            {
-                var messageReceivedEventArgs = new MessageReceivedEventArgs(
-                e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment));
-                MessageReceived?.Invoke(this, messageReceivedEventArgs);
-            });
+            var messageReceivedEventArgs = new MessageReceivedEventArgs(
+                e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.Payload));
+            MessageReceived?.Invoke(this, messageReceivedEventArgs);
+            return Task.CompletedTask;
         }
 
         // Event arguments for received messages

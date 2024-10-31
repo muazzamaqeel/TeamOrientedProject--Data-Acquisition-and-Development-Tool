@@ -6,6 +6,7 @@ using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Temp;
 using InfluxDB.Client;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
@@ -13,6 +14,7 @@ using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.CampaignsTab;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
+using System.Runtime.InteropServices;
 
 namespace Smart_Pacifier___Tool
 {
@@ -21,8 +23,15 @@ namespace Smart_Pacifier___Tool
         // The IServiceProvider instance that manages the lifetime of services and dependencies
         private IServiceProvider? _serviceProvider;
 
+        // Mutex instances to prevent multiple instances of the application and the broker
+        private static Mutex? appMutex;
+        private static Mutex? brokerMutex;
+
         // Expose the service provider publicly so other components can access it
         public IServiceProvider ServiceProvider => _serviceProvider!;
+
+        [DllImport("kernel32.dll")]
+        private static extern bool AllocConsole();
 
         /// <summary>
         /// The entry point of the application.
@@ -32,7 +41,31 @@ namespace Smart_Pacifier___Tool
         /// <param name="e">Startup event arguments.</param>
         protected override async void OnStartup(StartupEventArgs e)
         {
+            // Open the console window for logging
+            AllocConsole();
+
             base.OnStartup(e);
+
+            // Ensure only one instance of the main application
+            bool isAppNewInstance;
+            appMutex = new Mutex(true, "SmartPacifierMainAppMutex", out isAppNewInstance);
+            if (!isAppNewInstance)
+            {
+                MessageBox.Show("The application is already running.");
+                Shutdown();
+                return;
+            }
+
+            // Ensure only one instance of the MQTT broker
+            bool isBrokerNewInstance;
+            brokerMutex = new Mutex(true, "SmartPacifierBrokerMutex", out isBrokerNewInstance);
+
+            if (!isBrokerNewInstance)
+            {
+                MessageBox.Show("The MQTT broker is already running.");
+                Shutdown();
+                return;
+            }
 
             // Create a new service collection that will hold our service registrations
             var services = new ServiceCollection();
@@ -46,7 +79,6 @@ namespace Smart_Pacifier___Tool
             // Run BrokerMain asynchronously to avoid blocking the main UI thread
             var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
             await Task.Run(() => brokerMain.StartAsync(Array.Empty<string>())); // Provide an empty array instead of null
-
         }
 
         /// <summary>
