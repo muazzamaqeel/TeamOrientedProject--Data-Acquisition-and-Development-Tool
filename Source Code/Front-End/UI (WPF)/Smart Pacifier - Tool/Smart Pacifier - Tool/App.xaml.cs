@@ -3,7 +3,6 @@ using SmartPacifier.Interface.Services;
 using SmartPacifier.BackEnd.Database.InfluxDB.Connection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
-using Smart_Pacifier___Tool.Temp;
 using InfluxDB.Client;
 using System;
 using System.Diagnostics;
@@ -28,17 +27,11 @@ namespace Smart_Pacifier___Tool
         private static Mutex? appMutex;
         private static Mutex? brokerMutex;
 
-        // Separate process for logging console
-        private Process? _loggingConsoleProcess;
-
         // Expose the service provider publicly so other components can access it
         public IServiceProvider ServiceProvider => _serviceProvider!;
 
         [DllImport("kernel32.dll")]
         private static extern bool AllocConsole();
-
-        [DllImport("kernel32.dll")]
-        private static extern bool FreeConsole();
 
         /// <summary>
         /// The entry point of the application.
@@ -71,8 +64,8 @@ namespace Smart_Pacifier___Tool
                 return;
             }
 
-            // Start a separate console window for logging
-            StartLoggingConsole();
+            // Allocate a console window for logging
+            AllocConsole();
 
             // Create a new service collection that will hold our service registrations
             var services = new ServiceCollection();
@@ -85,7 +78,8 @@ namespace Smart_Pacifier___Tool
 
             // Run BrokerMain asynchronously to avoid blocking the main UI thread
             var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
-            await Task.Run(() => brokerMain.StartAsync(Array.Empty<string>())); // Provide an empty array instead of null
+            await brokerMain.StartAsync(Array.Empty<string>()); // Await the task directly
+
         }
 
         /// <summary>
@@ -138,51 +132,17 @@ namespace Smart_Pacifier___Tool
         }
 
         /// <summary>
-        /// Starts a separate console window for logging
-        /// </summary>
-        private void StartLoggingConsole()
-        {
-            _loggingConsoleProcess = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = "/K \"echo Logging started...\"",
-                    UseShellExecute = false, // Set to false to allow redirection
-                    RedirectStandardInput = true, // Redirect input so we can write to it
-                    RedirectStandardOutput = true, // Redirect output to capture logs
-                    RedirectStandardError = true, // Redirect errors
-                    CreateNoWindow = false // Keeps the console window visible
-                }
-            };
-
-            _loggingConsoleProcess.Start();
-
-            // Redirect the application's Console output to the logging console's StandardInput
-            Console.SetOut(new System.IO.StreamWriter(_loggingConsoleProcess.StandardInput.BaseStream) { AutoFlush = true });
-
-            // Optionally, you can capture and display the output from the console
-            Task.Run(async () =>
-            {
-                string line;
-                while ((line = await _loggingConsoleProcess.StandardOutput.ReadLineAsync()) != null)
-                {
-                    Console.WriteLine(line); // This will display output from the logging console in the main application console
-                }
-            });
-        }
-
-
-        /// <summary>
         /// Cleanup when the application exits
         /// </summary>
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
 
-            // Close the logging console when the application exits
-            _loggingConsoleProcess?.CloseMainWindow();
-            _loggingConsoleProcess?.Close();
+            // Free the console when the application exits
+            FreeConsole();
         }
+
+        [DllImport("kernel32.dll")]
+        private static extern bool FreeConsole();
     }
 }

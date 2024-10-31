@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 using SmartPacifier.Interface.Services;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
@@ -35,8 +34,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                     {
                         // Attempt to connect to the Docker Mosquitto broker
                         await broker.ConnectBroker();
-                        await broker.Subscribe("SmartPacifier");  // Subscribe to the topic
-                        debugLog.AppendLine("Broker connected and subscribed to 'SmartPacifier' topic.");
+                        await broker.Subscribe("Pacifier/#");
+                        debugLog.AppendLine("Broker connected and subscribed to 'Pacifier/#' topic.");
                         connected = true;
                     }
                     catch (Exception ex)
@@ -58,7 +57,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
 
             Console.WriteLine(debugLog.ToString()); // Write logs to the console
-            MessageBox.Show(debugLog.ToString(), "Broker Debug Log", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
