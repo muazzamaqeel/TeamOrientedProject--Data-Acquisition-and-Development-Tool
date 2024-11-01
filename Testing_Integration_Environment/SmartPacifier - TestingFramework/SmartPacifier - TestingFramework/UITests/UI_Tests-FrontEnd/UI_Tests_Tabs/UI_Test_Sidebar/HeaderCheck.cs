@@ -1,9 +1,10 @@
 ﻿using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.UIA3;
+using System;
 using System.Linq;
-using Xunit;
 using System.Threading;
+using Xunit;
 
 namespace SmartPacifier___TestingFramework.UITests.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Test_Sidebar
 {
@@ -18,49 +19,59 @@ namespace SmartPacifier___TestingFramework.UITests.UI_Tests_FrontEnd.UI_Tests_Ta
             this.automation = new UIA3Automation();
         }
 
-        // General method to check button click and corresponding window and header
         private bool CheckWindowHeader(string buttonName, string expectedHeader)
         {
-            Thread.Sleep(3000); // Ensure the UI is loaded properly
-
             var mainWindow = app.GetMainWindow(automation);
+
+            // Debugging output
+            if (mainWindow == null)
+            {
+                Console.WriteLine("Main window is null. The application might not be launched properly.");
+                return false; // Return false if main window is null
+            }
+
             Assert.NotNull(mainWindow); // Ensure the main window is open
 
             // Find and click the specified button
-            var button = mainWindow.FindFirstDescendant(x => x.ByName(buttonName)).AsButton();
-            button.Invoke();
+            var button = mainWindow.FindFirstDescendant(x => x.ByName(buttonName));
+            if (button == null)
+            {
+                Console.WriteLine($"Button '{buttonName}' not found.");
+                return false; // Handle accordingly
+            }
+
+            // Click the button
+            button.AsButton().Invoke(); // Make sure to cast to Button
 
             // Wait for the new window to appear
             var newWindow = WaitForNewWindow(buttonName);
-            if (newWindow != null)
+            if (newWindow == null)
             {
-                var headerElement = newWindow.FindFirstDescendant(x => x.ByControlType(FlaUI.Core.Definitions.ControlType.Header));
-                if (headerElement != null)
-                {
-                    var actualHeader = headerElement.Properties.Name.Value.Trim();
-                    Console.WriteLine($"New Window Title: '{newWindow.Properties.Name.Value}'");
-                    Console.WriteLine($"Actual Header: '{actualHeader}', Expected Header: '{expectedHeader.Trim()}'");
-                    return actualHeader == expectedHeader.Trim(); // Trim both for comparison
-                }
-                else
-                {
-                    Console.WriteLine("Header element not found.");
-                }
+                Console.WriteLine($"New window for '{buttonName}' did not appear.");
+                return false; // Return false if the new window is not found
+            }
+
+            // Find the header element in the new window
+            var headerElement = newWindow.FindFirstDescendant(x => x.ByControlType(FlaUI.Core.Definitions.ControlType.Header));
+            if (headerElement != null)
+            {
+                var actualHeader = headerElement.Properties.Name.Value.Trim();
+                Console.WriteLine($"New Window Title: '{newWindow.Properties.Name.Value}'");
+                Console.WriteLine($"Actual Header: '{actualHeader}', Expected Header: '{expectedHeader.Trim()}'");
+                return actualHeader == expectedHeader.Trim(); // Trim both for comparison
             }
             else
             {
-                Console.WriteLine($"New window for '{buttonName}' not found.");
+                Console.WriteLine("Header element not found.");
             }
 
-            return false; // Return false if the new window is not found
+            return false; // Return false if the header element is not found
         }
 
-
-        // Method to wait for a new window to appear based on the button name
-        private AutomationElement WaitForNewWindow(string buttonName)
+        private AutomationElement WaitForNewWindow(string buttonName, int timeoutInSeconds = 10)
         {
-            // You might want to implement a timeout to avoid an infinite wait
-            for (int i = 0; i < 10; i++) // wait up to 10 seconds
+            var endTime = DateTime.Now.AddSeconds(timeoutInSeconds);
+            while (DateTime.Now < endTime)
             {
                 var allWindows = automation.GetDesktop().FindAllChildren();
                 var newWindow = allWindows.FirstOrDefault(w =>
@@ -68,12 +79,13 @@ namespace SmartPacifier___TestingFramework.UITests.UI_Tests_FrontEnd.UI_Tests_Ta
                     w.Properties.Name.Value.Contains(buttonName));
                 if (newWindow != null) return newWindow;
 
-                Thread.Sleep(1000); // wait for a second before checking again
+                Thread.Sleep(1000); // Wait for a second before checking again
             }
-            return null; // Return null if no new window appears within the timeout
+
+            // If we reach here, the new window did not appear
+            return null;
         }
 
-        // Specific methods for each button that use the general method
         public bool ButtonClick_USERMODEShouldOpenNewActiveMonitoringWindow()
         {
             return CheckWindowHeader("Active Monitoring", "Active Monitoring");
