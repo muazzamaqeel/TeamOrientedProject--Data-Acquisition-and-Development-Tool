@@ -44,7 +44,9 @@ namespace Smart_Pacifier___Tool
 
         private void MonitoringButton_Click(object sender, RoutedEventArgs e)
         {
-            ((MainWindow)Application.Current.MainWindow).NavigateTo(new PacifierSelectionView());
+            // Retrieve PacifierSelectionView from the DI container
+            var pacifierSelectionView = ((App)Application.Current).ServiceProvider.GetRequiredService<PacifierSelectionView>();
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(pacifierSelectionView);
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)

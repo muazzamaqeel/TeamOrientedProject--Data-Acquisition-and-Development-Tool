@@ -41,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="DatabaseLayer\CSV\Files\" />
     <Folder Include="DatabaseLayer\InfluxDB\LoadFiles\ExcelFiles\" />
   </ItemGroup>
 
