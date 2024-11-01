@@ -63,13 +63,17 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                     if (!selectedPacifiers.Contains(pacifierName))
                     {
                         selectedPacifiers.Add(pacifierName);
+                        //MessageBox.Show($"{pacifierName} added to selected list.");
                     }
                 }
                 else
                 {
                     selectedPacifiers.Remove(pacifierName);
+                    //MessageBox.Show($"{pacifierName} removed from selected list.");
                 }
             };
+
+
 
             Console.WriteLine($"Adding pacifier: {pacifierName}"); // Debug
             ConnectedPacifierPanel.Children.Add(connectedPacifierItem);
@@ -80,9 +84,17 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         {
             string campaignName = CampaignTextBox.Text;
 
+            // Debug message to check campaign name
+            //MessageBox.Show($"Campaign Name: {campaignName}");
+            //MessageBox.Show($"Selected Pacifiers: {string.Join(", ", selectedPacifiers)} (Count: {selectedPacifiers.Count})");
+
+
+            // Validate that at least one pacifier is selected and the campaign name is not empty
             if (selectedPacifiers.Count > 0 && !string.IsNullOrWhiteSpace(campaignName))
             {
                 var monitoringView = new MonitoringView();
+
+                // Optionally pass selected pacifiers to the monitoring view
 
                 if (this.Parent is ContentControl parent)
                 {
@@ -94,5 +106,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 MessageBox.Show("Please make sure there is at least one connected pacifier and the campaign name is not empty.");
             }
         }
+
+
     }
 }
