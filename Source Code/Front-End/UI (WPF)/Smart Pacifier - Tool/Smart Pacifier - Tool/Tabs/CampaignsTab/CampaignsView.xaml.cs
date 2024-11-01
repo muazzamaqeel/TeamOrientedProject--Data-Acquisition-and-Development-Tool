@@ -156,7 +156,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void RemovePlaceholderText(object sender, RoutedEventArgs e)
         {
-            TextBox textBox = sender as TextBox;
+            TextBox? textBox = sender as TextBox;
             if (textBox.Text == "Search by name")
             {
                 textBox.Text = "";
@@ -166,7 +166,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void AddPlaceholderText(object sender, RoutedEventArgs e)
         {
-            TextBox textBox = sender as TextBox;
+            TextBox? textBox = sender as TextBox;
             if (string.IsNullOrWhiteSpace(textBox.Text))
             {
                 textBox.Text = "Search by name";
@@ -185,7 +185,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            TextBox textBox = sender as TextBox;
+            TextBox ?textBox = sender as TextBox;
             if (textBox != null && isLoaded)
             {
                 ActualSearchName = textBox.Text == "Search by name" ? string.Empty : textBox.Text;
@@ -198,7 +198,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void DatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
-            DatePicker datePicker = sender as DatePicker;
+            DatePicker ?datePicker = sender as DatePicker;
             if (datePicker != null)
             {
                 SearchDate = datePicker.SelectedDate;
@@ -208,7 +208,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void DatePicker_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            DatePicker datePicker = sender as DatePicker;
+            DatePicker ?datePicker = sender as DatePicker;
             if (datePicker != null && string.IsNullOrEmpty(datePicker.Text))
             {
                 SearchDate = null;
@@ -221,7 +221,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             ((MainWindow)Application.Current.MainWindow).NavigateTo(new MonitoringView());
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
