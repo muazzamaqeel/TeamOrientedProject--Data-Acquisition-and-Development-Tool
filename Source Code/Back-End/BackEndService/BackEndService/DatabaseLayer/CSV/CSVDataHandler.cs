@@ -129,16 +129,12 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.CSV
             }
         }
     }
-
-
-
-
     public class CampaignData
     {
-        public string Measurement { get; set; }
-        public string CampaignName { get; set; }
-        public string PacifierName { get; set; }
-        public string SensorType { get; set; }
+        public string? Measurement { get; set; }
+        public string? CampaignName { get; set; }
+        public string? PacifierName { get; set; }
+        public string? SensorType { get; set; }
         public int? Led1 { get; set; }
         public int? Led2 { get; set; }
         public int? Led3 { get; set; }

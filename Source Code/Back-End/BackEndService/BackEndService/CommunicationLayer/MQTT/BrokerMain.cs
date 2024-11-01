@@ -2,6 +2,8 @@
 using System.Text;
 using System.Threading.Tasks;
 using SmartPacifier.Interface.Services;
+using Protos;
+
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Text;
+using System.Text.Json;  // For JSON deserialization
 using System.Threading.Tasks;
+using Google.Protobuf;  // For Protobuf support
 using MQTTnet;
 using MQTTnet.Client;
-using MQTTnet.Protocol;
+using MQTTnet.Protocol;       // For MqttQualityOfServiceLevel
+using Protos;  // Namespace for SensorData
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
@@ -138,15 +141,70 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         // Event handler for received messages
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
-            // Log received message
-            Console.WriteLine($"Received message on topic '{e.ApplicationMessage.Topic}': {Encoding.UTF8.GetString(e.ApplicationMessage.Payload)}");
+            try
+            {
+                // Convert the payload to a JSON string
+                var payloadJson = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
 
-            // Raise the MessageReceived event
-            var messageReceivedEventArgs = new MessageReceivedEventArgs(
-                e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.Payload));
-            MessageReceived?.Invoke(this, messageReceivedEventArgs);
-            await Task.CompletedTask;
+                // Deserialize JSON payload to a dictionary
+                var jsonData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(payloadJson);
+
+                // Create a new Protobuf message instance
+                var sensorData = new SensorData();
+
+                // Set the topic
+                sensorData.Topic = e.ApplicationMessage.Topic;
+
+                // Check and populate PPG data fields
+                if (jsonData.ContainsKey("led1") && jsonData.ContainsKey("led2") && jsonData.ContainsKey("led3"))
+                {
+                    sensorData.Led1 = jsonData["led1"].GetInt32();
+                    sensorData.Led2 = jsonData["led2"].GetInt32();
+                    sensorData.Led3 = jsonData["led3"].GetInt32();
+                    sensorData.Temperature = jsonData.ContainsKey("temperature") ? jsonData["temperature"].GetSingle() : 0.0f;
+                }
+
+                // Check and populate IMU data fields
+                if (jsonData.ContainsKey("acc_x") && jsonData.ContainsKey("gyro_x"))
+                {
+                    sensorData.AccX = jsonData["acc_x"].GetSingle();
+                    sensorData.AccY = jsonData.ContainsKey("acc_y") ? jsonData["acc_y"].GetSingle() : 0.0f;
+                    sensorData.AccZ = jsonData.ContainsKey("acc_z") ? jsonData["acc_z"].GetSingle() : 0.0f;
+                    sensorData.GyroX = jsonData["gyro_x"].GetSingle();
+                    sensorData.GyroY = jsonData.ContainsKey("gyro_y") ? jsonData["gyro_y"].GetSingle() : 0.0f;
+                    sensorData.GyroZ = jsonData.ContainsKey("gyro_z") ? jsonData["gyro_z"].GetSingle() : 0.0f;
+                    sensorData.MagX = jsonData.ContainsKey("mag_x") ? jsonData["mag_x"].GetSingle() : 0.0f;
+                    sensorData.MagY = jsonData.ContainsKey("mag_y") ? jsonData["mag_y"].GetSingle() : 0.0f;
+                    sensorData.MagZ = jsonData.ContainsKey("mag_z") ? jsonData["mag_z"].GetSingle() : 0.0f;
+                }
+
+                // Log or process specific fields
+                Console.WriteLine($"Received data for topic: {sensorData.Topic}");
+
+                // Display IMU data if present
+                if (sensorData.Topic.Contains("imu"))
+                {
+                    Console.WriteLine($"Accelerometer Data - X: {sensorData.AccX}, Y: {sensorData.AccY}, Z: {sensorData.AccZ}");
+                    Console.WriteLine($"Gyroscope Data - X: {sensorData.GyroX}, Y: {sensorData.GyroY}, Z: {sensorData.GyroZ}");
+                    Console.WriteLine($"Magnetometer Data - X: {sensorData.MagX}, Y: {sensorData.MagY}, Z: {sensorData.MagZ}");
+                }
+
+                // Display PPG data if present
+                if (sensorData.Topic.Contains("ppg"))
+                {
+                    Console.WriteLine($"LED Data - LED1: {sensorData.Led1}, LED2: {sensorData.Led2}, LED3: {sensorData.Led3}, Temperature: {sensorData.Temperature}");
+                }
+
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to parse message: {ex.Message}");
+            }
         }
+
+
+
 
         // Event handler for successful connection
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)
