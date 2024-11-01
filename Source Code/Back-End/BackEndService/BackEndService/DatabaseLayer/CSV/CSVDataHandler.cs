@@ -4,36 +4,11 @@ using System.Globalization;
 using System.IO;
 using CsvHelper;
 using CsvHelper.Configuration;
+using SmartPacifier.Interface.Services;
 
 namespace SmartPacifier.BackEnd.DatabaseLayer.CSV
 {
-    public class CampaignData
-    {
-        public string Measurement { get; set; }
-        public string CampaignName { get; set; }
-        public string PacifierName { get; set; }
-        public string SensorType { get; set; }
-        public int? Led1 { get; set; }
-        public int? Led2 { get; set; }
-        public int? Led3 { get; set; }
-        public double? Temperature { get; set; }
-        public double? AccX { get; set; }
-        public double? AccY { get; set; }
-        public double? AccZ { get; set; }
-        public double? GyroX { get; set; }
-        public double? GyroY { get; set; }
-        public double? GyroZ { get; set; }
-        public double? MagX { get; set; }
-        public double? MagY { get; set; }
-        public double? MagZ { get; set; }
-        public string Status { get; set; }
-        public string Creation { get; set; }
-        public string StartTime { get; set; }
-        public string EndTime { get; set; }
-        public string Timestamp { get; set; }
-    }
-
-    public class CSVCampaignCreation
+    public class CSVCampaignCreation: ICSVDataHandler
     {
         // Base directory for saving files
         private readonly string baseDirectory = Path.Combine("BackEndService", "BackEndService", "DatabaseLayer", "CSV", "Files");
@@ -153,5 +128,34 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.CSV
                 csv.WriteRecords(records);
             }
         }
+    }
+
+
+
+
+    public class CampaignData
+    {
+        public string Measurement { get; set; }
+        public string CampaignName { get; set; }
+        public string PacifierName { get; set; }
+        public string SensorType { get; set; }
+        public int? Led1 { get; set; }
+        public int? Led2 { get; set; }
+        public int? Led3 { get; set; }
+        public double? Temperature { get; set; }
+        public double? AccX { get; set; }
+        public double? AccY { get; set; }
+        public double? AccZ { get; set; }
+        public double? GyroX { get; set; }
+        public double? GyroY { get; set; }
+        public double? GyroZ { get; set; }
+        public double? MagX { get; set; }
+        public double? MagY { get; set; }
+        public double? MagZ { get; set; }
+        public string? Status { get; set; }
+        public string? Creation { get; set; }
+        public string? StartTime { get; set; }
+        public string? EndTime { get; set; }
+        public string? Timestamp { get; set; }
     }
 }
