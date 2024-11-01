@@ -1,7 +1,9 @@
 ﻿using FlaUI.Core;
-using FlaUI.Core.AutomationElements;
 using FlaUI.UIA3;
 using Xunit;
+using System;
+using System.Threading;
+using FlaUI.Core.AutomationElements;
 
 namespace SmartPacifier_UITests
 {
@@ -9,52 +11,62 @@ namespace SmartPacifier_UITests
     {
         private readonly Application app;
 
-        // Constructor to accept the launched application
         public PINValidationTests(Application app)
         {
             this.app = app;
         }
 
-        /// <summary>
-        /// Validates the Developer tab activation by entering the correct PIN.
-        /// </summary>
         public void ValidateDeveloperTabActivation_WithCorrectPin()
         {
             using var automation = new UIA3Automation();
             var mainWindow = app.GetMainWindow(automation);
+            Assert.NotNull(mainWindow); // Ensure the main window is accessible
 
-            // Find and click on the "Settings" button in the sidebar
-            var settingsButton = mainWindow.FindFirstDescendant(cf => cf.ByText("Settings")).AsButton();
-            Assert.NotNull(settingsButton);
+            // Use WaitUntil method for button checks
+            var settingsButton = WaitUntil(() => mainWindow.FindFirstDescendant(cf => cf.ByName("Settings"))?.AsButton());
+            Assert.NotNull(settingsButton); // Assert the Settings button exists
             settingsButton.Click();
+            Thread.Sleep(1000); // Allow UI to update
 
-            // Find and click the "Switch Mode" button
-            var switchModeButton = mainWindow.FindFirstDescendant(cf => cf.ByText("Switch Mode")).AsButton();
-            Assert.NotNull(switchModeButton);
+            var switchModeButton = WaitUntil(() => mainWindow.FindFirstDescendant(cf => cf.ByName("Switch Mode"))?.AsButton());
+            Assert.NotNull(switchModeButton); // Assert the Switch Mode button exists
             switchModeButton.Click();
+            Thread.Sleep(1000); // Allow UI to update
 
-            // Find and click the "Developer Mode" button
-            var developerModeButton = mainWindow.FindFirstDescendant(cf => cf.ByText("Developer Mode")).AsButton();
-            Assert.NotNull(developerModeButton);
+            var developerModeButton = WaitUntil(() => mainWindow.FindFirstDescendant(cf => cf.ByName("Developer Mode"))?.AsButton());
+            Assert.NotNull(developerModeButton); // Assert the Developer Mode button exists
             developerModeButton.Click();
+            Thread.Sleep(1000); // Allow UI to update
 
-            // Find the PIN entry text box and enter the correct PIN "1234"
-            var pinEntry = mainWindow.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Edit)).AsTextBox();
-            Assert.NotNull(pinEntry);
+            var pinEntry = WaitUntil(() => mainWindow.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Edit))?.AsTextBox());
+            Assert.NotNull(pinEntry); // Assert the PIN entry box exists
             pinEntry.Enter("1234");
+            Thread.Sleep(1000); // Allow UI to update
 
-            // Find and click the "Continue" button
-            var continueButton = mainWindow.FindFirstDescendant(cf => cf.ByText("Continue")).AsButton();
-            Assert.NotNull(continueButton);
+            var continueButton = WaitUntil(() => mainWindow.FindFirstDescendant(cf => cf.ByName("Continue"))?.AsButton());
+            Assert.NotNull(continueButton); // Assert the Continue button exists
             continueButton.Click();
+            Thread.Sleep(1000); // Allow UI to update
 
-            // Check if the "Developer" tab is now visible in the sidebar
-            var developerTab = mainWindow.FindFirstDescendant(cf => cf.ByText("Developer")).AsButton();
-            Assert.NotNull(developerTab);
+            var developerTab = WaitUntil(() => mainWindow.FindFirstDescendant(cf => cf.ByName("Developer"))?.AsButton());
+            Assert.NotNull(developerTab); // Assert the Developer tab exists
+            Assert.True(!developerTab.Properties.IsOffscreen.Value, "Developer tab should be visible after entering the correct PIN.");
+        }
 
-            // Use IsOffscreen to check if the Developer tab is visible
-            bool isDeveloperTabVisible = !developerTab.Properties.IsOffscreen.Value;
-            Assert.True(isDeveloperTabVisible, "Developer tab should be visible after entering the correct PIN.");
+        private T WaitUntil<T>(Func<T> condition, TimeSpan? timeout = null) where T : class
+        {
+            var startTime = DateTime.UtcNow;
+            var waitTimeout = timeout ?? TimeSpan.FromSeconds(10); // Default timeout
+
+            while (DateTime.UtcNow - startTime < waitTimeout)
+            {
+                var result = condition();
+                if (result != null) return result;
+
+                Thread.Sleep(100); // Small wait before next check
+            }
+
+            return null; // Return null if the condition was never met
         }
     }
 }
