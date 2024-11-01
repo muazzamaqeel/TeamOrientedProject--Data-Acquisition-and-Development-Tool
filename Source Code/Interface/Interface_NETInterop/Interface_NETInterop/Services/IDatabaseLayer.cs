@@ -45,6 +45,8 @@ namespace SmartPacifier.Interface.Services
 
     public interface IManagerPacifiers
     {
+
+        List<string> GetPacifierNamesFromSensorData();
         Task<List<string>> GetPacifiersAsync(string campaignName);
         Task AddPacifierAsync(string campaignName);
 

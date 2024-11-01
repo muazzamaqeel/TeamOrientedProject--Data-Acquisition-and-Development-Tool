@@ -1,4 +1,6 @@
 ﻿using Smart_Pacifier___Tool.Components;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
+using SmartPacifier.Interface.Services;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,14 +12,32 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
     {
         private List<string> connectedPacifiers = new List<string>();
         private List<string> selectedPacifiers = new List<string>();
+        private readonly IManagerPacifiers _managerPacifiers;
 
-        public PacifierSelectionView()
+
+        public PacifierSelectionView(IManagerPacifiers managerPacifiers)
         {
             InitializeComponent();
+            _managerPacifiers = managerPacifiers;
 
             // dummy pacifiers for testing
-            AddDummyPacifiers(15);
+            LoadPacifierNames();
         }
+
+
+        private void LoadPacifierNames()
+        {
+            var pacifierNames = _managerPacifiers.GetPacifierNamesFromSensorData();
+
+            // Debug: Print the count of pacifiers
+            MessageBox.Show($"Loaded {pacifierNames.Count} pacifiers.");
+
+            foreach (var pacifierName in pacifierNames)
+            {
+                AddConnectedPacifier(pacifierName);
+            }
+        }
+
 
         // TESTING - to be removed later
         private void AddDummyPacifiers(int number)
@@ -30,36 +50,31 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
         public void AddConnectedPacifier(string pacifierName)
         {
-            if (!connectedPacifiers.Contains(pacifierName))
+            var connectedPacifierItem = new ConnectedPacifierItem
             {
-                connectedPacifiers.Add(pacifierName);
+                ButtonText = pacifierName,
+                IsChecked = false
+            };
 
-                var connectedPacifierItem = new Components.ConnectedPacifierItem
+            connectedPacifierItem.Toggled += (s, e) =>
+            {
+                if (connectedPacifierItem.IsChecked)
                 {
-                    ButtonText = pacifierName,
-                    IsChecked = false
-                };
-
-                connectedPacifierItem.Toggled += (s, e) =>
+                    if (!selectedPacifiers.Contains(pacifierName))
+                    {
+                        selectedPacifiers.Add(pacifierName);
+                    }
+                }
+                else
                 {
-                    if (connectedPacifierItem.IsChecked)
-                    {
-                        // Add pacifier to the list if checked
-                        if (!selectedPacifiers.Contains(pacifierName))
-                        {
-                            selectedPacifiers.Add(pacifierName);
-                        }
-                    }
-                    else
-                    {
-                        // Remove pacifier from the list if unchecked
-                        selectedPacifiers.Remove(pacifierName);
-                    }
-                };
+                    selectedPacifiers.Remove(pacifierName);
+                }
+            };
 
-                ConnectedPacifierPanel.Children.Add(connectedPacifierItem);
-            }
+            Console.WriteLine($"Adding pacifier: {pacifierName}"); // Debug
+            ConnectedPacifierPanel.Children.Add(connectedPacifierItem);
         }
+
 
         private void CreateCampaign_Click(object sender, RoutedEventArgs e)
         {
@@ -67,12 +82,9 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
             if (selectedPacifiers.Count > 0 && !string.IsNullOrWhiteSpace(campaignName))
             {
-                //MessageBox.Show($"Campaign '{campaignName}' created with pacifiers: {string.Join(", ", selectedPacifiers)}");
-
                 var monitoringView = new MonitoringView();
 
-                var parent = this.Parent as ContentControl;
-                if (parent != null)
+                if (this.Parent is ContentControl parent)
                 {
                     parent.Content = monitoringView;
                 }
@@ -82,6 +94,5 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 MessageBox.Show("Please make sure there is at least one connected pacifier and the campaign name is not empty.");
             }
         }
-
     }
 }

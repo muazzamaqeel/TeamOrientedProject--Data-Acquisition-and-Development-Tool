@@ -14,6 +14,7 @@ using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.CampaignsTab;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
+using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 
 namespace Smart_Pacifier___Tool
 {
@@ -95,6 +96,9 @@ namespace Smart_Pacifier___Tool
         {
             // Register ILocalHost with its implementation
             services.AddSingleton<ILocalHost, LocalHostSetup>();
+            services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
+            services.AddTransient<PacifierSelectionView>(); // Register PacifierSelectionView for DI
+
 
             // Register InfluxDBClient with the URL and token from ILocalHost
             services.AddSingleton<InfluxDBClient>(sp =>
