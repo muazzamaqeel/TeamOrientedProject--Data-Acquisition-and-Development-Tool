@@ -1,20 +1,43 @@
-version: '3'
 services:
-  mosquitto:
-    image: eclipse-mosquitto:2.0.20
-
   influxdb:
     image: influxdb:2.7
     container_name: influxdb
     ports:
       - "8086:8086"
     volumes:
-      - influxdb-data:/var/lib/influxdb2  # Persisting the data locally
+      - influxdb-data:/var/lib/influxdb2  # Persist data locally
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=admin  # You set this value
-      - DOCKER_INFLUXDB_INIT_PASSWORD=thu.1234  # You set this value
-      - DOCKER_INFLUXDB_INIT_ORG=thu-de  # You set this value
-      - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket  # You set this value
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=thu.1234
+      - DOCKER_INFLUXDB_INIT_ORG=thu-de
+      - DOCKER_INFLUXDB_INIT_BUCKET=SmartPacifier-Bucket1
+      - DOCKER_INFLUXDB_INIT_RETENTION=365d  
+    restart: unless-stopped  # Ensuring container restarts on failure
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    ports:
+      - "1883:1883"       # MQTT port
+      - "9001:9001"       # WebSocket port (optional, if needed)
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf  # Use relative path to the conf file
+    restart: unless-stopped  # Ensuring container restarts on failure
+    environment:
+      - MQTT_ALLOW_ANONYMOUS=true  # Allow anonymous connections (optional)
+    
+  mqttsimulator:
+    image: strivi01/mqttsim:0.1
+    container_name: mqttSimulator
+    volumes:
+      - ./settings.json:/usr/src/app/config/settings.json
+    depends_on:
+      - mosquitto
+
 volumes:
   influxdb-data:
+  mosquitto-data:
+  mosquitto-log:
