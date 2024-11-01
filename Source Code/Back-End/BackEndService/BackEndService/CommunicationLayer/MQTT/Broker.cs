@@ -139,60 +139,66 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         }
 
         // Event handler for received messages
+        // Event handler for received messages
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
             {
                 // Convert the payload to a JSON string
                 var payloadJson = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-
-                // Deserialize JSON payload to a dictionary
                 var jsonData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(payloadJson);
 
-                // Create a new Protobuf message instance
+                // Identify the pacifier from the topic, e.g., "Pacifier/3"
+                string pacifierId = e.ApplicationMessage.Topic.Split('/')[1];
+
+                var pacifierData = new PacifierData { PacifierId = pacifierId };
+
+                // Populate IMU data if available
+                if (jsonData.ContainsKey("acc_x"))
+                {
+                    pacifierData.ImuData = new IMUData
+                    {
+                        AccX = jsonData["acc_x"].GetSingle(),
+                        AccY = jsonData["acc_y"].GetSingle(),
+                        AccZ = jsonData["acc_z"].GetSingle(),
+                        GyroX = jsonData["gyro_x"].GetSingle(),
+                        GyroY = jsonData["gyro_y"].GetSingle(),
+                        GyroZ = jsonData["gyro_z"].GetSingle(),
+                        MagX = jsonData["mag_x"].GetSingle(),
+                        MagY = jsonData["mag_y"].GetSingle(),
+                        MagZ = jsonData["mag_z"].GetSingle()
+                    };
+                }
+
+                // Populate PPG data if available
+                if (jsonData.ContainsKey("led1"))
+                {
+                    pacifierData.PpgData = new PPGData
+                    {
+                        Led1 = jsonData["led1"].GetInt32(),
+                        Led2 = jsonData["led2"].GetInt32(),
+                        Led3 = jsonData["led3"].GetInt32(),
+                        Temperature = jsonData["temperature"].GetSingle()
+                    };
+                }
+
+                // Add the pacifier data to the SensorData object
                 var sensorData = new SensorData();
+                sensorData.Pacifiers.Add(pacifierData);
 
-                // Set the topic
-                sensorData.Topic = e.ApplicationMessage.Topic;
+                // Log the data for this pacifier
+                Console.WriteLine($"Received data for {pacifierId}");
 
-                // Check and populate PPG data fields
-                if (jsonData.ContainsKey("led1") && jsonData.ContainsKey("led2") && jsonData.ContainsKey("led3"))
+                if (pacifierData.ImuData != null)
                 {
-                    sensorData.Led1 = jsonData["led1"].GetInt32();
-                    sensorData.Led2 = jsonData["led2"].GetInt32();
-                    sensorData.Led3 = jsonData["led3"].GetInt32();
-                    sensorData.Temperature = jsonData.ContainsKey("temperature") ? jsonData["temperature"].GetSingle() : 0.0f;
+                    Console.WriteLine($"IMU Data - AccX: {pacifierData.ImuData.AccX}, AccY: {pacifierData.ImuData.AccY}, AccZ: {pacifierData.ImuData.AccZ}");
+                    Console.WriteLine($"Gyro Data - GyroX: {pacifierData.ImuData.GyroX}, GyroY: {pacifierData.ImuData.GyroY}, GyroZ: {pacifierData.ImuData.GyroZ}");
+                    Console.WriteLine($"Mag Data - MagX: {pacifierData.ImuData.MagX}, MagY: {pacifierData.ImuData.MagY}, MagZ: {pacifierData.ImuData.MagZ}");
                 }
 
-                // Check and populate IMU data fields
-                if (jsonData.ContainsKey("acc_x") && jsonData.ContainsKey("gyro_x"))
+                if (pacifierData.PpgData != null)
                 {
-                    sensorData.AccX = jsonData["acc_x"].GetSingle();
-                    sensorData.AccY = jsonData.ContainsKey("acc_y") ? jsonData["acc_y"].GetSingle() : 0.0f;
-                    sensorData.AccZ = jsonData.ContainsKey("acc_z") ? jsonData["acc_z"].GetSingle() : 0.0f;
-                    sensorData.GyroX = jsonData["gyro_x"].GetSingle();
-                    sensorData.GyroY = jsonData.ContainsKey("gyro_y") ? jsonData["gyro_y"].GetSingle() : 0.0f;
-                    sensorData.GyroZ = jsonData.ContainsKey("gyro_z") ? jsonData["gyro_z"].GetSingle() : 0.0f;
-                    sensorData.MagX = jsonData.ContainsKey("mag_x") ? jsonData["mag_x"].GetSingle() : 0.0f;
-                    sensorData.MagY = jsonData.ContainsKey("mag_y") ? jsonData["mag_y"].GetSingle() : 0.0f;
-                    sensorData.MagZ = jsonData.ContainsKey("mag_z") ? jsonData["mag_z"].GetSingle() : 0.0f;
-                }
-
-                // Log or process specific fields
-                Console.WriteLine($"Received data for topic: {sensorData.Topic}");
-
-                // Display IMU data if present
-                if (sensorData.Topic.Contains("imu"))
-                {
-                    Console.WriteLine($"Accelerometer Data - X: {sensorData.AccX}, Y: {sensorData.AccY}, Z: {sensorData.AccZ}");
-                    Console.WriteLine($"Gyroscope Data - X: {sensorData.GyroX}, Y: {sensorData.GyroY}, Z: {sensorData.GyroZ}");
-                    Console.WriteLine($"Magnetometer Data - X: {sensorData.MagX}, Y: {sensorData.MagY}, Z: {sensorData.MagZ}");
-                }
-
-                // Display PPG data if present
-                if (sensorData.Topic.Contains("ppg"))
-                {
-                    Console.WriteLine($"LED Data - LED1: {sensorData.Led1}, LED2: {sensorData.Led2}, LED3: {sensorData.Led3}, Temperature: {sensorData.Temperature}");
+                    Console.WriteLine($"PPG Data - LED1: {pacifierData.PpgData.Led1}, LED2: {pacifierData.PpgData.Led2}, LED3: {pacifierData.PpgData.Led3}, Temperature: {pacifierData.PpgData.Temperature}");
                 }
 
                 await Task.CompletedTask;
@@ -202,6 +208,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 Console.WriteLine($"Failed to parse message: {ex.Message}");
             }
         }
+
 
 
 
