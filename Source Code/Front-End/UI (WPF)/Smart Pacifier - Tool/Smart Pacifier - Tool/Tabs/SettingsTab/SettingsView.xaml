@@ -57,7 +57,7 @@
 
                         <!-- Scrollable and Resizable WebView2 with Increased Dimensions -->
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Grid.Row="1">
-                            <wv2:WebView2 x:Name="InfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="1200" MinHeight="500" Visibility="Visible"/>
+                            <wv2:WebView2 x:Name="InfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Visibility="Visible"/>
                         </ScrollViewer>
 
                         <!-- Docker Controls and API Key Entry Section -->
@@ -73,7 +73,23 @@
                     </Grid>
                 </Border>
 
-
+                <!-- Theme Selection Section -->
+                <StackPanel x:Name="ThemeSelectionPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="DarkThemeButton" Style="{StaticResource ModernButtonStyle}" Width="180" Height="75" Margin="15,0,15,0" Click="DarkTheme_Click">
+                            <StackPanel>
+                                <TextBlock Text="Dark Theme" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock x:Name="DarkThemeStatus" Text="Current Theme" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Collapsed"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="LightThemeButton" Style="{StaticResource ModernButtonStyle}" Width="180" Height="75" Margin="15,0,15,0" Click="LightTheme_Click">
+                            <StackPanel>
+                                <TextBlock Text="Light Theme" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                <TextBlock x:Name="LightThemeStatus" Text="Current Theme" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Collapsed"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
 
                 <!-- Mode Selection Panel -->
                 <StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Visibility="Collapsed" Margin="0,20,0,0">

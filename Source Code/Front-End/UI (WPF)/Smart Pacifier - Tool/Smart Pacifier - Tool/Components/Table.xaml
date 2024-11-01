@@ -8,7 +8,7 @@
     <Grid Background="{StaticResource MainViewBackgroundColor}">
         <DataGrid x:Name="dataGrid" AutoGenerateColumns="True" ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=UserControl}}"
                   Background="{StaticResource MainViewBackgroundColor}" 
-                  RowBackground="#333333"
+                  RowBackground="{StaticResource MainViewSecondaryBackgroundColor}"
                   BorderThickness="0"
                   HeadersVisibility="Column">
             <DataGrid.Resources>
@@ -55,14 +55,14 @@
                 </Style>
                 <!-- Style for DataGrid Row Headers -->
                 <Style TargetType="DataGridRowHeader">
-                    <Setter Property="Background" Value="#333333" />
+                    <Setter Property="Background" Value="{StaticResource MainViewSecondaryBackgroundColor}" />
                     <Setter Property="Foreground" Value="{StaticResource MainViewBackgroundColor}" />
                     <Setter Property="BorderBrush" Value="{StaticResource MainViewBackgroundColor}" />
                     <Setter Property="BorderThickness" Value="1" />
                 </Style>
                 <!-- Style for DataGrid Rows -->
                 <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="#333333" />
+                    <Setter Property="Background" Value="{StaticResource MainViewSecondaryBackgroundColor}" />
                     <Setter Property="Foreground" Value="{StaticResource MainViewBackgroundColor}" />
                     <Setter Property="FontSize" Value="14" />
                     <Setter Property="BorderBrush" Value="{StaticResource MainViewBackgroundColor}" />
@@ -72,7 +72,7 @@
                 </Style>
                 <!-- Style for DataGrid Cells -->
                 <Style TargetType="DataGridCell">
-                    <Setter Property="Background" Value="#333333" />
+                    <Setter Property="Background" Value="{StaticResource MainViewSecondaryBackgroundColor}" />
                     <!-- Dark gray -->
                     <Setter Property="Foreground" Value="{StaticResource MainViewForegroundColor}" />
                     <Setter Property="FontSize" Value="14" />

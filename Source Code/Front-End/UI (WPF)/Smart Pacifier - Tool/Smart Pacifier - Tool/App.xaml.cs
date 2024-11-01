@@ -13,6 +13,7 @@ using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.CampaignsTab;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
+using System.Configuration;
 
 namespace Smart_Pacifier___Tool
 {
@@ -24,6 +25,8 @@ namespace Smart_Pacifier___Tool
         // Expose the service provider publicly so other components can access it
         public IServiceProvider ServiceProvider => _serviceProvider!;
 
+        private const string ThemeKey = "SelectedTheme";
+
         /// <summary>
         /// The entry point of the application.
         /// This method is executed when the application starts.
@@ -33,6 +36,14 @@ namespace Smart_Pacifier___Tool
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            // Retrieve the saved theme URI from settings
+            string themeUri = ConfigurationManager.AppSettings[ThemeKey];
+            if (string.IsNullOrEmpty(themeUri))
+            {
+                themeUri = "Resources/ColorsDark.xaml";
+            }
+            ApplyTheme(themeUri);
 
             // Create a new service collection that will hold our service registrations
             var services = new ServiceCollection();
@@ -46,7 +57,6 @@ namespace Smart_Pacifier___Tool
             // Run BrokerMain asynchronously to avoid blocking the main UI thread
             var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
             await Task.Run(() => brokerMain.StartAsync(Array.Empty<string>())); // Provide an empty array instead of null
-
         }
 
         /// <summary>
@@ -91,11 +101,53 @@ namespace Smart_Pacifier___Tool
             // Register UI components
             services.AddSingleton<MainWindow>();
             services.AddSingleton<DeveloperView>();
-            services.AddTransient<SettingsView>();
+            services.AddTransient<Func<string, SettingsView>>(sp => (defaultView) =>
+            {
+                var localHostService = sp.GetRequiredService<ILocalHost>();
+                return new SettingsView(localHostService, defaultView);
+            });
             services.AddTransient<CampaignsView>();
 
             // Register the BrokerMain class
             services.AddSingleton<IBrokerMain, BrokerMain>();
+        }
+
+        private void ApplyTheme(string themeUri)
+        {
+            // Save the selected theme URI to settings
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.Settings[ThemeKey].Value = themeUri;
+            config.Save(ConfigurationSaveMode.Modified);
+            ConfigurationManager.RefreshSection("appSettings");
+
+            Application.Current.Properties[ThemeKey] = themeUri;
+
+            // Clear existing resources
+            Application.Current.Resources.Clear();
+
+            // Add the new theme resource dictionary
+            Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri(themeUri, UriKind.Relative)
+            });
+
+            // Add other required resource dictionaries
+            Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri("Resources/ScrollBar.xaml", UriKind.Relative)
+            });
+            Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri("Resources/TextBoxStyle.xaml", UriKind.Relative)
+            });
+            Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri("Resources/DatePickerStyle.xaml", UriKind.Relative)
+            });
+            Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri("Resources/ButtonStyle.xaml", UriKind.Relative)
+            });
         }
     }
 }
