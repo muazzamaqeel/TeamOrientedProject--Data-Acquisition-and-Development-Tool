@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Text;
-using System.Text.Json;  // For JSON deserialization
+using System.Text.Json;
 using System.Threading.Tasks;
-using Google.Protobuf;  // For Protobuf support
 using MQTTnet;
 using MQTTnet.Client;
-using MQTTnet.Protocol;       // For MqttQualityOfServiceLevel
-using Protos;  // Namespace for SensorData
+using MQTTnet.Protocol;
+using Protos; // Namespace for SensorData
+using SmartPacifier.BackEnd.CommunicationLayer.Protobuf;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
@@ -139,7 +139,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         }
 
         // Event handler for received messages
-        // Event handler for received messages
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
@@ -182,9 +181,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                     };
                 }
 
-                // Add the pacifier data to the SensorData object
-                var sensorData = new SensorData();
-                sensorData.Pacifiers.Add(pacifierData);
+                // Update the ExposeSensorDataManager
+                ExposeSensorDataManager.Instance.UpdatePacifierData(pacifierData);
 
                 // Log the data for this pacifier
                 Console.WriteLine($"Received data for {pacifierId}");
@@ -208,10 +206,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 Console.WriteLine($"Failed to parse message: {ex.Message}");
             }
         }
-
-
-
-
 
         // Event handler for successful connection
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)
