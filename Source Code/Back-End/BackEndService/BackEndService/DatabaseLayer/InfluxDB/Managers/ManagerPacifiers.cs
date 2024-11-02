@@ -1,6 +1,7 @@
 ﻿using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
+using SmartPacifier.BackEnd.CommunicationLayer.Protobuf;
 using SmartPacifier.Interface.Services;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,19 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             _client = client; // Inject the client from DI
         }
 
+
+
+
+
+        public List<string> GetPacifierNamesFromSensorData()
+        {
+            return ExposeSensorDataManager.Instance.GetPacifierNames();
+
+        }
+
+
+
+
         // ManagerPacifiers-specific method to add a pacifier
         public async Task AddPacifierAsync(string pacifierName)
         {
@@ -34,14 +48,6 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
             await WritePacifierDataAsync("pacifiers", fields, tags, DateTime.UtcNow);
         }
-
-
-
-
-
-
-
-
 
         private async Task WritePacifierDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags, DateTime timestamp)
         {

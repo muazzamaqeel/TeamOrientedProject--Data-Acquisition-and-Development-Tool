@@ -3,9 +3,10 @@ using SmartPacifier.Interface.Services;
 using SmartPacifier.BackEnd.Database.InfluxDB.Connection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
-using Smart_Pacifier___Tool.Temp;
 using InfluxDB.Client;
 using System;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
@@ -13,6 +14,7 @@ using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.CampaignsTab;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
+using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using System.Configuration;
 
 namespace Smart_Pacifier___Tool
@@ -22,8 +24,18 @@ namespace Smart_Pacifier___Tool
         // The IServiceProvider instance that manages the lifetime of services and dependencies
         private IServiceProvider? _serviceProvider;
 
+        // Mutex instances to prevent multiple instances of the application and the broker
+        private static Mutex? appMutex;
+        private static Mutex? brokerMutex;
+
         // Expose the service provider publicly so other components can access it
         public IServiceProvider ServiceProvider => _serviceProvider!;
+
+        [DllImport("kernel32.dll")]
+        private static extern bool AllocConsole();
+
+        [DllImport("kernel32.dll")]
+        private static extern bool FreeConsole();
 
         private const string ThemeKey = "SelectedTheme";
 
@@ -36,6 +48,30 @@ namespace Smart_Pacifier___Tool
         protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            // Ensure only one instance of the main application
+            bool isAppNewInstance;
+            appMutex = new Mutex(true, "SmartPacifierMainAppMutex", out isAppNewInstance);
+            if (!isAppNewInstance)
+            {
+                MessageBox.Show("The application is already running.");
+                Shutdown();
+                return;
+            }
+
+            // Ensure only one instance of the MQTT client
+            bool isBrokerNewInstance;
+            brokerMutex = new Mutex(true, "SmartPacifierBrokerMutex", out isBrokerNewInstance);
+
+            if (!isBrokerNewInstance)
+            {
+                MessageBox.Show("The MQTT client is already running.");
+                Shutdown();
+                return;
+            }
+
+            // Allocate a console window for logging
+            AllocConsole();
 
             // Retrieve the saved theme URI from settings
             string themeUri = ConfigurationManager.AppSettings[ThemeKey];
@@ -56,7 +92,10 @@ namespace Smart_Pacifier___Tool
 
             // Run BrokerMain asynchronously to avoid blocking the main UI thread
             var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
-            await Task.Run(() => brokerMain.StartAsync(Array.Empty<string>())); // Provide an empty array instead of null
+            await brokerMain.StartAsync(Array.Empty<string>()); // Await the task directly
+
+            // Start the main window to keep the application running
+
         }
 
         /// <summary>
@@ -68,6 +107,9 @@ namespace Smart_Pacifier___Tool
         {
             // Register ILocalHost with its implementation
             services.AddSingleton<ILocalHost, LocalHostSetup>();
+            services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
+            services.AddTransient<PacifierSelectionView>(); // Register PacifierSelectionView for DI
+
 
             // Register InfluxDBClient with the URL and token from ILocalHost
             services.AddSingleton<InfluxDBClient>(sp =>
@@ -148,6 +190,17 @@ namespace Smart_Pacifier___Tool
             {
                 Source = new Uri("Resources/ButtonStyle.xaml", UriKind.Relative)
             });
+        }
+
+        /// <summary>
+        /// Cleanup when the application exits
+        /// </summary>
+        protected override void OnExit(ExitEventArgs e)
+        {
+            base.OnExit(e);
+
+            // Free the console when the application exits
+            FreeConsole();
         }
     }
 }

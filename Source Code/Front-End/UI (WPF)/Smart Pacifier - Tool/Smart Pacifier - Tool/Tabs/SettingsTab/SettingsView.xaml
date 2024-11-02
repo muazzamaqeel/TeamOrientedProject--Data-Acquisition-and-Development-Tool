@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Smart_Pacifier___Tool.Tabs.SettingsTab.SettingsView"
+<UserControl x:Class="Smart_Pacifier___Tool.Tabs.SettingsTab.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -17,6 +17,7 @@
         <!-- Content Section -->
         <Grid Margin="10,90,10,10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
@@ -37,8 +38,34 @@
                 </Button>
             </StackPanel>
 
+            <!-- Mode Selection Panel -->
+            <StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Grid.Row="1" Margin="0,150,0,0">
+                <!-- User Mode Button -->
+                <Button x:Name="UserModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="UserMode_Click">
+                    <StackPanel>
+                        <TextBlock x:Name="UserModeText" Text="User Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
+                        <TextBlock x:Name="UserModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Visible"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Developer Mode Button -->
+                <Button x:Name="DeveloperModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="DeveloperMode_Click">
+                    <StackPanel>
+                        <TextBlock x:Name="DeveloperModeText" Text="Developer Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
+                        <TextBlock x:Name="DeveloperModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- PIN Entry Section, positioned lower below Mode Buttons -->
+            <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Row="1" Margin="0,300,0,0" Visibility="Collapsed">
+                <TextBlock Text="Enter PIN:" HorizontalAlignment="Center" FontSize="16" Margin="0,10" Foreground="White"/>
+                <PasswordBox x:Name="PinInput" Width="200" HorizontalAlignment="Center" Margin="10"/>
+                <Button Content="Continue" Style="{StaticResource SmallModernButtonStyle}" Click="PinSubmit_Click" HorizontalAlignment="Center" Margin="10"/>
+            </StackPanel>
+
             <!-- Main Content Panels -->
-            <Grid Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
+            <Grid Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>

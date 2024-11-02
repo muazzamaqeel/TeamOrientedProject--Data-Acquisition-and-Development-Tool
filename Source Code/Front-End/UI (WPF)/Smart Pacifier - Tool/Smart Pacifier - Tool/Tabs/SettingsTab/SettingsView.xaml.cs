@@ -82,6 +82,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void LocalHost_Click(object sender, RoutedEventArgs e)
         {
+            PinEntryPanel.Visibility = Visibility.Collapsed;
             ModeButtonsPanel.Visibility = Visibility.Collapsed;
             ThemeSelectionPanel.Visibility = Visibility.Collapsed;
             LocalHostPanel.Visibility = Visibility.Visible;

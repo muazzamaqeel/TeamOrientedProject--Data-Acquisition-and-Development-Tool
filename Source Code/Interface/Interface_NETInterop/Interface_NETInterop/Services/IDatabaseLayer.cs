@@ -45,6 +45,8 @@ namespace SmartPacifier.Interface.Services
 
     public interface IManagerPacifiers
     {
+
+        List<string> GetPacifierNamesFromSensorData();
         Task<List<string>> GetPacifiersAsync(string campaignName);
         Task AddPacifierAsync(string campaignName);
 
@@ -57,9 +59,23 @@ namespace SmartPacifier.Interface.Services
         Task AddSensorDataAsync(string pacifierId, float ppgValue, float imuAccelX, float imuAccelY, float imuAccelZ);
     }
 
+
+
+
+    public interface ICSVDataHandler
+    {
+
+        void CreateCSV(string campaignName, List<string> pacifierNames);
+        void StartCampaign(string campaignName, List<string> pacifierNames);
+        void EndCampaign(string campaignName);
+
+    }
+
     public interface IInfluxDBParser
     {
 
 
     }
+
+
 }
