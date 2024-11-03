@@ -154,7 +154,11 @@ namespace Smart_Pacifier___Tool
             services.AddSingleton<IBrokerMain, BrokerMain>();
         }
 
-        private void ApplyTheme(string themeUri)
+        /// <summary>
+        /// Applies the passed theme, clears all current resource dictionaries and adds them back
+        /// </summary>
+        /// <param name="themeUri">The URI of the theme that should be applied, either dark or light</param>
+        public void ApplyTheme(string themeUri)
         {
             // Save the selected theme URI to settings
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);

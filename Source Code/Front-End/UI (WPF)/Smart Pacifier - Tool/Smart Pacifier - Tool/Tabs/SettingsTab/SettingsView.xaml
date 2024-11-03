@@ -24,16 +24,16 @@
 
             <!-- Top Buttons Section -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,20" Grid.Row="0">
-                <Button x:Name="SwitchModeButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="SwitchMode_Click">
+                <Button x:Name="SwitchModeButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="ModeButtonsPanel">
                     <TextBlock Text="Switch Mode" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button x:Name="ThemeButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="Theme_Click">
+                <Button x:Name="ThemeButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="ThemeSelectionPanel">
                     <TextBlock Text="Theme" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button x:Name="LocalHostButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="LocalHost_Click">
+                <Button x:Name="LocalHostButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="LocalHostPanel">
                     <TextBlock Text="Local Host" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button x:Name="ServerButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="Theme_Click">
+                <Button x:Name="ServerButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="None">
                     <TextBlock Text="Server" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
             </StackPanel>
@@ -116,32 +116,6 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
-                </StackPanel>
-
-                <!-- Mode Selection Panel -->
-                <StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Visibility="Collapsed" Margin="0,20,0,0">
-                    <!-- User Mode Button -->
-                    <Button x:Name="UserModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="UserMode_Click">
-                        <StackPanel>
-                            <TextBlock x:Name="UserModeText" Text="User Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
-                            <TextBlock x:Name="UserModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Visible"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Developer Mode Button -->
-                    <Button x:Name="DeveloperModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="DeveloperMode_Click">
-                        <StackPanel>
-                            <TextBlock x:Name="DeveloperModeText" Text="Developer Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
-                            <TextBlock x:Name="DeveloperModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Collapsed"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-
-                <!-- PIN Entry Section -->
-                <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" Visibility="Collapsed" Margin="0,10,0,0">
-                    <TextBlock Text="Enter PIN:" HorizontalAlignment="Center" FontSize="16" Margin="0,10" Foreground="White"/>
-                    <PasswordBox x:Name="PinInput" Width="200" HorizontalAlignment="Center" Margin="10"/>
-                    <Button Content="Continue" Style="{StaticResource SmallModernButtonStyle}" Click="PinSubmit_Click" HorizontalAlignment="Center" Margin="10"/>
                 </StackPanel>
             </Grid>
         </Grid>
