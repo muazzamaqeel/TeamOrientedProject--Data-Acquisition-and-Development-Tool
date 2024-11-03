@@ -6,6 +6,7 @@
     <SolidColorBrush x:Key="MainViewSecondaryBackgroundColor" Color="#383838"/>
     <SolidColorBrush x:Key="MainViewForegroundColor" Color="#ffffff"/>
     <SolidColorBrush x:Key="AccentColor" Color="#FF0059FF"/>
+    <SolidColorBrush x:Key="ButtonBackgroundColor" Color="#333333"/>
     <SolidColorBrush x:Key="ButtonHoverColor" Color="#555555"/>
     <SolidColorBrush x:Key="ButtonPressedColor" Color="#777777"/>
     <SolidColorBrush x:Key="TextColor" Color="White"/>
