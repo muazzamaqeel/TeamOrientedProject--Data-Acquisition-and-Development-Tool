@@ -19,13 +19,13 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         private readonly string _originalCampaignName;
 
         // Constructor that initializes the EditDataWindow with existing data
-        public EditDataWindow(SensorData data, IManagerCampaign managerCampaign, IManagerPacifiers managerPacifiers)
+        public EditDataWindow(IManagerCampaign managerCampaign, IManagerPacifiers managerPacifiers)
         {
             InitializeComponent();
 
             _managerCampaign = managerCampaign;
             _managerPacifiers = managerPacifiers;
-
+            /*
             // Store original campaign name to check if it was changed
             _originalCampaignName = data.Campaign;
 
@@ -35,7 +35,9 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             CampaignTextBox.Text = data.Campaign;
             SensorTextBox.Text = data.Sensor;
             ValueTextBox.Text = data.Value.ToString();
-        }
+        
+            */
+            }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {

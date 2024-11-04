@@ -113,70 +113,76 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- Modernized Table (ListView) with checkboxes, increased text size, and outline -->
-        <ListView Grid.Row="1" x:Name="DataListView" Margin="0,10,0,10" SelectionMode="Multiple"
-                  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
-            <ListView.View>
-                <GridView>
-                    <!-- Added a checkbox in the header for selecting/deselecting all -->
-                    <GridViewColumn>
-                        <GridViewColumn.Header>
-                            <!-- Header CheckBox for select/deselect all -->
-                            <CheckBox Name="SelectAllCheckBox" Checked="SelectAllCheckBox_Checked" Unchecked="SelectAllCheckBox_Unchecked"/>
-                        </GridViewColumn.Header>
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
+        <!-- Enable horizontal scrolling by wrapping ListView in a ScrollViewer -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <ListView x:Name="DataListView" Margin="0,10,0,10" SelectionMode="Multiple"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
+                <ListView.View>
+                    <GridView>
+                        <!-- Header Checkbox for select/deselect all -->
+                        <GridViewColumn>
+                            <GridViewColumn.Header>
+                                <CheckBox Name="SelectAllCheckBox" Checked="SelectAllCheckBox_Checked" Unchecked="SelectAllCheckBox_Unchecked"/>
+                            </GridViewColumn.Header>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
 
-                    <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Timestamp}" 
-                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
-                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.18}" />
-                    <GridViewColumn Header="Campaign" DisplayMemberBinding="{Binding Campaign}" 
-                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
-                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.18}" />
-                    <GridViewColumn Header="Pacifier" DisplayMemberBinding="{Binding Pacifier}" 
-                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
-                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.18}" />
-                    <GridViewColumn Header="Sensor" DisplayMemberBinding="{Binding Sensor}" 
-                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
-                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.18}" />
-                    <GridViewColumn Header="Value" DisplayMemberBinding="{Binding Value}" 
-                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
-                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.18}" />
-                </GridView>
-            </ListView.View>
-            <!-- Adjust font size and add border to the entries -->
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
-                    <Setter Property="FontFamily" Value="Segoe UI"/>
-                    <Setter Property="FontSize" Value="18"/>
-                    <!-- Increased Font Size -->
-                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                    <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    <Setter Property="Padding" Value="10"/>
-                    <Setter Property="Margin" Value="5"/>
-                    <Setter Property="Background" Value="White"/>
-                    <Setter Property="Foreground" Value="Black"/>
-                    <Setter Property="BorderBrush" Value="Gray"/>
-                    <!-- Added border -->
-                    <Setter Property="BorderThickness" Value="2"/>
-                    <!-- Increased border thickness -->
-                    <Setter Property="SnapsToDevicePixels" Value="True"/>
-                    <Setter Property="UseLayoutRounding" Value="True"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#F0F0F0"/>
-                        </Trigger>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="#D0D0D0"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </ListView.ItemContainerStyle>
-        </ListView>
+                        <!-- Columns based on provided data -->
+                        <GridViewColumn Header="Measurement" DisplayMemberBinding="{Binding Path=[Measurement]}" Width="150" />
+                        <GridViewColumn Header="Campaign Name" DisplayMemberBinding="{Binding Path=[Campaign Name]}" Width="150" />
+                        <GridViewColumn Header="Pacifier Name" DisplayMemberBinding="{Binding Path=[Pacifier Name]}" Width="150" />
+                        <GridViewColumn Header="Sensor Type" DisplayMemberBinding="{Binding Path=[Sensor Type]}" Width="150" />
+                        <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Path=[Status]}" Width="100" />
+                        <GridViewColumn Header="LED1" DisplayMemberBinding="{Binding Path=[LED1]}" Width="70" />
+                        <GridViewColumn Header="LED2" DisplayMemberBinding="{Binding Path=[LED2]}" Width="70" />
+                        <GridViewColumn Header="LED3" DisplayMemberBinding="{Binding Path=[LED3]}" Width="70" />
+                        <GridViewColumn Header="Temperature" DisplayMemberBinding="{Binding Path=[Temperature]}" Width="100" />
+                        <GridViewColumn Header="Acc X" DisplayMemberBinding="{Binding Path=[Acc X]}" Width="70" />
+                        <GridViewColumn Header="Acc Y" DisplayMemberBinding="{Binding Path=[Acc Y]}" Width="70" />
+                        <GridViewColumn Header="Acc Z" DisplayMemberBinding="{Binding Path=[Acc Z]}" Width="70" />
+                        <GridViewColumn Header="Gyro X" DisplayMemberBinding="{Binding Path=[Gyro X]}" Width="70" />
+                        <GridViewColumn Header="Gyro Y" DisplayMemberBinding="{Binding Path=[Gyro Y]}" Width="70" />
+                        <GridViewColumn Header="Gyro Z" DisplayMemberBinding="{Binding Path=[Gyro Z]}" Width="70" />
+                        <GridViewColumn Header="Mag X" DisplayMemberBinding="{Binding Path=[Mag X]}" Width="70" />
+                        <GridViewColumn Header="Mag Y" DisplayMemberBinding="{Binding Path=[Mag Y]}" Width="70" />
+                        <GridViewColumn Header="Mag Z" DisplayMemberBinding="{Binding Path=[Mag Z]}" Width="70" />
+                        <GridViewColumn Header="Creation" DisplayMemberBinding="{Binding Path=[Creation]}" Width="150" />
+                        <GridViewColumn Header="Start Time" DisplayMemberBinding="{Binding Path=[Start Time]}" Width="150" />
+                        <GridViewColumn Header="End Time" DisplayMemberBinding="{Binding Path=[End Time]}" Width="150" />
+                        <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Path=[Timestamp]}" Width="150" />
+                    </GridView>
+                </ListView.View>
+                <!-- Styling and ItemContainerStyle -->
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="FontFamily" Value="Segoe UI"/>
+                        <Setter Property="FontSize" Value="18"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        <Setter Property="Padding" Value="10"/>
+                        <Setter Property="Margin" Value="5"/>
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                        <Setter Property="BorderBrush" Value="Gray"/>
+                        <Setter Property="BorderThickness" Value="2"/>
+                        <Setter Property="SnapsToDevicePixels" Value="True"/>
+                        <Setter Property="UseLayoutRounding" Value="True"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F0F0F0"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#D0D0D0"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+        </ScrollViewer>
 
         <!-- Pagination Controls -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
