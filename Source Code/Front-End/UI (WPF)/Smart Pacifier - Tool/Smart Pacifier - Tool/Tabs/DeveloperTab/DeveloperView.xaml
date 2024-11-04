@@ -131,32 +131,32 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
-                        <!-- Columns based on provided data -->
-                        <GridViewColumn Header="Measurement" DisplayMemberBinding="{Binding Path=[Measurement]}" Width="150" />
-                        <GridViewColumn Header="Campaign Name" DisplayMemberBinding="{Binding Path=[Campaign Name]}" Width="150" />
-                        <GridViewColumn Header="Pacifier Name" DisplayMemberBinding="{Binding Path=[Pacifier Name]}" Width="150" />
-                        <GridViewColumn Header="Sensor Type" DisplayMemberBinding="{Binding Path=[Sensor Type]}" Width="150" />
-                        <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Path=[Status]}" Width="100" />
-                        <GridViewColumn Header="LED1" DisplayMemberBinding="{Binding Path=[LED1]}" Width="70" />
-                        <GridViewColumn Header="LED2" DisplayMemberBinding="{Binding Path=[LED2]}" Width="70" />
-                        <GridViewColumn Header="LED3" DisplayMemberBinding="{Binding Path=[LED3]}" Width="70" />
-                        <GridViewColumn Header="Temperature" DisplayMemberBinding="{Binding Path=[Temperature]}" Width="100" />
-                        <GridViewColumn Header="Acc X" DisplayMemberBinding="{Binding Path=[Acc X]}" Width="70" />
-                        <GridViewColumn Header="Acc Y" DisplayMemberBinding="{Binding Path=[Acc Y]}" Width="70" />
-                        <GridViewColumn Header="Acc Z" DisplayMemberBinding="{Binding Path=[Acc Z]}" Width="70" />
-                        <GridViewColumn Header="Gyro X" DisplayMemberBinding="{Binding Path=[Gyro X]}" Width="70" />
-                        <GridViewColumn Header="Gyro Y" DisplayMemberBinding="{Binding Path=[Gyro Y]}" Width="70" />
-                        <GridViewColumn Header="Gyro Z" DisplayMemberBinding="{Binding Path=[Gyro Z]}" Width="70" />
-                        <GridViewColumn Header="Mag X" DisplayMemberBinding="{Binding Path=[Mag X]}" Width="70" />
-                        <GridViewColumn Header="Mag Y" DisplayMemberBinding="{Binding Path=[Mag Y]}" Width="70" />
-                        <GridViewColumn Header="Mag Z" DisplayMemberBinding="{Binding Path=[Mag Z]}" Width="70" />
-                        <GridViewColumn Header="Creation" DisplayMemberBinding="{Binding Path=[Creation]}" Width="150" />
-                        <GridViewColumn Header="Start Time" DisplayMemberBinding="{Binding Path=[Start Time]}" Width="150" />
-                        <GridViewColumn Header="End Time" DisplayMemberBinding="{Binding Path=[End Time]}" Width="150" />
-                        <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Path=[Timestamp]}" Width="150" />
+                        <!-- Columns without extra spaces -->
+                        <GridViewColumn Header="Measurement" DisplayMemberBinding="{Binding Path=[Measurement]}" Width="Auto" />
+                        <GridViewColumn Header="Campaign Name" DisplayMemberBinding="{Binding Path=[Campaign Name]}" Width="Auto" />
+                        <GridViewColumn Header="Pacifier Name" DisplayMemberBinding="{Binding Path=[Pacifier Name]}" Width="Auto" />
+                        <GridViewColumn Header="Sensor Type" DisplayMemberBinding="{Binding Path=[Sensor Type]}" Width="Auto" />
+                        <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Path=[Status]}" Width="Auto" />
+                        <GridViewColumn Header="LED1" DisplayMemberBinding="{Binding Path=[LED1]}" Width="Auto" />
+                        <GridViewColumn Header="LED2" DisplayMemberBinding="{Binding Path=[LED2]}" Width="Auto" />
+                        <GridViewColumn Header="LED3" DisplayMemberBinding="{Binding Path=[LED3]}" Width="Auto" />
+                        <GridViewColumn Header="Temperature" DisplayMemberBinding="{Binding Path=[Temperature]}" Width="Auto" />
+                        <GridViewColumn Header="Acc X" DisplayMemberBinding="{Binding Path=[Acc X]}" Width="Auto" />
+                        <GridViewColumn Header="Acc Y" DisplayMemberBinding="{Binding Path=[Acc Y]}" Width="Auto" />
+                        <GridViewColumn Header="Acc Z" DisplayMemberBinding="{Binding Path=[Acc Z]}" Width="Auto" />
+                        <GridViewColumn Header="Gyro X" DisplayMemberBinding="{Binding Path=[Gyro X]}" Width="Auto" />
+                        <GridViewColumn Header="Gyro Y" DisplayMemberBinding="{Binding Path=[Gyro Y]}" Width="Auto" />
+                        <GridViewColumn Header="Gyro Z" DisplayMemberBinding="{Binding Path=[Gyro Z]}" Width="Auto" />
+                        <GridViewColumn Header="Mag X" DisplayMemberBinding="{Binding Path=[Mag X]}" Width="Auto" />
+                        <GridViewColumn Header="Mag Y" DisplayMemberBinding="{Binding Path=[Mag Y]}" Width="Auto" />
+                        <GridViewColumn Header="Mag Z" DisplayMemberBinding="{Binding Path=[Mag Z]}" Width="Auto" />
+                        <GridViewColumn Header="Creation" DisplayMemberBinding="{Binding Path=[Creation]}" Width="Auto" />
+                        <GridViewColumn Header="Start Time" DisplayMemberBinding="{Binding Path=[Start Time]}" Width="Auto" />
+                        <GridViewColumn Header="End Time" DisplayMemberBinding="{Binding Path=[End Time]}" Width="Auto" />
+                        <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Path=[Timestamp]}" Width="Auto" />
                     </GridView>
                 </ListView.View>
-                <!-- Styling and ItemContainerStyle -->
+                <!-- Styling and ItemContainerStyle as before -->
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="FontFamily" Value="Segoe UI"/>
