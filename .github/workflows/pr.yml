@@ -26,9 +26,12 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
       working-directory: 'Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool'
-    - name: Run
-      run: dotnet run --no-build
-      working-directory: 'Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool'
+    - name: Run Application
+      run: |
+        $process = Start-Process -FilePath "Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool/bin/Debug/net8.0-windows/SmartPacifier.UI (WPF).exe" -NoNewWindow -PassThru
+        Start-Sleep -Seconds 10
+        $process.CloseMainWindow()
+      shell: pwsh
     - name: Test
       run: dotnet test --no-build --verbosity normal
       working-directory: 'Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool'
