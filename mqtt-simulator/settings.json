@@ -1,0 +1,79 @@
+{
+    "BROKER_URL": "localhost",
+    "BROKER_PORT": 1883,
+    "TOPICS": [
+        {
+            "TYPE": "list",
+            "PREFIX": "Pacifier",
+            "LIST": [
+                "1/ppg", "1/imu",
+                "2/ppg", "2/imu",
+                "3/ppg", "3/imu",
+                "4/ppg", "4/imu",
+                "5/ppg", "5/imu",
+                "6/ppg", "6/imu",
+                "7/ppg", "7/imu",
+                "8/ppg", "8/imu"
+            ],
+            "TIME_INTERVAL": 1,
+            "DATA": [
+                {
+                    "NAME": "heart_rate",
+                    "TYPE": "int",
+                    "MIN_VALUE": 70,
+                    "MAX_VALUE": 80,
+                    "MAX_STEP": 1
+                },
+                {
+                    "NAME": "oxygen",
+                    "TYPE": "int",
+                    "MIN_VALUE": 96,
+                    "MAX_VALUE": 99,
+                    "MAX_STEP": 1
+                },
+                {
+                    "NAME": "acc_x",
+                    "TYPE": "float",
+                    "MIN_VALUE": -0.03,
+                    "MAX_VALUE": 0.03,
+                    "MAX_STEP": 0.01
+                },
+                {
+                    "NAME": "acc_y",
+                    "TYPE": "float",
+                    "MIN_VALUE": -0.03,
+                    "MAX_VALUE": 0.03,
+                    "MAX_STEP": 0.01
+                },
+                {
+                    "NAME": "acc_z",
+                    "TYPE": "float",
+                    "MIN_VALUE": -0.03,
+                    "MAX_VALUE": 0.03,
+                    "MAX_STEP": 0.01
+                },
+                {
+                    "NAME": "gyro_x",
+                    "TYPE": "float",
+                    "MIN_VALUE": -0.2,
+                    "MAX_VALUE": 0.2,
+                    "MAX_STEP": 0.05
+                },
+                {
+                    "NAME": "gyro_y",
+                    "TYPE": "float",
+                    "MIN_VALUE": -0.2,
+                    "MAX_VALUE": 0.2,
+                    "MAX_STEP": 0.05
+                },
+                {
+                    "NAME": "gyro_z",
+                    "TYPE": "float",
+                    "MIN_VALUE": -0.2,
+                    "MAX_VALUE": 0.2,
+                    "MAX_STEP": 0.05
+                }
+            ]
+        }
+    ]
+}
