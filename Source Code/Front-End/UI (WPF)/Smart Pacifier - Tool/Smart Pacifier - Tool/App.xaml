@@ -7,7 +7,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <!-- Colors -->
-                <ResourceDictionary Source="Resources/ColorsDark.xaml"/>
+                <ResourceDictionary Source="Resources/Colors.xaml"/>
                 <!-- Reference to the styles resource dictionary -->
                 <ResourceDictionary Source="Resources/ButtonStyle.xaml" />
                 <ResourceDictionary Source="Resources/ScrollBar.xaml"/>
