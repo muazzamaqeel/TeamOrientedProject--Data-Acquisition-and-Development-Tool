@@ -9,16 +9,12 @@
 
   <ItemGroup>
     <Compile Remove="CommunicationLayer\NewFolder\**" />
-    <Compile Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
     <Compile Remove="NewFolder\**" />
     <EmbeddedResource Remove="CommunicationLayer\NewFolder\**" />
-    <EmbeddedResource Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
     <EmbeddedResource Remove="NewFolder\**" />
     <None Remove="CommunicationLayer\NewFolder\**" />
-    <None Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
     <None Remove="NewFolder\**" />
     <Page Remove="CommunicationLayer\NewFolder\**" />
-    <Page Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
     <Page Remove="NewFolder\**" />
   </ItemGroup>
 
