@@ -26,6 +26,9 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
       working-directory: 'Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool'
+    - name: Run
+      run: dotnet run --no-build
+      working-directory: 'Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool'
     - name: Test
       run: dotnet test --no-build --verbosity normal
       working-directory: 'Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool'
