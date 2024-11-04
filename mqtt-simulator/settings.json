@@ -1,5 +1,5 @@
 {
-    "BROKER_URL": "host.docker.internal",
+    "BROKER_URL": "localhost",
     "BROKER_PORT": 1883,
     "TOPICS": [
         {

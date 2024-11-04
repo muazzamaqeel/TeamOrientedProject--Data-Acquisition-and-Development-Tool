@@ -7,7 +7,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
 
-    <Grid>
+    <Grid Background="{StaticResource MainViewSecondaryBackgroundColor}">
         <Grid.RowDefinitions>
             <RowDefinition Height="50" />
             <RowDefinition Height="Auto" />
