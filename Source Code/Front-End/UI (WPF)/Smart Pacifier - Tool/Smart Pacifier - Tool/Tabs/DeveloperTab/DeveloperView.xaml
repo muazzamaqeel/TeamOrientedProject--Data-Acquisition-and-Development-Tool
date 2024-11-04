@@ -26,6 +26,23 @@
             </StackPanel>
 
             <StackPanel Margin="5" HorizontalAlignment="Center">
+                <TextBlock Text="Data Source" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
+                <ComboBox x:Name="DataSource" Width="150" SelectionChanged="ComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Local-InfluxDB"/>
+                    <ComboBoxItem Content="Server-InfluxDB"/>
+                    <ComboBox.Style>
+                        <Style TargetType="ComboBox">
+                            <Style.Triggers>
+                                <Trigger Property="SelectedItem" Value="{x:Null}">
+                                    <Setter Property="Text" Value="Select Data Source"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
+                </ComboBox>
+            </StackPanel>
+
+            <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Time Range" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
                 <ComboBox x:Name="TimeRange" Width="150" SelectionChanged="ComboBox_SelectionChanged">
                     <ComboBox.Style>
