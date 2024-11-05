@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Google.Protobuf;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Protocol;
+using Protos;
+using SmartPacifier.BackEnd.CommunicationLayer.Protobuf;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
@@ -134,6 +138,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         }
 
         // Event handler for received messages
+        // Raw Data
+        /*
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
@@ -155,6 +161,51 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 Console.WriteLine($"Failed to process message: {ex.Message}");
             }
         }
+        */
+
+        // Event handler for received messages
+        private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
+        {
+            try
+            {
+                var rawPayload = e.ApplicationMessage.Payload;
+                string topic = e.ApplicationMessage.Topic;
+                Console.WriteLine($"Received raw data on topic '{topic}'");
+
+                // Extract pacifier ID and sensor type from the topic
+                string[] topicParts = topic.Split('/');
+                if (topicParts.Length >= 3 && topicParts[0] == "Pacifier")
+                {
+                    string pacifierId = topicParts[1];
+                    string sensorType = topicParts[2];
+
+                    var message = ExposeSensorDataManager.Instance.ParseDynamicSensorMessage(pacifierId, sensorType, rawPayload);
+
+                    if (message != null)
+                    {
+                        Console.WriteLine($"Parsed {sensorType} data for Pacifier {pacifierId}:");
+                        ExposeSensorDataManager.Instance.DisplayProtobufFields(message);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Unknown sensor type '{sensorType}' for Pacifier {pacifierId}, displaying raw bytes.");
+                        Console.WriteLine($"Raw data: {BitConverter.ToString(rawPayload)}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid topic format: {topic}");
+                }
+
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to process message: {ex.Message}");
+            }
+        }
+
+
 
         // Event handler for successful connection
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)

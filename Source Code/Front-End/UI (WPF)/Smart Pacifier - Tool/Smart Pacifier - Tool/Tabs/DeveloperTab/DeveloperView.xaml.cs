@@ -36,11 +36,20 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         {
             try
             {
+                // Load campaigns
                 var campaigns = await _databaseService.GetCampaignsAsync();
                 Campaign.ItemsSource = campaigns;
 
+                // Load pacifiers for the first selected campaign if any
+                if (campaigns.Any())
+                {
+                    var pacifiers = await _managerPacifiers.GetPacifiersAsync(campaigns.First());
+                    Pacifier.ItemsSource = pacifiers;
+                }
+
+                // Load all sensor data from the database
                 allData.Clear();
-                allData = await _databaseService.GetSensorDataAsync(); // Get all sensor data directly from the database
+                allData = await _databaseService.GetSensorDataAsync(); // Ensure that this returns data correctly
 
                 DisplayData();
             }
@@ -50,8 +59,15 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
+
         private void DisplayData()
         {
+            if (allData.Rows.Count == 0)
+            {
+                MessageBox.Show("No data to display.");
+                return;
+            }
+
             DataTable paginatedData = allData.Clone();
             int startIndex = (currentPage - 1) * pageSize;
             int endIndex = Math.Min(startIndex + pageSize, allData.Rows.Count);
@@ -64,6 +80,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             DataListView.ItemsSource = paginatedData.DefaultView;
             MessageBox.Show($"Displaying {paginatedData.Rows.Count} rows.", "DisplayData");
         }
+
 
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
@@ -108,9 +125,15 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 {
                     var pacifiers = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
                     Pacifier.ItemsSource = pacifiers;
+
+                    // Filter and display data for the selected campaign
+                    var filteredData = allData.AsEnumerable().Where(row =>
+                        row["campaign_name"].ToString() == selectedCampaign);
+                    DataListView.ItemsSource = filteredData.CopyToDataTable().DefaultView;
                 }
             }
         }
+
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {

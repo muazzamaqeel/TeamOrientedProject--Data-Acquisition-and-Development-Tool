@@ -2,6 +2,11 @@
 
 package Protos;
 
+message SensorData {
+    string pacifier_id = 1;
+    map<string, bytes> sensor_data_map = 2; // Key: sensor type (e.g., "ppg", "imu"); Value: serialized sensor data
+}
+
 message IMUData {
     float acc_x = 1;
     float acc_y = 2;
@@ -19,10 +24,4 @@ message PPGData {
     int32 led2 = 2;
     int32 led3 = 3;
     float temperature = 4;
-}
-
-message SensorData { 
-    string pacifier_id = 1;  // ID for the pacifier
-    IMUData imu_data = 2;    // IMU sensor data (optional)
-    PPGData ppg_data = 3;    // PPG sensor data (optional)
 }
