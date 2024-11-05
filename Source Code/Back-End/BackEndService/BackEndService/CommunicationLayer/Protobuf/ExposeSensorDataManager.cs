@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Protos; // Make sure this namespace includes your generated SensorData classes
+using Protos; // Ensure this namespace includes your generated SensorData classes
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 {
@@ -10,79 +10,88 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
     /// </summary>
     public class ExposeSensorDataManager
     {
+        private static readonly object _instanceLock = new object(); // Singleton lock
         private static ExposeSensorDataManager? _instance;
-        private readonly SensorData _sensorData;
-        private readonly object _lock = new object();
+
+        private readonly List<SensorData> _sensorDataList = new List<SensorData>();
+        private readonly object _dataLock = new object(); // Data lock
 
         // Event to notify subscribers when SensorData is updated
         public event EventHandler? SensorDataUpdated;
 
         // Private constructor to ensure singleton pattern
-        private ExposeSensorDataManager()
-        {
-            _sensorData = new SensorData();
-        }
+        private ExposeSensorDataManager() { }
 
         // Singleton instance for global access
         public static ExposeSensorDataManager Instance
         {
             get
             {
-                if (_instance == null)
+                lock (_instanceLock)
                 {
-                    _instance = new ExposeSensorDataManager();
+                    return _instance ??= new ExposeSensorDataManager();
                 }
-                return _instance;
             }
         }
 
         /// <summary>
-        /// Retrieves a list of pacifier names from the current SensorData.
+        /// Retrieves a list of all pacifier IDs currently stored.
         /// </summary>
-        /// <returns>A list of pacifier names (IDs).</returns>
-        public List<string> GetPacifierNames()
+        public List<string> GetPacifierIds()
         {
-            lock (_lock)
+            lock (_dataLock)
             {
-                return _sensorData.Pacifiers.Select(p => p.PacifierId).ToList();
+                return _sensorDataList.Select(data => data.PacifierId).Distinct().ToList();
             }
         }
 
         /// <summary>
-        /// Gets the current SensorData object, if needed for further processing.
+        /// Gets a copy of all SensorData objects for further processing.
         /// </summary>
-        /// <returns>The current SensorData object managed by this class.</returns>
-        public SensorData GetSensorData()
+        public List<SensorData> GetAllSensorData()
         {
-            lock (_lock)
+            lock (_dataLock)
             {
-                return _sensorData;
+                // Return a deep copy of the list to avoid external modifications
+                return _sensorDataList.Select(data => data.Clone()).ToList();
             }
         }
 
         /// <summary>
-        /// Updates or adds pacifier data and notifies subscribers.
+        /// Updates or adds sensor data based on the pacifier ID.
         /// </summary>
-        /// <param name="pacifierData">The new or updated pacifier data.</param>
-        public void UpdatePacifierData(PacifierData pacifierData)
+        /// <param name="sensorData">The new or updated sensor data.</param>
+        public void UpdateSensorData(SensorData sensorData)
         {
-            lock (_lock)
+            lock (_dataLock)
             {
-                var existingPacifier = _sensorData.Pacifiers.FirstOrDefault(p => p.PacifierId == pacifierData.PacifierId);
-                if (existingPacifier != null)
+                // Locate the sensor data by pacifier ID and update it, or add it if not found
+                var existingData = _sensorDataList.FirstOrDefault(data => data.PacifierId == sensorData.PacifierId);
+
+                if (existingData != null)
                 {
-                    // Update existing pacifier data
-                    existingPacifier.ImuData = pacifierData.ImuData;
-                    existingPacifier.PpgData = pacifierData.PpgData;
+                    // Update existing sensor data
+                    existingData.ImuData = sensorData.ImuData;
+                    existingData.PpgData = sensorData.PpgData;
                 }
                 else
                 {
-                    // Add new pacifier
-                    _sensorData.Pacifiers.Add(pacifierData);
+                    // Add new sensor data
+                    _sensorDataList.Add(sensorData);
                 }
             }
             // Raise the event to notify subscribers
             SensorDataUpdated?.Invoke(this, EventArgs.Empty);
         }
+
+
+        public List<string> GetPacifierNames()
+        {
+            lock (_dataLock)
+            {
+                return _sensorDataList.Select(data => data.PacifierId).Distinct().ToList();
+            }
+        }
+
     }
 }

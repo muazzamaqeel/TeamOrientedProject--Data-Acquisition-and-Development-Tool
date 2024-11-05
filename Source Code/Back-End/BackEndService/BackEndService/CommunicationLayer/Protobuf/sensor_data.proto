@@ -21,12 +21,8 @@ message PPGData {
     float temperature = 4;
 }
 
-message PacifierData {
-    string pacifier_id = 1;  // Identifier for each pacifier (e.g., Pacifier 1, Pacifier 2)
-    IMUData imu_data = 2;
-    PPGData ppg_data = 3;
-}
-
-message SensorData {
-    repeated PacifierData pacifiers = 1;  // List of all pacifiers with their respective data
+message SensorData { 
+    string pacifier_id = 1;  // ID for the pacifier
+    IMUData imu_data = 2;    // IMU sensor data (optional)
+    PPGData ppg_data = 3;    // PPG sensor data (optional)
 }
