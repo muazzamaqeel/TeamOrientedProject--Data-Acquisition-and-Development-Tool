@@ -15,8 +15,8 @@ jobs:
     runs-on: windows-latest
 
     env:
-      Solution_Name: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln"
-      Test_Project_Path: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj"
+      Solution_Name: "Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln"
+      Test_Project_Path: "Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj"
 
     steps:
     - name: Checkout
@@ -32,13 +32,13 @@ jobs:
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v2
 
-    # Debug step: List the root directory
-    - name: List contents of the root directory
+    # Debug step: List all contents of the repository
+    - name: List all repository contents
       run: dir /S /B
       shell: cmd
 
-    # Debug step: Check solution path
-    - name: Check solution path
+    # Confirm the solution path exists
+    - name: Confirm solution file path
       run: |
         if (Test-Path "${{ env.Solution_Name }}) { 
           Write-Output "Solution file found." 
@@ -47,13 +47,17 @@ jobs:
         }
       shell: pwsh
 
-    # Debug step: List contents of Testing_Integration_Environment directory
-    - name: List contents of Testing_Integration_Environment directory
+    # Confirm the test project path exists
+    - name: Confirm test project file path
       run: |
-        dir "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/" /S /B
-      shell: cmd
+        if (Test-Path "${{ env.Test_Project_Path }}) { 
+          Write-Output "Test project file found." 
+        } else { 
+          Write-Output "Test project file NOT found at ${{ env.Test_Project_Path }}."
+        }
+      shell: pwsh
 
-    # Run dotnet test for the entire solution to confirm setup
+    # Run dotnet test for the solution
     - name: Execute all tests in the solution
       run: dotnet test "${{ env.Solution_Name }}" --configuration ${{ matrix.configuration }} --no-build --verbosity normal
 
