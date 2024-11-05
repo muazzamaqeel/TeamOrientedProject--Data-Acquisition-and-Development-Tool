@@ -17,8 +17,6 @@ jobs:
     env:
       Solution_Name: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln"  # Full path to the solution file
       Test_Project_Path: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj"  # Full path to the test project file
-      Wap_Project_Directory: "SmartPacifier.Package"  # Adjust if needed
-      Wap_Project_Path: "SmartPacifier.Package/SmartPacifier.Package.wapproj"  # Adjust if needed
 
     steps:
     - name: Checkout
@@ -38,34 +36,11 @@ jobs:
     - name: Execute all tests in the solution
       run: dotnet test "${{ env.Solution_Name }}" --configuration ${{ matrix.configuration }} --no-build --verbosity normal
 
-    # Optional: Execute unit tests in Main_UnitTests class once above step works
-    # - name: Execute unit tests in Main_UnitTests class
-    #   run: dotnet test "${{ env.Test_Project_Path }}" --configuration ${{ matrix.configuration }} --no-build --verbosity normal --filter "FullyQualifiedName~SmartPacifier___TestingFramework.Main_UnitTests"
+    # Execute unit tests in Main_UnitTests class
+    - name: Execute unit tests in Main_UnitTests class
+      run: dotnet test "${{ env.Test_Project_Path }}" --configuration ${{ matrix.configuration }} --no-build --verbosity normal --filter "FullyQualifiedName~SmartPacifier___TestingFramework.Main_UnitTests"
 
     - name: Restore the application
       run: msbuild "${{ env.Solution_Name }}" /t:Restore /p:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
-
-    - name: Decode the pfx
-      run: |
-        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
-        $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
-        [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
-
-    - name: Create the app package
-      run: msbuild "${{ env.Wap_Project_Path }}" /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
-      env:
-        Appx_Bundle: Always
-        Appx_Bundle_Platforms: x86|x64
-        Appx_Package_Build_Mode: StoreUpload
-        Configuration: ${{ matrix.configuration }}
-
-    - name: Remove the pfx
-      run: Remove-Item -path "${{ env.Wap_Project_Directory }}\GitHubActionsWorkflow.pfx"
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: MSIX Package
-        path: "${{ env.Wap_Project_Directory }}\AppPackages"
