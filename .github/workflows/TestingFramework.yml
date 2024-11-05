@@ -56,10 +56,10 @@ jobs:
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
 
     env:
-      Solution_Name: SmartPacifier.sln                           # The name of your solution file in the repo root
-      Test_Project_Path: SmartPacifier-TestingFramework          # Relative path to your test project folder
-      Wap_Project_Directory: SmartPacifier.Package               # Directory name of the WAP project relative to the solution
-      Wap_Project_Path: SmartPacifier.Package\SmartPacifier.Package.wapproj # Path to the WAP project file
+      Solution_Name: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln  # Full path to the solution file
+      Test_Project_Path: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj  # Full path to the project file
+      Wap_Project_Directory: SmartPacifier.Package  # Adjust if needed
+      Wap_Project_Path: SmartPacifier.Package/SmartPacifier.Package.wapproj  # Adjust if needed
 
     steps:
     - name: Checkout
@@ -79,7 +79,7 @@ jobs:
 
     # Execute all unit tests in the specific class Main_UnitTests
     - name: Execute unit tests in Main_UnitTests class
-      run: dotnet test ${{ env.Test_Project_Path }} --configuration ${{ matrix.configuration }} --no-build --verbosity normal --filter "FullyQualifiedName~SmartPacifier___TestingFramework.Main_UnitTests" 
+      run: dotnet test ${{ env.Test_Project_Path }} --configuration ${{ matrix.configuration }} --no-build --verbosity normal --filter "FullyQualifiedName~SmartPacifier___TestingFramework.Main_UnitTests"
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
