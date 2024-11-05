@@ -15,8 +15,8 @@ jobs:
     runs-on: windows-latest
 
     env:
-      Solution_Name: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln"  # Full path to the solution file
-      Test_Project_Path: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj"  # Full path to the test project file
+      Solution_Name: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln"
+      Test_Project_Path: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj"
 
     steps:
     - name: Checkout
@@ -31,6 +31,27 @@ jobs:
 
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v2
+
+    # Debug step: List the root directory
+    - name: List contents of the root directory
+      run: dir /S /B
+      shell: cmd
+
+    # Debug step: Check solution path
+    - name: Check solution path
+      run: |
+        if (Test-Path "${{ env.Solution_Name }}) { 
+          Write-Output "Solution file found." 
+        } else { 
+          Write-Output "Solution file NOT found at ${{ env.Solution_Name }}."
+        }
+      shell: pwsh
+
+    # Debug step: List contents of Testing_Integration_Environment directory
+    - name: List contents of Testing_Integration_Environment directory
+      run: |
+        dir "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/" /S /B
+      shell: cmd
 
     # Run dotnet test for the entire solution to confirm setup
     - name: Execute all tests in the solution
