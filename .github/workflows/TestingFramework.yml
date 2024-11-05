@@ -45,21 +45,18 @@ on:
     branches: [ "main-Production-Environment" ]
 
 jobs:
-
   build:
-
     strategy:
       matrix:
         configuration: [Debug, Release]
 
-    runs-on: windows-latest  # For a list of available runner types, refer to
-                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    runs-on: windows-latest
 
     env:
-      Solution_Name: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln  # Full path to the solution file
-      Test_Project_Path: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj  # Full path to the test project file
-      Wap_Project_Directory: SmartPacifier.Package  # Adjust if needed
-      Wap_Project_Path: SmartPacifier.Package/SmartPacifier.Package.wapproj  # Adjust if needed
+      Solution_Name: "Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln"  # Full path to the solution file
+      Test_Project_Path: "Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj"  # Full path to the test project file
+      Wap_Project_Directory: SmartPacifier.Package
+      Wap_Project_Path: SmartPacifier.Package/SmartPacifier.Package.wapproj
 
     steps:
     - name: Checkout
@@ -67,34 +64,33 @@ jobs:
       with:
         fetch-depth: 0
 
-    # Install the .NET Core workload
     - name: Install .NET Core
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
-    # Add MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v2
 
-    # Execute all unit tests in the specific class Main_UnitTests
-    - name: Execute unit tests in Main_UnitTests class
-      run: dotnet test "Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj" --configuration ${{ matrix.configuration }} --no-build --verbosity normal --filter "FullyQualifiedName~SmartPacifier___TestingFramework.Main_UnitTests"
+    # Run dotnet test for the entire solution to confirm setup
+    - name: Execute all tests in the solution
+      run: dotnet test "${{ env.Solution_Name }}" --configuration ${{ matrix.configuration }} --no-build --verbosity normal
 
-    # Restore the application to populate the obj folder with RuntimeIdentifiers
+    # Optional: Execute unit tests in Main_UnitTests class once above step works
+    # - name: Execute unit tests in Main_UnitTests class
+    #   run: dotnet test "${{ env.Test_Project_Path }}" --configuration ${{ matrix.configuration }} --no-build --verbosity normal --filter "FullyQualifiedName~SmartPacifier___TestingFramework.Main_UnitTests"
+
     - name: Restore the application
-      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
+      run: msbuild "${{ env.Solution_Name }}" /t:Restore /p:Configuration=$env:Configuration
       env:
         Configuration: ${{ matrix.configuration }}
 
-    # Decode the base 64 encoded pfx and save the Signing_Certificate
     - name: Decode the pfx
       run: |
         $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
         $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
         [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
 
-    # Create the app package by building and packaging the Windows Application Packaging project
     - name: Create the app package
       run: msbuild $env:Wap_Project_Path /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
       env:
@@ -103,13 +99,12 @@ jobs:
         Appx_Package_Build_Mode: StoreUpload
         Configuration: ${{ matrix.configuration }}
 
-    # Remove the pfx
     - name: Remove the pfx
       run: Remove-Item -path $env:Wap_Project_Directory\GitHubActionsWorkflow.pfx
 
-    # Upload the MSIX package: https://github.com/marketplace/actions/upload-a-build-artifact
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: MSIX Package
         path: ${{ env.Wap_Project_Directory }}\AppPackages
+
