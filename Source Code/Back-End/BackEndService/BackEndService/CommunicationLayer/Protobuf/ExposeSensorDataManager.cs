@@ -35,7 +35,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
         /// <summary>
         /// Parses sensor data based on the sensor type and pacifier ID.
         /// </summary>
-        public SensorData? ParseDynamicSensorMessage(string pacifierId, string sensorType, byte[] data)
+        public IMessage? ParseDynamicSensorMessage(string pacifierId, string sensorType, byte[] data)
         {
             try
             {
@@ -68,7 +68,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                     }
                     SensorDataUpdated?.Invoke(this, EventArgs.Empty); // Trigger event to notify listeners
 
-                    return sensorData;
+                    return message; // Return the actual sensor data message (IMUData or PPGData)
                 }
                 else
                 {
@@ -81,6 +81,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 return null;
             }
         }
+
 
 
         public void DisplayProtobufFields(IMessage message, int indentLevel = 0)
@@ -101,6 +102,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 }
             }
         }
+
 
 
         private IMessage ParseImuData(JsonDocument jsonDoc)
