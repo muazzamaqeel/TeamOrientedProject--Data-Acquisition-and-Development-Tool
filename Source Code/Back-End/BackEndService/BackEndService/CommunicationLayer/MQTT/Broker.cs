@@ -179,12 +179,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                     string pacifierId = topicParts[1];
                     string sensorType = topicParts[2];
 
-                    var message = ExposeSensorDataManager.Instance.ParseDynamicSensorMessage(pacifierId, sensorType, rawPayload);
+                    var sensorMessage = ExposeSensorDataManager.Instance.ParseDynamicSensorMessage(pacifierId, sensorType, rawPayload);
 
-                    if (message != null)
+                    if (sensorMessage != null)
                     {
                         Console.WriteLine($"Parsed {sensorType} data for Pacifier {pacifierId}:");
-                        ExposeSensorDataManager.Instance.DisplayProtobufFields(message);
+                        ExposeSensorDataManager.Instance.DisplayProtobufFields(sensorMessage);
                     }
                     else
                     {
@@ -204,6 +204,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 Console.WriteLine($"Failed to process message: {ex.Message}");
             }
         }
+
 
 
 
