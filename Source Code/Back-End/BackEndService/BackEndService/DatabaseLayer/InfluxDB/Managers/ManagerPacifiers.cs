@@ -6,6 +6,7 @@ using SmartPacifier.Interface.Services;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 {
@@ -28,9 +29,11 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
         public List<string> GetPacifierNamesFromSensorData()
         {
-            return ExposeSensorDataManager.Instance.GetPacifierNames();
-
+            var names = ExposeSensorDataManager.Instance.GetPacifierNames();
+            MessageBox.Show($"Retrieved Pacifier Names: {string.Join(", ", names)}");
+            return names;
         }
+
 
 
 
@@ -101,22 +104,18 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
 
 
-
-
-
-
-
         // ManagerPacifiers-specific method to get pacifiers by campaign
         public async Task<List<string>> GetPacifiersAsync(string campaignName)
         {
             var pacifiers = new List<string>();
             try
             {
+                // Query for pacifiers based on the selected campaign
                 var fluxQuery = $"from(bucket: \"{_bucket}\") " +
                                 $"|> range(start: -30d) " +
                                 $"|> filter(fn: (r) => r[\"_measurement\"] == \"pacifiers\" and r[\"campaign_name\"] == \"{campaignName}\") " +
-                                $"|> keep(columns: [\"pacifier_id\"]) " +
-                                $"|> distinct(column: \"pacifier_id\")";
+                                $"|> keep(columns: [\"pacifier_name\"]) " +
+                                $"|> distinct(column: \"pacifier_name\")";
 
                 var queryApi = _client.GetQueryApi();
                 var tables = await queryApi.QueryAsync(fluxQuery, _org);
@@ -125,10 +124,10 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
                 {
                     foreach (var record in table.Records)
                     {
-                        var pacifierId = record.GetValueByKey("pacifier_id")?.ToString();
-                        if (!string.IsNullOrEmpty(pacifierId))
+                        var pacifierName = record.GetValueByKey("pacifier_name")?.ToString();
+                        if (!string.IsNullOrEmpty(pacifierName))
                         {
-                            pacifiers.Add(pacifierId);
+                            pacifiers.Add(pacifierName);
                         }
                     }
                 }
@@ -140,6 +139,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
             return pacifiers;
         }
+
 
         // Implementation of the GetCampaignsAsync method
         public async Task<List<string>> GetCampaignsAsync()

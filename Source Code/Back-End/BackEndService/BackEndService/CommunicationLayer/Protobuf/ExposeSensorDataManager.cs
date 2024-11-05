@@ -1,88 +1,223 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Protos; // Make sure this namespace includes your generated SensorData classes
+using System.Text;
+using System.Text.Json;
+using System.Windows;
+using Google.Protobuf;
+using Protos;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 {
-    /// <summary>
-    /// Manages SensorData globally and notifies subscribers when data is updated.
-    /// </summary>
     public class ExposeSensorDataManager
     {
+        private static readonly object _instanceLock = new object();
         private static ExposeSensorDataManager? _instance;
-        private readonly SensorData _sensorData;
-        private readonly object _lock = new object();
 
-        // Event to notify subscribers when SensorData is updated
+        private readonly List<SensorData> _sensorDataList = new List<SensorData>();
+        private readonly object _dataLock = new object();
+
         public event EventHandler? SensorDataUpdated;
 
-        // Private constructor to ensure singleton pattern
-        private ExposeSensorDataManager()
-        {
-            _sensorData = new SensorData();
-        }
+        private ExposeSensorDataManager() { }
 
-        // Singleton instance for global access
         public static ExposeSensorDataManager Instance
         {
             get
             {
-                if (_instance == null)
+                lock (_instanceLock)
                 {
-                    _instance = new ExposeSensorDataManager();
+                    return _instance ??= new ExposeSensorDataManager();
                 }
-                return _instance;
             }
         }
 
         /// <summary>
-        /// Retrieves a list of pacifier names from the current SensorData.
+        /// Parses sensor data based on the sensor type and pacifier ID.
         /// </summary>
-        /// <returns>A list of pacifier names (IDs).</returns>
-        public List<string> GetPacifierNames()
+        public SensorData? ParseDynamicSensorMessage(string pacifierId, string sensorType, byte[] data)
         {
-            lock (_lock)
+            try
             {
-                return _sensorData.Pacifiers.Select(p => p.PacifierId).ToList();
-            }
-        }
+                string jsonString = Encoding.UTF8.GetString(data);
+                JsonDocument jsonDoc = JsonDocument.Parse(jsonString);
 
-        /// <summary>
-        /// Gets the current SensorData object, if needed for further processing.
-        /// </summary>
-        /// <returns>The current SensorData object managed by this class.</returns>
-        public SensorData GetSensorData()
-        {
-            lock (_lock)
-            {
-                return _sensorData;
-            }
-        }
-
-        /// <summary>
-        /// Updates or adds pacifier data and notifies subscribers.
-        /// </summary>
-        /// <param name="pacifierData">The new or updated pacifier data.</param>
-        public void UpdatePacifierData(PacifierData pacifierData)
-        {
-            lock (_lock)
-            {
-                var existingPacifier = _sensorData.Pacifiers.FirstOrDefault(p => p.PacifierId == pacifierData.PacifierId);
-                if (existingPacifier != null)
+                IMessage message = sensorType.ToLower() switch
                 {
-                    // Update existing pacifier data
-                    existingPacifier.ImuData = pacifierData.ImuData;
-                    existingPacifier.PpgData = pacifierData.PpgData;
+                    "imu" => ParseImuData(jsonDoc),
+                    "ppg" => ParsePpgData(jsonDoc),
+                    _ => null
+                };
+
+                if (message != null)
+                {
+                    var sensorData = new SensorData
+                    {
+                        PacifierId = pacifierId
+                    };
+
+                    // Serialize the message to bytes
+                    byte[] serializedData = message.ToByteArray();
+
+                    // Add to sensor_data_map
+                    sensorData.SensorDataMap.Add(sensorType, ByteString.CopyFrom(serializedData));
+
+                    lock (_dataLock)
+                    {
+                        _sensorDataList.Add(sensorData);
+                    }
+                    SensorDataUpdated?.Invoke(this, EventArgs.Empty); // Trigger event to notify listeners
+
+                    return sensorData;
                 }
                 else
                 {
-                    // Add new pacifier
-                    _sensorData.Pacifiers.Add(pacifierData);
+                    return null;
                 }
             }
-            // Raise the event to notify subscribers
-            SensorDataUpdated?.Invoke(this, EventArgs.Empty);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to parse sensor data for Pacifier '{pacifierId}' and type '{sensorType}': {ex.Message}");
+                return null;
+            }
+        }
+
+
+        public void DisplayProtobufFields(IMessage message, int indentLevel = 0)
+        {
+            foreach (var field in message.Descriptor.Fields.InDeclarationOrder())
+            {
+                var value = field.Accessor.GetValue(message);
+                string indent = new string(' ', indentLevel * 2);
+
+                if (value is IMessage nestedMessage)
+                {
+                    Console.WriteLine($"{indent}{field.Name} (Message):");
+                    DisplayProtobufFields(nestedMessage, indentLevel + 1);
+                }
+                else
+                {
+                    Console.WriteLine($"{indent}{field.Name}: {value}");
+                }
+            }
+        }
+
+
+        private IMessage ParseImuData(JsonDocument jsonDoc)
+        {
+            var imuData = new IMUData();
+            foreach (var property in jsonDoc.RootElement.EnumerateObject())
+            {
+                switch (property.Name)
+                {
+                    case "acc_x":
+                        imuData.AccX = property.Value.GetSingle();
+                        break;
+                    case "acc_y":
+                        imuData.AccY = property.Value.GetSingle();
+                        break;
+                    case "acc_z":
+                        imuData.AccZ = property.Value.GetSingle();
+                        break;
+                    case "gyro_x":
+                        imuData.GyroX = property.Value.GetSingle();
+                        break;
+                    case "gyro_y":
+                        imuData.GyroY = property.Value.GetSingle();
+                        break;
+                    case "gyro_z":
+                        imuData.GyroZ = property.Value.GetSingle();
+                        break;
+                    case "mag_x":
+                        imuData.MagX = property.Value.GetSingle();
+                        break;
+                    case "mag_y":
+                        imuData.MagY = property.Value.GetSingle();
+                        break;
+                    case "mag_z":
+                        imuData.MagZ = property.Value.GetSingle();
+                        break;
+                }
+            }
+            return imuData;
+        }
+
+        private IMessage ParsePpgData(JsonDocument jsonDoc)
+        {
+            var ppgData = new PPGData();
+            foreach (var property in jsonDoc.RootElement.EnumerateObject())
+            {
+                switch (property.Name)
+                {
+                    case "led1":
+                        ppgData.Led1 = property.Value.GetInt32();
+                        break;
+                    case "led2":
+                        ppgData.Led2 = property.Value.GetInt32();
+                        break;
+                    case "led3":
+                        ppgData.Led3 = property.Value.GetInt32();
+                        break;
+                    case "temperature":
+                        ppgData.Temperature = property.Value.GetSingle();
+                        break;
+                }
+            }
+            return ppgData;
+        }
+
+        /// <summary>
+        /// Retrieves a list of unique pacifier IDs from the stored sensor data.
+        /// </summary>
+        public List<string> GetPacifierIds()
+        {
+            lock (_dataLock)
+            {
+                return _sensorDataList.Select(data => data.PacifierId).Distinct().ToList();
+            }
+        }
+
+        /// <summary>
+        /// Retrieves all sensor data entries as a list.
+        /// </summary>
+        public List<SensorData> GetAllSensorData()
+        {
+            lock (_dataLock)
+            {
+                return _sensorDataList.Select(data => data.Clone()).ToList();
+            }
+        }
+
+        /// <summary>
+        /// Retrieves and displays unique pacifier names, showing a message if the list is empty.
+        /// </summary>
+        public List<string> GetPacifierNames()
+        {
+            lock (_dataLock)
+            {
+                if (!_sensorDataList.Any())
+                {
+                    MessageBox.Show("No data available in _sensorDataList.", "Debug", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return new List<string>();
+                }
+
+                var pacifierIds = _sensorDataList
+                    .Where(data => !string.IsNullOrEmpty(data.PacifierId))
+                    .Select(data => data.PacifierId)
+                    .Distinct()
+                    .ToList();
+
+                if (!pacifierIds.Any())
+                {
+                    MessageBox.Show("PacifierIds are empty or null.", "Debug", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    MessageBox.Show($"PacifierIds: {string.Join(", ", pacifierIds)}", "Debug", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+
+                return pacifierIds;
+            }
         }
     }
 }

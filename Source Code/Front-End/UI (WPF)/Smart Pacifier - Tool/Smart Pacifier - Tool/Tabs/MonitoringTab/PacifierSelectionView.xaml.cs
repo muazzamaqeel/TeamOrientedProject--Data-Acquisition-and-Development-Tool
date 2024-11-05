@@ -1,10 +1,11 @@
 ﻿using Smart_Pacifier___Tool.Components;
-using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
-using SmartPacifier.Interface.Services;
+using SmartPacifier.BackEnd.CommunicationLayer.Protobuf;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Navigation;
+using System.Windows.Threading;
+using System.Linq;
+using System;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -12,47 +13,49 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
     {
         private List<string> connectedPacifiers = new List<string>();
         private List<string> selectedPacifiers = new List<string>();
-        private readonly IManagerPacifiers _managerPacifiers;
 
-
-        public PacifierSelectionView(IManagerPacifiers managerPacifiers)
+        public PacifierSelectionView()
         {
             InitializeComponent();
-            _managerPacifiers = managerPacifiers;
 
-            // dummy pacifiers for testing
+            // Subscribe to the SensorDataUpdated event
+            ExposeSensorDataManager.Instance.SensorDataUpdated += OnSensorDataUpdated;
+
+            // Load existing pacifier names
             LoadPacifierNames();
         }
 
+        private void OnSensorDataUpdated(object sender, EventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                LoadPacifierNames();
+            });
+        }
 
         private void LoadPacifierNames()
         {
-            var pacifierNames = _managerPacifiers.GetPacifierNamesFromSensorData();
+            var pacifierIds = ExposeSensorDataManager.Instance.GetPacifierIds();
 
             // Debug: Print the count of pacifiers
-            MessageBox.Show($"Loaded {pacifierNames.Count} pacifiers.");
+            // MessageBox.Show($"Loaded {pacifierIds.Count} pacifiers.");
 
-            foreach (var pacifierName in pacifierNames)
+            foreach (var pacifierId in pacifierIds)
             {
-                AddConnectedPacifier(pacifierName);
+                // Check if the pacifier is already in the list
+                if (!connectedPacifiers.Contains(pacifierId))
+                {
+                    connectedPacifiers.Add(pacifierId);
+                    AddConnectedPacifier(pacifierId);
+                }
             }
         }
 
-
-        // TESTING - to be removed later
-        private void AddDummyPacifiers(int number)
-        {
-            for (int i = 1; i <= number; i++)
-            {
-                AddConnectedPacifier($"Pacifier {i}");
-            }
-        }
-
-        public void AddConnectedPacifier(string pacifierName)
+        public void AddConnectedPacifier(string pacifierId)
         {
             var connectedPacifierItem = new ConnectedPacifierItem
             {
-                ButtonText = pacifierName,
+                ButtonText = $"Pacifier {pacifierId}",
                 IsChecked = false
             };
 
@@ -60,34 +63,28 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             {
                 if (connectedPacifierItem.IsChecked)
                 {
-                    if (!selectedPacifiers.Contains(pacifierName))
+                    if (!selectedPacifiers.Contains(pacifierId))
                     {
-                        selectedPacifiers.Add(pacifierName);
-                        //MessageBox.Show($"{pacifierName} added to selected list.");
+                        selectedPacifiers.Add(pacifierId);
+                        // Optionally, you can log or display a message
+                        // MessageBox.Show($"{pacifierId} added to selected list.");
                     }
                 }
                 else
                 {
-                    selectedPacifiers.Remove(pacifierName);
-                    //MessageBox.Show($"{pacifierName} removed from selected list.");
+                    selectedPacifiers.Remove(pacifierId);
+                    // Optionally, you can log or display a message
+                    // MessageBox.Show($"{pacifierId} removed from selected list.");
                 }
             };
 
-
-
-            Console.WriteLine($"Adding pacifier: {pacifierName}"); // Debug
+            Console.WriteLine($"Adding pacifier: {pacifierId}"); // Debug
             ConnectedPacifierPanel.Children.Add(connectedPacifierItem);
         }
-
 
         private void CreateCampaign_Click(object sender, RoutedEventArgs e)
         {
             string campaignName = CampaignTextBox.Text;
-
-            // Debug message to check campaign name
-            //MessageBox.Show($"Campaign Name: {campaignName}");
-            //MessageBox.Show($"Selected Pacifiers: {string.Join(", ", selectedPacifiers)} (Count: {selectedPacifiers.Count})");
-
 
             // Validate that at least one pacifier is selected and the campaign name is not empty
             if (selectedPacifiers.Count > 0 && !string.IsNullOrWhiteSpace(campaignName))
@@ -95,6 +92,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 var monitoringView = new MonitoringView();
 
                 // Optionally pass selected pacifiers to the monitoring view
+                // monitoringView.SetSelectedPacifiers(selectedPacifiers);
 
                 if (this.Parent is ContentControl parent)
                 {
@@ -106,7 +104,5 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 MessageBox.Show("Please make sure there is at least one connected pacifier and the campaign name is not empty.");
             }
         }
-
-
     }
 }

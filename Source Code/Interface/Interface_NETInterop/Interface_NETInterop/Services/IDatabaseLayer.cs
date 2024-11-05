@@ -1,6 +1,7 @@
 ﻿using InfluxDB.Client;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Data;
 
 namespace SmartPacifier.Interface.Services
 {
@@ -15,6 +16,8 @@ namespace SmartPacifier.Interface.Services
 
         string Token { get; } 
         string BaseUrl { get; }
+        Task<DataTable> GetSensorDataAsync();
+
     }
 
 
