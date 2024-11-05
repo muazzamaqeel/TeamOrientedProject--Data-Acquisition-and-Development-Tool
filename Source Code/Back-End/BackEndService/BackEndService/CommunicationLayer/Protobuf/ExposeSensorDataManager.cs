@@ -1,21 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using Protos;  // Ensure this is the namespace for your generated SensorData class
+using System.Linq;
+using Protos; // Make sure this namespace includes your generated SensorData classes
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 {
     /// <summary>
-    /// Exposes functionality to manage and access SensorData globally.
+    /// Manages SensorData globally and notifies subscribers when data is updated.
     /// </summary>
     public class ExposeSensorDataManager
     {
         private static ExposeSensorDataManager? _instance;
-        private SensorData _sensorData;
+        private readonly SensorData _sensorData;
+        private readonly object _lock = new object();
+
+        // Event to notify subscribers when SensorData is updated
+        public event EventHandler? SensorDataUpdated;
 
         // Private constructor to ensure singleton pattern
         private ExposeSensorDataManager()
         {
-            _sensorData = LoadDefaultSensorData(); // Load default data
+            _sensorData = new SensorData();
         }
 
         // Singleton instance for global access
@@ -32,40 +37,15 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
         }
 
         /// <summary>
-        /// Loads default SensorData to be used initially.
-        /// </summary>
-        /// <returns>A new SensorData object with sample data.</returns>
-        private SensorData LoadDefaultSensorData()
-        {
-            var sensorData = new SensorData();
-
-            // Populate sensorData with dummy or default pacifiers
-            for (int i = 1; i <= 5; i++)
-            {
-                sensorData.Pacifiers.Add(new PacifierData
-                {
-                    PacifierId = $"Pacifier {i}",
-                    // Add other default properties if needed
-                });
-            }
-
-            return sensorData;
-        }
-
-        /// <summary>
         /// Retrieves a list of pacifier names from the current SensorData.
         /// </summary>
         /// <returns>A list of pacifier names (IDs).</returns>
         public List<string> GetPacifierNames()
         {
-            var pacifierNames = new List<string>();
-
-            foreach (var pacifier in _sensorData.Pacifiers)
+            lock (_lock)
             {
-                pacifierNames.Add(pacifier.PacifierId);
+                return _sensorData.Pacifiers.Select(p => p.PacifierId).ToList();
             }
-
-            return pacifierNames;
         }
 
         /// <summary>
@@ -74,7 +54,35 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
         /// <returns>The current SensorData object managed by this class.</returns>
         public SensorData GetSensorData()
         {
-            return _sensorData;
+            lock (_lock)
+            {
+                return _sensorData;
+            }
+        }
+
+        /// <summary>
+        /// Updates or adds pacifier data and notifies subscribers.
+        /// </summary>
+        /// <param name="pacifierData">The new or updated pacifier data.</param>
+        public void UpdatePacifierData(PacifierData pacifierData)
+        {
+            lock (_lock)
+            {
+                var existingPacifier = _sensorData.Pacifiers.FirstOrDefault(p => p.PacifierId == pacifierData.PacifierId);
+                if (existingPacifier != null)
+                {
+                    // Update existing pacifier data
+                    existingPacifier.ImuData = pacifierData.ImuData;
+                    existingPacifier.PpgData = pacifierData.PpgData;
+                }
+                else
+                {
+                    // Add new pacifier
+                    _sensorData.Pacifiers.Add(pacifierData);
+                }
+            }
+            // Raise the event to notify subscribers
+            SensorDataUpdated?.Invoke(this, EventArgs.Empty);
         }
     }
 }

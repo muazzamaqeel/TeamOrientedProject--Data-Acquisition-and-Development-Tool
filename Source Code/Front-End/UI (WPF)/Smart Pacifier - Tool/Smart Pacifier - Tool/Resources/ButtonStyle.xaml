@@ -3,7 +3,7 @@
 
 	<!-- Global Modern Button Style with Rounded Corners, Hover Effect, and Shadows -->
 	<Style x:Key="ModernButtonStyle" TargetType="Button">
-		<Setter Property="Background" Value="#383838" />
+        <Setter Property="Background" Value="{StaticResource ButtonBackgroundColor}" />
 		<Setter Property="Foreground" Value="White" />
 		<Setter Property="Padding" Value="10,5" />
 		<Setter Property="FontWeight" Value="Bold"/>
@@ -28,8 +28,8 @@
 					<ControlTemplate.Triggers>
 						<!-- Hover Effect -->
 						<Trigger Property="IsMouseOver" Value="True">
-							<Setter Property="Background" Value="#808080"/>
-							<Setter Property="BorderBrush" Value="#808080"/>
+                            <Setter Property="Background" Value="{StaticResource ButtonHoverColor}"/>
+                            <Setter Property="BorderBrush" Value="{StaticResource ButtonHoverColor}"/>
 							<Setter Property="Cursor" Value="Hand"/>
 						</Trigger>
 						<!-- Pressed Effect -->

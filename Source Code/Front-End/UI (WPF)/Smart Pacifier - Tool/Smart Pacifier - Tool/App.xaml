@@ -3,17 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Smart_Pacifier___Tool"
              StartupUri="MainWindow.xaml">
-	<Application.Resources>
-		<ResourceDictionary>
-			<ResourceDictionary.MergedDictionaries>
-				<!-- Colors -->
-				<ResourceDictionary Source="Resources/Colors.xaml"/>
-				<!-- Reference to the styles resource dictionary -->
-				<ResourceDictionary Source="Resources/ButtonStyle.xaml" />
-				<ResourceDictionary Source="Resources/ScrollBar.xaml"/>
-				<ResourceDictionary Source="Resources/TextBoxStyle.xaml"/>
-				<ResourceDictionary Source="Resources/DatePickerStyle.xaml"/>
-			</ResourceDictionary.MergedDictionaries>
-		</ResourceDictionary>
-	</Application.Resources>
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Colors -->
+                <ResourceDictionary Source="Resources/ColorsDark.xaml"/>
+                <!-- Reference to the styles resource dictionary -->
+                <ResourceDictionary Source="Resources/ButtonStyle.xaml" />
+                <ResourceDictionary Source="Resources/ScrollBar.xaml"/>
+                <ResourceDictionary Source="Resources/TextBoxStyle.xaml"/>
+                <ResourceDictionary Source="Resources/DatePickerStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
 </Application>
