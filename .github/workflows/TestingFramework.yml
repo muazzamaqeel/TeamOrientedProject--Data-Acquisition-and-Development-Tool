@@ -57,7 +57,7 @@ jobs:
 
     env:
       Solution_Name: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln  # Full path to the solution file
-      Test_Project_Path: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj  # Full path to the project file
+      Test_Project_Path: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj  # Full path to the test project file
       Wap_Project_Directory: SmartPacifier.Package  # Adjust if needed
       Wap_Project_Path: SmartPacifier.Package/SmartPacifier.Package.wapproj  # Adjust if needed
 
