@@ -16,7 +16,7 @@ jobs:
 
     env:
       Solution_Name: "Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln"
-      Test_Project_Path: "Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj"
+      Test_Project_Path: "TeamOrientedProject---Smart-Pacifier/Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj"
 
     steps:
     - name: Checkout
