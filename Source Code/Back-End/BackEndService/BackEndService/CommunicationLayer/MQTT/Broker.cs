@@ -168,7 +168,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         {
             try
             {
-                var rawPayload = e.ApplicationMessage.Payload;
+                var rawPayload = e.ApplicationMessage.PayloadSegment.ToArray();
                 string topic = e.ApplicationMessage.Topic;
                 Console.WriteLine($"Received raw data on topic '{topic}'");
 

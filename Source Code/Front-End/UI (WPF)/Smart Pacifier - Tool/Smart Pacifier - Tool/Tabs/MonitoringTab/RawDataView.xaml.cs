@@ -26,7 +26,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
         {
