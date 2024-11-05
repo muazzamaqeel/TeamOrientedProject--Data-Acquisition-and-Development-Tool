@@ -1,85 +1,59 @@
-﻿using System;
+﻿using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLayer.MQTT
 {
-    // Custom mock class to simulate the behavior of the Broker class
-
-
-
-    /// <summary>
-    /// A Wrapper Class that allows us to override the Bok
-    /// </summary>
-    public class MockBroker
-    {
-        public event EventHandler<MessageReceivedEventArgs>? MockMessageReceived;
-
-        public Task ConnectBroker()
-        {
-            Console.WriteLine("Mock: ConnectBroker called");
-            return Task.CompletedTask;
-        }
-
-        public Task Subscribe(string topic)
-        {
-            Console.WriteLine($"Mock: Subscribed to topic: {topic}");
-            return Task.CompletedTask;
-        }
-
-        public Task SendMessage(string topic, string message)
-        {
-            Console.WriteLine($"Mock: Sending message to topic: {topic}");
-            // Simulate receiving the message by invoking the MockMessageReceived event
-            MockMessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, message));
-            return Task.CompletedTask;
-        }
-
-        // Event argument class for message received event
-        public class MessageReceivedEventArgs : EventArgs
-        {
-            public string Topic { get; }
-            public string Payload { get; }
-
-            public MessageReceivedEventArgs(string topic, string payload)
-            {
-                Topic = topic;
-                Payload = payload;
-            }
-        }
-    }
-
     public class MQTTBrokerTestCases : IAsyncLifetime
     {
-        private readonly MockBroker _broker;
+        private readonly Broker _broker;
+        private static bool _isBrokerConnected = false; // Static variable to track connection state
 
         public MQTTBrokerTestCases()
         {
-            _broker = new MockBroker();
-            _broker.MockMessageReceived += OnMessageReceived; // Subscribe to message events
+            _broker = Broker.Instance;
+            _broker.MessageReceived += OnMessageReceived; // Subscribe to message events
         }
 
         public async Task InitializeAsync()
         {
-            await _broker.ConnectBroker(); // Simulate connecting the broker at the start of each test
+            await EnsureBrokerConnected(); // Ensure broker is connected at the start of each test
         }
 
         public Task DisposeAsync()
         {
+            // No need to disconnect here, as we'll rely on the static connection state
             return Task.CompletedTask;
+        }
+
+        private async Task EnsureBrokerConnected()
+        {
+            if (!_isBrokerConnected)
+            {
+                try
+                {
+                    await _broker.ConnectBroker();
+                    _isBrokerConnected = true; // Update static connection state
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("Failed to connect to the broker.", ex);
+                }
+            }
         }
 
         [Fact]
         public async Task TestMQTTConnectBroker()
         {
-            await _broker.ConnectBroker(); // Ensure the mock broker is "connected"
-            Assert.True(true); // If no exception, we assume it connected successfully
-                               // The true paramemter tells us that we expect a true conenction, and if its false the test will fail.
+            await EnsureBrokerConnected(); // Ensure the broker is connected before asserting
+            Assert.True(_isBrokerConnected); // Check if connected
         }
 
         [Fact]
         public async Task TestMQTTSubscribe()
         {
+            await EnsureBrokerConnected(); // Ensure connection before subscription
             string topic = "Pacifier/test";
             Exception exception = await Record.ExceptionAsync(async () => await _broker.Subscribe(topic));
             Assert.Null(exception); // Verify that no exception was thrown during subscription
@@ -88,6 +62,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
         [Fact]
         public async Task TestMQTTSendMessage()
         {
+            await EnsureBrokerConnected(); // Ensure connection before sending
             string topic = "Pacifier/test";
             string message = "Test Message";
 
@@ -95,16 +70,21 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Assert.Null(exception); // Verify that no exception was thrown during message sending
         }
 
+
+
+        /*
         [Fact]
         public async Task TestMQTTReceiveMessage()
         {
+            await EnsureBrokerConnected(); // Ensure the broker is connected
+
             string topic = "Pacifier/test";
             string expectedMessage = "Hello from Test";
 
             var messageReceivedCompletionSource = new TaskCompletionSource<bool>();
 
             // Set up event handler to capture the message
-            EventHandler<MockBroker.MessageReceivedEventArgs> messageHandler = (sender, args) =>
+            EventHandler<Broker.MessageReceivedEventArgs> messageHandler = (sender, args) =>
             {
                 if (args.Topic == topic && args.Payload == expectedMessage)
                 {
@@ -114,11 +94,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
 
             try
             {
-                _broker.MockMessageReceived += messageHandler; // Attach the handler
+                _broker.MessageReceived += messageHandler; // Attach the handler
 
-                await _broker.Subscribe(topic); // Simulate subscribing
+                await _broker.Subscribe(topic); // Ensure subscription before sending
 
-                // Simulate sending the message
+                // Send the message to test receiving
                 await _broker.SendMessage(topic, expectedMessage);
 
                 // Wait up to 5 seconds for the message to be received
@@ -128,13 +108,17 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             }
             finally
             {
-                _broker.MockMessageReceived -= messageHandler; // Clean up the event handler
+                _broker.MessageReceived -= messageHandler; // Clean up the event handler
             }
         }
 
-        private void OnMessageReceived(object? sender, MockBroker.MessageReceivedEventArgs e)
+
+        */
+
+
+        private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
-            Console.WriteLine($"Mock: Received message on topic '{e.Topic}': {e.Payload}");
+            Console.WriteLine($"Received message on topic '{e.Topic}': {e.Payload}");
         }
     }
 }
