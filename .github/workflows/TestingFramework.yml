@@ -57,7 +57,7 @@ jobs:
 
     env:
       Solution_Name: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.sln  # Full path to the solution file
-      Test_Project_Path: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj  # Full path to the test project file
+      Test_Project_Path: Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj  # Full path to the test project file
       Wap_Project_Directory: SmartPacifier.Package  # Adjust if needed
       Wap_Project_Path: SmartPacifier.Package/SmartPacifier.Package.wapproj  # Adjust if needed
 
@@ -79,7 +79,7 @@ jobs:
 
     # Execute all unit tests in the specific class Main_UnitTests
     - name: Execute unit tests in Main_UnitTests class
-      run: dotnet test ${{ env.Test_Project_Path }} --configuration ${{ matrix.configuration }} --no-build --verbosity normal --filter "FullyQualifiedName~SmartPacifier___TestingFramework.Main_UnitTests"
+      run: dotnet test "Testing_Integration_Environment/SmartPacifier - TestingFramework/SmartPacifier - TestingFramework.csproj" --configuration ${{ matrix.configuration }} --no-build --verbosity normal --filter "FullyQualifiedName~SmartPacifier___TestingFramework.Main_UnitTests"
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
     - name: Restore the application
