@@ -85,9 +85,9 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            string selectedCampaign = Campaign.SelectedItem?.ToString();
-            string selectedPacifier = Pacifier.SelectedItem?.ToString();
-            string selectedSensorType = Sensor.SelectedItem?.ToString();
+            string? selectedCampaign = Campaign.SelectedItem?.ToString();
+            string? selectedPacifier = Pacifier.SelectedItem?.ToString();
+            string? selectedSensorType = Sensor.SelectedItem?.ToString();
 
             var filteredData = allData.AsEnumerable().Where(row =>
                 (string.IsNullOrEmpty(selectedCampaign) || row["campaign_name"].ToString() == selectedCampaign) &&

@@ -42,7 +42,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 string jsonString = Encoding.UTF8.GetString(data);
                 JsonDocument jsonDoc = JsonDocument.Parse(jsonString);
 
-                IMessage message = sensorType.ToLower() switch
+                IMessage? message = sensorType.ToLower() switch
                 {
                     "imu" => ParseImuData(jsonDoc),
                     "ppg" => ParsePpgData(jsonDoc),

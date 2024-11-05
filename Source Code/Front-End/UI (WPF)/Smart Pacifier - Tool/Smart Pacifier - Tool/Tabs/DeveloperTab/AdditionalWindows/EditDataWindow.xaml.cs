@@ -16,7 +16,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         public string Sensor { get; private set; } = string.Empty;
         public double Value { get; private set; }
 
-        private readonly string _originalCampaignName;
+        private readonly string? _originalCampaignName;
 
         // Constructor that initializes the EditDataWindow with existing data
         public EditDataWindow(IManagerCampaign managerCampaign, IManagerPacifiers managerPacifiers)
