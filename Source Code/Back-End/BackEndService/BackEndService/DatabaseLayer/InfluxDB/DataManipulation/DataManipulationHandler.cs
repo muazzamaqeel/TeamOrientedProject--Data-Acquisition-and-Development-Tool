@@ -36,36 +36,16 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.DataManipulation
         /// <summary>
         /// Deletes a row based on measurement, tags, and timestamp.
         /// </summary>
-        private async Task DeleteRowAsync(string measurement, Dictionary<string, string> tags, long timestampNanoseconds)
+        public async Task DeleteRowAsync(string measurement, Dictionary<string, string> tags, long timestampNanoseconds)
         {
-            // Convert nanoseconds to ticks and create a DateTime with appropriate bounds
-            long timestampTicks = timestampNanoseconds / 100; // 1 tick = 100 nanoseconds
-            DateTime originalTimestamp;
+            // Convert nanoseconds to ticks for DateTime
+            long timestampTicks = timestampNanoseconds / 100;
+            DateTime timestamp = new DateTime(timestampTicks, DateTimeKind.Utc);
 
-            try
-            {
-                originalTimestamp = new DateTime(timestampTicks, DateTimeKind.Utc);
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                MessageBox.Show("Timestamp out of range for InfluxDB.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+            // Set start and end times around the original timestamp
+            DateTime start = timestamp.AddTicks(-1);
+            DateTime end = timestamp.AddTicks(1);
 
-            // Define InfluxDB's minimum valid timestamp
-            DateTime minValidTime = new DateTime(1677, 9, 21, 0, 12, 43, 145, DateTimeKind.Utc).AddTicks(2241940);
-
-            // Ensure start time is within valid bounds for InfluxDB
-            DateTime start = originalTimestamp.AddTicks(-1);
-            if (start < minValidTime)
-            {
-                start = minValidTime;
-            }
-
-            // Set end time as 1 tick after the original timestamp for a safe range
-            DateTime end = originalTimestamp.AddTicks(1);
-
-            // Build the filter conditions and query
             string filterConditions = $"r[\"_measurement\"] == \"{measurement}\"";
             foreach (var tag in tags)
             {
@@ -73,9 +53,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.DataManipulation
             }
 
             string query = $@"
-                from(bucket: ""{_databaseService.Bucket}"")
-                |> range(start: {start:yyyy-MM-ddTHH:mm:ss.fffffffZ}, stop: {end:yyyy-MM-ddTHH:mm:ss.fffffffZ})
-                |> filter(fn: (r) => {filterConditions})";
+        from(bucket: ""{_databaseService.Bucket}"")
+        |> range(start: {start:yyyy-MM-ddTHH:mm:ss.fffffffZ}, stop: {end:yyyy-MM-ddTHH:mm:ss.fffffffZ})
+        |> filter(fn: (r) => {filterConditions})";
 
             try
             {
@@ -83,15 +63,20 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.DataManipulation
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}\n\n" +
-                                $"Debug Information:\n" +
-                                $"Original Timestamp (ns): {timestampNanoseconds}\n" +
-                                $"Converted Timestamp (ticks): {timestampTicks}\n" +
-                                $"Start Time: {start:yyyy-MM-ddTHH:mm:ss.fffffffZ}\n" +
-                                $"End Time: {end:yyyy-MM-ddTHH:mm:ss.fffffffZ}\n\n" +
-                                $"Query:\n{query}",
-                                "Delete Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error during deletion: {ex.Message}", "Delete Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+
+        public async Task CreateNewEntryAsync(
+            string measurement,
+            Dictionary<string, object> fields,
+            Dictionary<string, string> tags)
+        {
+            await _databaseService.WriteDataAsync(measurement, fields, tags);
+        }
+
+
+
     }
 }

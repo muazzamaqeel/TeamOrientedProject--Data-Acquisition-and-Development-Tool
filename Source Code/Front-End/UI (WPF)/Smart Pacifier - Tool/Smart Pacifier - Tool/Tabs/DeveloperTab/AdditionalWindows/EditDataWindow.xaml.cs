@@ -52,20 +52,17 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         {
             var newTags = new Dictionary<string, string>();
             var newFields = new Dictionary<string, object>();
-            string timestampText = null;
-            string timestampKey = null;
+            string debugInfo = "Debug Information:\n";
 
             foreach (var kvp in _textBoxes)
             {
                 string key = kvp.Key;
                 string value = kvp.Value.Text;
 
-                // Check if the current key might be the timestamp field
+                // Ignore timestamp fields as they are managed by InfluxDB
                 if (key.ToLower().Contains("timestamp"))
                 {
-                    timestampText = value;
-                    timestampKey = key;
-                    continue;  // Skip adding to fields or tags
+                    continue;
                 }
 
                 // Determine if this key should be a tag or a field based on its original usage
@@ -87,46 +84,60 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 }
             }
 
-            // Retrieve original tags if they exist in _originalData
-            var originalTags = new Dictionary<string, string>();
-            if (_originalData.TryGetValue("campaign_name", out var campaignName))
-                originalTags["campaign_name"] = campaignName.ToString();
-            if (_originalData.TryGetValue("pacifier_name", out var pacifierName))
-                originalTags["pacifier_name"] = pacifierName.ToString();
-            if (_originalData.TryGetValue("sensor_type", out var sensorType))
-                originalTags["sensor_type"] = sensorType.ToString();
+            debugInfo += $"New Tags: {string.Join(", ", newTags)}\n";
+            debugInfo += $"New Fields: {string.Join(", ", newFields)}\n";
+            debugInfo += $"Original Tags: {string.Join(", ", new Dictionary<string, string>() { { "campaign_name", newTags.GetValueOrDefault("Campaign Name") }, { "pacifier_name", newTags.GetValueOrDefault("Pacifier Name") }, { "sensor_type", newTags.GetValueOrDefault("Sensor Type") } })}\n";
 
-            // Validate and parse the timestamp
-            if (!string.IsNullOrEmpty(timestampText) && DateTime.TryParseExact(timestampText, "yyyy-MM-ddTHH:mm:ss.fffffffZ",
-                                          System.Globalization.CultureInfo.InvariantCulture,
-                                          System.Globalization.DateTimeStyles.AssumeUniversal,
-                                          out DateTime originalTimestamp))
+            // List all keys in _originalData for debugging
+            debugInfo += $"Available keys in _originalData: {string.Join(", ", _originalData.Keys)}\n";
+
+            // Attempt to retrieve the original timestamp with multiple key names
+            if (_originalData.TryGetValue("timestamp", out var originalTimestampValue) ||
+                _originalData.TryGetValue("Timestamp", out originalTimestampValue) ||
+                _originalData.TryGetValue("time", out originalTimestampValue) ||
+                _originalData.TryGetValue("_time", out originalTimestampValue))
             {
-                // Convert DateTime to Unix timestamp in nanoseconds
-                long timestampInNanoseconds = originalTimestamp.ToUniversalTime().Ticks * 100; // 1 tick = 100 nanoseconds
-
-                // Check if the timestamp is within the valid InfluxDB range
-                if (timestampInNanoseconds >= -9223372036854775806 && timestampInNanoseconds <= 9223372036854775806)
+                // Try to parse the timestamp
+                if (DateTime.TryParse(originalTimestampValue.ToString(), out DateTime originalTimestamp))
                 {
-                    // Call the update method in DataManipulationHandler with the valid nanosecond timestamp
-                    await _dataManipulationHandler.UpdateRowAsync("pacifiers", originalTags, timestampInNanoseconds, newFields, newTags);
+                    // Convert DateTime to Unix timestamp in nanoseconds for deletion
+                    long originalTimestampNanoseconds = originalTimestamp.ToUniversalTime().Ticks * 100; // 1 tick = 100 nanoseconds
 
-                    // Close the window
-                    DialogResult = true;
-                    Close();
+                    debugInfo += $"Original Timestamp (ns): {originalTimestampNanoseconds}\n";
+                    debugInfo += $"Original Timestamp (DateTime): {originalTimestamp.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ")}\n";
+
+                    try
+                    {
+                        // Step 1: Delete the original entry from the database
+                        await _dataManipulationHandler.DeleteRowAsync("pacifiers", new Dictionary<string, string>(), originalTimestampNanoseconds);
+
+                        // Step 2: Create a new entry with the modified data
+                        await _dataManipulationHandler.CreateNewEntryAsync("pacifiers", newFields, newTags);
+
+                        MessageBox.Show("Data saved successfully.\n" + debugInfo, "Save Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        // Close the window after saving
+                        DialogResult = true;
+                        Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error during save operation:\n{ex.Message}\n\n{debugInfo}", "Save Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
                 else
                 {
-                    ErrorMessage.Text = "Timestamp is out of the valid range for InfluxDB.";
-                    ErrorMessage.Visibility = Visibility.Visible;
+                    debugInfo += "Failed to parse the original timestamp.\n";
+                    MessageBox.Show(debugInfo, "Debug Information", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             else
             {
-                ErrorMessage.Text = $"Timestamp data is missing or invalid. Timestamp Text: {timestampText ?? "Not found"}";
-                ErrorMessage.Visibility = Visibility.Visible;
+                debugInfo += "Failed to retrieve the original timestamp for deletion.\n";
+                MessageBox.Show(debugInfo, "Debug Information", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {

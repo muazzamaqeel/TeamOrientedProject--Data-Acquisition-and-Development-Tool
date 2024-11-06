@@ -26,6 +26,9 @@ namespace SmartPacifier.Interface.Services
             long originalTimestampNanoseconds,
             Dictionary<string, object> newFields,
             Dictionary<string, string> newTags);
+        Task CreateNewEntryAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags);
+        Task DeleteRowAsync(string measurement, Dictionary<string, string> tags, long timestampNanoseconds);
+
     }
 
 
