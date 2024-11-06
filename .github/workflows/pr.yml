@@ -29,3 +29,16 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
       working-directory: 'Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool'
+
+          # SmartPacifier - TestingFramework (Second Application)
+    - name: Restore dependencies for SmartPacifier - TestingFramework
+      run: dotnet restore
+      working-directory: 'Testing_Integration_Environment/SmartPacifier - TestingFramework'
+
+    - name: Build SmartPacifier - TestingFramework
+      run: dotnet build --no-restore
+      working-directory: 'Testing_Integration_Environment/SmartPacifier - TestingFramework'
+
+    - name: Test SmartPacifier - TestingFramework
+      run: dotnet test --no-build --verbosity normal
+      working-directory: 'Testing_Integration_Environment/SmartPacifier - TestingFramework'
