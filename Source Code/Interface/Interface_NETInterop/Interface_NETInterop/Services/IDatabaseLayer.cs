@@ -13,11 +13,19 @@ namespace SmartPacifier.Interface.Services
         Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags);
         Task<List<string>> ReadData(string query);
         Task<List<string>> GetCampaignsAsync();
-
-        string Token { get; } 
+        string Token { get; }
         string BaseUrl { get; }
         Task<DataTable> GetSensorDataAsync();
+    }
 
+    public interface IDataManipulationHandler
+    {
+        Task UpdateRowAsync(
+            string measurement,
+            Dictionary<string, string> originalTags,
+            long originalTimestampNanoseconds,
+            Dictionary<string, object> newFields,
+            Dictionary<string, string> newTags);
     }
 
 

@@ -1,5 +1,4 @@
 ﻿using SmartPacifier.Interface.Services;
-using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,8 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.ComponentModel;
-using System.Data;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.DataManipulation;
 
 namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
@@ -17,6 +15,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         private readonly IDatabaseService _databaseService;
         private readonly IManagerPacifiers _managerPacifiers;
         private readonly IManagerCampaign _managerCampaign;
+        private readonly IDataManipulationHandler _dataManipulationHandler; // Added field
 
         private DataTable allData = new DataTable();
         private int currentPage = 1;
@@ -28,6 +27,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             _databaseService = databaseService;
             _managerPacifiers = managerPacifiers;
             _managerCampaign = managerCampaign;
+
+            _dataManipulationHandler = new DataManipulationHandler(_databaseService); // Initialize handler
 
             _ = LoadDataAsync();  // Call the async method but don't await, suppressing CS4014
         }
@@ -59,7 +60,6 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-
         private void DisplayData()
         {
             if (allData.Rows.Count == 0)
@@ -78,24 +78,29 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
 
             DataListView.ItemsSource = paginatedData.DefaultView;
-            MessageBox.Show($"Displaying {paginatedData.Rows.Count} rows.", "DisplayData");
         }
-
-
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            string? selectedCampaign = Campaign.SelectedItem?.ToString();
-            string? selectedPacifier = Pacifier.SelectedItem?.ToString();
-            string? selectedSensorType = Sensor.SelectedItem?.ToString();
+            string selectedCampaign = Campaign.SelectedItem?.ToString();
+            string selectedPacifier = Pacifier.SelectedItem?.ToString();
+            string selectedSensorType = Sensor.SelectedItem?.ToString();
 
             var filteredData = allData.AsEnumerable().Where(row =>
-                (string.IsNullOrEmpty(selectedCampaign) || row["campaign_name"].ToString() == selectedCampaign) &&
-                (string.IsNullOrEmpty(selectedPacifier) || row["pacifier_name"].ToString() == selectedPacifier) &&
-                (string.IsNullOrEmpty(selectedSensorType) || row["sensor_type"].ToString() == selectedSensorType));
+                (string.IsNullOrEmpty(selectedCampaign) || row["Campaign Name"].ToString() == selectedCampaign) &&
+                (string.IsNullOrEmpty(selectedPacifier) || row["Pacifier Name"].ToString() == selectedPacifier) &&
+                (string.IsNullOrEmpty(selectedSensorType) || row["Sensor Type"].ToString() == selectedSensorType));
 
-            DataTable filteredTable = filteredData.CopyToDataTable();
-            DataListView.ItemsSource = filteredTable.DefaultView;
+            if (filteredData.Any())
+            {
+                DataTable filteredTable = filteredData.CopyToDataTable();
+                DataListView.ItemsSource = filteredTable.DefaultView;
+            }
+            else
+            {
+                DataListView.ItemsSource = null;
+                MessageBox.Show("No data matches the selected filters.");
+            }
         }
 
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
@@ -128,21 +133,55 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
                     // Filter and display data for the selected campaign
                     var filteredData = allData.AsEnumerable().Where(row =>
-                        row["campaign_name"].ToString() == selectedCampaign);
-                    DataListView.ItemsSource = filteredData.CopyToDataTable().DefaultView;
+                        row["Campaign Name"].ToString() == selectedCampaign);
+                    if (filteredData.Any())
+                    {
+                        DataListView.ItemsSource = filteredData.CopyToDataTable().DefaultView;
+                    }
+                    else
+                    {
+                        DataListView.ItemsSource = null;
+                        MessageBox.Show("No data for the selected campaign.");
+                    }
                 }
             }
         }
 
-
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            _managerCampaign.EndCampaignAsync("Campaign 10");
+            // Implement your add functionality here
         }
 
         private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Edit functionality not implemented for direct database rows.");
+            if (DataListView.SelectedItem is DataRowView selectedRow)
+            {
+                // Extract the selected row data into a dictionary
+                var originalData = selectedRow.Row
+                    .Table.Columns.Cast<DataColumn>()
+                    .ToDictionary(col => col.ColumnName, col => selectedRow.Row[col] ?? string.Empty); // Ensure no null values
+
+                // Create an instance of the EditDataWindow and pass the data
+                var editWindow = new EditDataWindow(_dataManipulationHandler, originalData);
+
+                // Show the EditDataWindow as a dialog and refresh data if changes were saved
+                if (editWindow.ShowDialog() == true)
+                {
+                    await LoadDataAsync();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a row to edit.");
+            }
+        }
+
+        private void RowCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.DataContext is DataRowView dataRow)
+            {
+                DataListView.SelectedItem = dataRow;
+            }
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
