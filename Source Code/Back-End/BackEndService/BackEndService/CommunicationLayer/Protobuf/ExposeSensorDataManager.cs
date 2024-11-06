@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Windows;
 using Google.Protobuf;
 using Protos;
+using Google.Protobuf.Reflection;
+
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 {
@@ -33,56 +34,107 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
         }
 
         /// <summary>
-        /// Parses sensor data based on the sensor type and pacifier ID.
+        /// Parses sensor data dynamically without hardcoding any message type names.
         /// </summary>
-        public IMessage? ParseDynamicSensorMessage(string pacifierId, string sensorType, byte[] data)
+        public void ParseSensorData(string pacifierId, byte[] data)
         {
             try
             {
                 string jsonString = Encoding.UTF8.GetString(data);
                 JsonDocument jsonDoc = JsonDocument.Parse(jsonString);
 
-                IMessage? message = sensorType.ToLower() switch
+                // Instantiate a generic SensorData message
+                var sensorData = new SensorData
                 {
-                    "imu" => ParseImuData(jsonDoc),
-                    "ppg" => ParsePpgData(jsonDoc),
-                    _ => null
+                    PacifierId = pacifierId
                 };
 
-                if (message != null)
+                // Dynamically determine the type of message to parse by examining jsonDoc
+                var parsedMessage = ParseDynamicMessage(jsonDoc);
+                if (parsedMessage != null)
                 {
-                    var sensorData = new SensorData
-                    {
-                        PacifierId = pacifierId
-                    };
-
                     // Serialize the message to bytes
-                    byte[] serializedData = message.ToByteArray();
+                    byte[] serializedData = parsedMessage.ToByteArray();
 
-                    // Add to sensor_data_map
+                    // Use reflection to determine the sensor type from the message class name
+                    string sensorType = parsedMessage.Descriptor.Name.ToLower();
                     sensorData.SensorDataMap.Add(sensorType, ByteString.CopyFrom(serializedData));
 
                     lock (_dataLock)
                     {
                         _sensorDataList.Add(sensorData);
                     }
+
                     SensorDataUpdated?.Invoke(this, EventArgs.Empty); // Trigger event to notify listeners
 
-                    return message; // Return the actual sensor data message (IMUData or PPGData)
-                }
-                else
-                {
-                    return null;
+                    Console.WriteLine($"Parsed {sensorType} data for Pacifier {pacifierId}:");
+                    DisplayProtobufFields(parsedMessage); // Display parsed data
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to parse sensor data for Pacifier '{pacifierId}' and type '{sensorType}': {ex.Message}");
-                return null;
+                Console.WriteLine($"Failed to parse sensor data for Pacifier '{pacifierId}': {ex.Message}");
             }
         }
 
+        /// <summary>
+        /// Uses reflection to parse JSON data into a dynamically created Protobuf message.
+        /// </summary>
+        private IMessage? ParseDynamicMessage(JsonDocument jsonDoc)
+        {
+            IMessage? parsedMessage = null;
 
+            // Attempt to parse as various known types by reflection
+            foreach (var descriptor in typeof(SensorData).Assembly.GetTypes()
+                         .Where(t => typeof(IMessage).IsAssignableFrom(t) && t != typeof(SensorData))
+                         .Select(t => Activator.CreateInstance(t) as IMessage)
+                         .Where(m => m != null))
+            {
+                if (TryPopulateMessageFields(descriptor!, jsonDoc))
+                {
+                    parsedMessage = descriptor;
+                    break;
+                }
+            }
+
+            return parsedMessage;
+        }
+
+        /// <summary>
+        /// Dynamically populates fields in a Protobuf message based on JSON data.
+        /// </summary>
+        private bool TryPopulateMessageFields(IMessage message, JsonDocument jsonDoc)
+        {
+            bool hasPopulated = false;
+
+            foreach (var property in jsonDoc.RootElement.EnumerateObject())
+            {
+                var field = message.Descriptor.FindFieldByName(property.Name);
+                if (field != null)
+                {
+                    hasPopulated = true;
+                    switch (field.FieldType)
+                    {
+                        case FieldType.Float:
+                            field.Accessor.SetValue(message, property.Value.GetSingle());
+                            break;
+                        case FieldType.Int32:
+                            field.Accessor.SetValue(message, property.Value.GetInt32());
+                            break;
+                        case FieldType.Message:
+                            var nestedMessage = (IMessage)field.Accessor.GetValue(message);
+                            if (nestedMessage != null)
+                            {
+                                var nestedJson = JsonDocument.Parse(property.Value.GetRawText());
+                                TryPopulateMessageFields(nestedMessage, nestedJson);
+                            }
+                            break;
+                    }
+                }
+            }
+
+            return hasPopulated;
+        }
 
         public void DisplayProtobufFields(IMessage message, int indentLevel = 0)
         {
@@ -101,71 +153,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                     Console.WriteLine($"{indent}{field.Name}: {value}");
                 }
             }
-        }
-
-
-
-        private IMessage ParseImuData(JsonDocument jsonDoc)
-        {
-            var imuData = new IMUData();
-            foreach (var property in jsonDoc.RootElement.EnumerateObject())
-            {
-                switch (property.Name)
-                {
-                    case "acc_x":
-                        imuData.AccX = property.Value.GetSingle();
-                        break;
-                    case "acc_y":
-                        imuData.AccY = property.Value.GetSingle();
-                        break;
-                    case "acc_z":
-                        imuData.AccZ = property.Value.GetSingle();
-                        break;
-                    case "gyro_x":
-                        imuData.GyroX = property.Value.GetSingle();
-                        break;
-                    case "gyro_y":
-                        imuData.GyroY = property.Value.GetSingle();
-                        break;
-                    case "gyro_z":
-                        imuData.GyroZ = property.Value.GetSingle();
-                        break;
-                    case "mag_x":
-                        imuData.MagX = property.Value.GetSingle();
-                        break;
-                    case "mag_y":
-                        imuData.MagY = property.Value.GetSingle();
-                        break;
-                    case "mag_z":
-                        imuData.MagZ = property.Value.GetSingle();
-                        break;
-                }
-            }
-            return imuData;
-        }
-
-        private IMessage ParsePpgData(JsonDocument jsonDoc)
-        {
-            var ppgData = new PPGData();
-            foreach (var property in jsonDoc.RootElement.EnumerateObject())
-            {
-                switch (property.Name)
-                {
-                    case "led1":
-                        ppgData.Led1 = property.Value.GetInt32();
-                        break;
-                    case "led2":
-                        ppgData.Led2 = property.Value.GetInt32();
-                        break;
-                    case "led3":
-                        ppgData.Led3 = property.Value.GetInt32();
-                        break;
-                    case "temperature":
-                        ppgData.Temperature = property.Value.GetSingle();
-                        break;
-                }
-            }
-            return ppgData;
         }
 
         /// <summary>
@@ -199,7 +186,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             {
                 if (!_sensorDataList.Any())
                 {
-                    MessageBox.Show("No data available in _sensorDataList.", "Debug", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Console.WriteLine("No data available in _sensorDataList.");
                     return new List<string>();
                 }
 
@@ -211,11 +198,11 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 
                 if (!pacifierIds.Any())
                 {
-                    MessageBox.Show("PacifierIds are empty or null.", "Debug", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Console.WriteLine("PacifierIds are empty or null.");
                 }
                 else
                 {
-                    MessageBox.Show($"PacifierIds: {string.Join(", ", pacifierIds)}", "Debug", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Console.WriteLine($"PacifierIds: {string.Join(", ", pacifierIds)}");
                 }
 
                 return pacifierIds;
