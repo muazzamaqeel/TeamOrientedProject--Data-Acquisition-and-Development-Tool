@@ -5,9 +5,9 @@ name: .NET
 
 on:
   push:
-    branches: [ "Staging-Environment" ]
+    branches: [ "Staging-Environment", "main-Production-Environment" ]
   pull_request:
-    branches: [ "Staging-Environment" ]
+    branches: [ "Staging-Environment", "main-Production-Environment" ]
 
 jobs:
   build:
