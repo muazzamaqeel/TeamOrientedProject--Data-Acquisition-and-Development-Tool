@@ -164,6 +164,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         */
 
         // Event handler for received messages
+        // Event handler for received messages
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
@@ -172,25 +173,14 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 string topic = e.ApplicationMessage.Topic;
                 Console.WriteLine($"Received raw data on topic '{topic}'");
 
-                // Extract pacifier ID and sensor type from the topic
+                // Extract pacifier ID from the topic
                 string[] topicParts = topic.Split('/');
                 if (topicParts.Length >= 3 && topicParts[0] == "Pacifier")
                 {
                     string pacifierId = topicParts[1];
-                    string sensorType = topicParts[2];
 
-                    var sensorMessage = ExposeSensorDataManager.Instance.ParseDynamicSensorMessage(pacifierId, sensorType, rawPayload);
-
-                    if (sensorMessage != null)
-                    {
-                        Console.WriteLine($"Parsed {sensorType} data for Pacifier {pacifierId}:");
-                        ExposeSensorDataManager.Instance.DisplayProtobufFields(sensorMessage);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Unknown sensor type '{sensorType}' for Pacifier {pacifierId}, displaying raw bytes.");
-                        Console.WriteLine($"Raw data: {BitConverter.ToString(rawPayload)}");
-                    }
+                    // Call ParseSensorData without the sensorType
+                    ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, rawPayload);
                 }
                 else
                 {
