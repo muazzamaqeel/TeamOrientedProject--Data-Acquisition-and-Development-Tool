@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using InfluxDB.Client.Api.Domain;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Wpf;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab;
@@ -27,7 +25,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             InitializeComponent();
             localHostService = localHost;
 
-            // Retrieve persisted state when the view is loaded
             if (Application.Current.Properties[UserModeKey] is bool userModeValue)
             {
                 isUserMode = userModeValue;
@@ -39,8 +36,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
             UpdateButtonStates();
             UpdateThemeStates();
-
-            // Ensure the User Mode and Developer Mode buttons are visible by default
             SetDefaultView(defaultView);
         }
 
@@ -49,6 +44,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             ModeButtonsPanel.Visibility = Visibility.Collapsed;
             LocalHostPanel.Visibility = Visibility.Collapsed;
             ThemeSelectionPanel.Visibility = Visibility.Collapsed;
+            InfluxDbModePanel.Visibility = Visibility.Collapsed;
 
             switch (defaultView)
             {
@@ -59,8 +55,10 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                     ThemeSelectionPanel.Visibility = Visibility.Visible;
                     break;
                 case "ModeButtons":
-                default:
                     ModeButtonsPanel.Visibility = Visibility.Visible;
+                    break;
+                case "InfluxDbModePanel":
+                    InfluxDbModePanel.Visibility = Visibility.Visible;
                     break;
             }
         }
@@ -79,6 +77,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             PinEntryPanel.Visibility = Visibility.Collapsed;
             ThemeSelectionPanel.Visibility = Visibility.Collapsed;
             ModeButtonsPanel.Visibility = Visibility.Collapsed;
+            InfluxDbModePanel.Visibility = Visibility.Collapsed;
 
             switch (panelName)
             {
@@ -88,12 +87,11 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 case "ThemeSelectionPanel":
                     ThemeSelectionPanel.Visibility = Visibility.Visible;
                     break;
-                case "LocalHostPanel":
-                    LocalHostPanel.Visibility = Visibility.Visible;
+                case "InfluxDbModePanel":
+                    InfluxDbModePanel.Visibility = Visibility.Visible;
                     break;
                 case "None":
                 default:
-                    // No panel to show
                     break;
             }
         }
@@ -138,7 +136,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
             if (!string.IsNullOrWhiteSpace(apiKey))
             {
-                // Save the API key using the localHostService instance
                 ((LocalHostSetup)localHostService).SaveApiKey(apiKey);
                 MessageBox.Show("API Key submitted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -216,7 +213,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             var app = (App)Application.Current;
             app.ApplyTheme(themeUri);
 
-            // Force the UI to refresh, to apply new theme
             RefreshUI();
             UpdateThemeStates();
         }
@@ -226,7 +222,24 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             var settingsViewFactory = ((App)Application.Current).ServiceProvider.GetRequiredService<Func<string, SettingsView>>();
             var settingsView = settingsViewFactory("ThemeSelection");
             ((MainWindow)Application.Current.MainWindow).NavigateTo(settingsView);
+        }
 
+        // Updated event handlers for Local and Server buttons
+        private void LocalButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Show the original Local Host panel
+            LocalHostPanel.Visibility = Visibility.Visible;
+            InfluxDbModePanel.Visibility = Visibility.Collapsed;
+            // Remove the Local Host button from the top completely
+            // InfluxDBButton is kept visible
+        }
+
+        private void ServerButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Show a simple message
+            MessageBox.Show("Hello World", "Server", MessageBoxButton.OK, MessageBoxImage.Information);
+            // Optionally hide the InfluxDB panel if needed
+            InfluxDbModePanel.Visibility = Visibility.Collapsed;
         }
     }
 }

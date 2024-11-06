@@ -30,11 +30,8 @@
                 <Button x:Name="ThemeButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="ThemeSelectionPanel">
                     <TextBlock Text="Theme" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
-                <Button x:Name="LocalHostButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="LocalHostPanel">
-                    <TextBlock Text="Local Host" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Button>
-                <Button x:Name="ServerButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="None">
-                    <TextBlock Text="Server" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button x:Name="InfluxDBButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="InfluxDbModePanel">
+                    <TextBlock Text="InfluxDB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
             </StackPanel>
 
@@ -45,16 +42,13 @@
                 </Grid.RowDefinitions>
 
                 <!-- Mode Selection Panel -->
-                <StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Grid.Row="1" Margin="0,200,0,0">
-                    <!-- User Mode Button -->
+                <StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Grid.Row="1" Margin="0,200,0,0" Visibility="Collapsed">
                     <Button x:Name="UserModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="UserMode_Click">
                         <StackPanel>
                             <TextBlock x:Name="UserModeText" Text="User Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
                             <TextBlock x:Name="UserModeStatus" Text="Current Mode" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontWeight="Normal" Visibility="Visible"/>
                         </StackPanel>
                     </Button>
-
-                    <!-- Developer Mode Button -->
                     <Button x:Name="DeveloperModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="DeveloperMode_Click">
                         <StackPanel>
                             <TextBlock x:Name="DeveloperModeText" Text="Developer Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
@@ -63,14 +57,14 @@
                     </Button>
                 </StackPanel>
 
-                <!-- PIN Entry Section, positioned lower below Mode Buttons -->
-                <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Row="1" Margin="0,300,0,0" Visibility="Collapsed">
+                <!-- PIN Entry Section -->
+                <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Row="1" Margin="0,350,0,0" Visibility="Collapsed">
                     <TextBlock Text="Enter PIN:" HorizontalAlignment="Center" FontSize="16" Margin="0,10" Foreground="White"/>
                     <PasswordBox x:Name="PinInput" Width="200" HorizontalAlignment="Center" Margin="10"/>
                     <Button Content="Continue" Style="{StaticResource SmallModernButtonStyle}" Click="PinSubmit_Click" HorizontalAlignment="Center" Margin="10"/>
                 </StackPanel>
 
-                <!-- Localhost Interface Section with Border and Scrollable WebView2 -->
+                <!-- Localhost Interface Section -->
                 <Border x:Name="LocalHostPanel" BorderThickness="1" BorderBrush="Gray" CornerRadius="10" Padding="10" Margin="10,0,10,20" Visibility="Collapsed">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -79,21 +73,17 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Heading -->
                         <TextBlock Text="InfluxDB Localhost Interface" Foreground="White" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10"/>
 
-                        <!-- Scrollable and Resizable WebView2 with Increased Dimensions -->
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Grid.Row="1">
                             <wv2:WebView2 x:Name="InfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="1200" MinHeight="500" Visibility="Visible"/>
                         </ScrollViewer>
 
-                        <!-- Docker Controls and API Key Entry Section -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Grid.Row="2">
                             <Button x:Name="IntializeDockerImage" Content="Initialize Image" Width="130" Margin="10" Click="DockerInitialize" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="DockerStartButton" Content="Start Docker" Width="120" Margin="10" Click="DockerStart_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="DockerStopButton" Content="Stop Docker" Width="120" Margin="10" Click="DockerStop_Click" Style="{StaticResource ModernButtonStyle}"/>
 
-                            <!-- API Key Input without Placeholder -->
                             <TextBox x:Name="ApiKeyInput" Width="300" Margin="20,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             <Button x:Name="SubmitApiButton" Content="Submit API" Style="{StaticResource ModernButtonStyle}" Click="SubmitApiKey_Click" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0" Visibility="Visible"/>
                         </StackPanel>
@@ -116,6 +106,19 @@
                     </Button>
                 </StackPanel>
 
+                <!-- InfluxDB Mode Panel -->
+                <StackPanel x:Name="InfluxDbModePanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Grid.Row="1" Margin="0,200,0,0" Visibility="Collapsed">
+                    <Button x:Name="LocalButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="LocalButton_Click">
+                        <StackPanel>
+                            <TextBlock Text="Local" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="ServerButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="ServerButton_Click">
+                        <StackPanel>
+                            <TextBlock Text="Server" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Grid>
     </Grid>
