@@ -101,12 +101,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
         }
 
-        private void CopyDockerFile_Click(object sender, RoutedEventArgs e)
-        {
-            // Implement the logic to copy the Docker file.
-            MessageBox.Show("Docker file copied successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
         private void DockerInitialize(object sender, RoutedEventArgs e)
         {
             localHostService.DockerInitialize();
@@ -139,42 +133,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                     SubmitApiButton.Visibility = Visibility.Collapsed;
                 });
             });
-        }
-
-        private void ServerButton_Click(object sender, RoutedEventArgs e)
-        {
-            TerminalPanel.Visibility = Visibility.Visible;
-            string host = "16.170.201.173";
-            string username = "ubuntu";
-            string privateKeyPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
-            serverHandler.InitializeSshConnection(host, username, privateKeyPath);
-        }
-
-        private void TerminalOutput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Enter)
-            {
-                string command = TerminalOutput.Text.Split('\n').Last().Trim();
-                if (!string.IsNullOrEmpty(command))
-                {
-                    serverHandler.ExecuteCommand(command);
-                }
-                e.Handled = true;
-            }
-        }
-
-        private void UpdateTerminalOutput(string output)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                TerminalOutput.AppendText(output);
-                TerminalOutput.ScrollToEnd();
-            });
-        }
-
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
-        {
-            serverHandler.DisconnectSsh();
         }
 
         private void SubmitApiKey_Click(object sender, RoutedEventArgs e)
@@ -275,5 +233,77 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             LocalHostPanel.Visibility = Visibility.Visible;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
         }
+
+
+
+
+        /// <summary>
+        /// Server Operations
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+
+
+
+        private void ServerButton_Click(object sender, RoutedEventArgs e)
+        {
+            TerminalPanel.Visibility = Visibility.Visible;
+            string host = "16.170.201.173";
+            string username = "ubuntu";
+            string privateKeyPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
+            serverHandler.InitializeSshConnection(host, username, privateKeyPath);
+        }
+
+        private void TerminalOutput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                string command = TerminalOutput.Text.Split('\n').Last().Trim();
+                if (!string.IsNullOrEmpty(command))
+                {
+                    serverHandler.ExecuteCommand(command);
+                }
+                e.Handled = true;
+            }
+        }
+
+        private void UpdateTerminalOutput(string output)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                TerminalOutput.AppendText(output);
+                TerminalOutput.ScrollToEnd();
+            });
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            serverHandler.DisconnectSsh();
+        }
+        private void CopyDockerFile_Click(object sender, RoutedEventArgs e)
+        {
+            string sourcePath = "path/to/source/dockerfile"; // Replace with actual path
+            string destinationPath = "path/to/destination/dockerfile"; // Replace with actual path
+            serverHandler.Server_CopyDockerFile(sourcePath, destinationPath);
+        }
+
+        private void Server_InitializeImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            serverHandler.Server_InitializeDockerImage();
+        }
+
+        private void Server_StartDockerButton_Click(object sender, RoutedEventArgs e)
+        {
+            serverHandler.Server_StartDocker();
+        }
+
+        private void Server_StopDockerButton_Click(object sender, RoutedEventArgs e)
+        {
+            serverHandler.Server_StopDocker();
+        }
+
+
+
+
     }
 }

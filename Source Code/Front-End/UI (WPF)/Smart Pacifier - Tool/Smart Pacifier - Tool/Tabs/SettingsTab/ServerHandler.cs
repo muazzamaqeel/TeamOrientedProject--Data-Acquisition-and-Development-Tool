@@ -80,5 +80,38 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 sshClient.Dispose();
             }
         }
+
+        // New methods for Docker and file operations, prefixed with "Server_"
+
+        public void Server_CopyDockerFile(string sourcePath, string destinationPath)
+        {
+            try
+            {
+                File.Copy(sourcePath, destinationPath, true);
+                TerminalOutputReceived?.Invoke($"Docker file copied from {sourcePath} to {destinationPath}.\n");
+            }
+            catch (Exception ex)
+            {
+                TerminalOutputReceived?.Invoke($"Error copying Docker file: {ex.Message}\n");
+            }
+        }
+
+        public void Server_InitializeDockerImage()
+        {
+            ExecuteCommand("docker image build -t my_docker_image .");
+            TerminalOutputReceived?.Invoke("Docker image initialization command executed.\n");
+        }
+
+        public void Server_StartDocker()
+        {
+            ExecuteCommand("docker start my_docker_container");
+            TerminalOutputReceived?.Invoke("Docker start command executed.\n");
+        }
+
+        public void Server_StopDocker()
+        {
+            ExecuteCommand("docker stop my_docker_container");
+            TerminalOutputReceived?.Invoke("Docker stop command executed.\n");
+        }
     }
 }
