@@ -24,7 +24,7 @@ services:
     volumes:
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf  # Use relative path to the conf file
+      - "${MOSQUITTO_CONF_PATH:-./mosquitto.conf}:/mosquitto/config/mosquitto.conf"  # Use env variable with default
     restart: unless-stopped  # Ensuring container restarts on failure
     environment:
       - MQTT_ALLOW_ANONYMOUS=true  # Allow anonymous connections (optional)

@@ -243,8 +243,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         /// <param name="sender"></param>
         /// <param name="e"></param>
 
-
-
         private void ServerButton_Click(object sender, RoutedEventArgs e)
         {
             TerminalPanel.Visibility = Visibility.Visible;
@@ -266,7 +264,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 e.Handled = true;
             }
         }
-
         private void UpdateTerminalOutput(string output)
         {
             Dispatcher.Invoke(() =>
@@ -282,10 +279,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         }
         private void CopyDockerFile_Click(object sender, RoutedEventArgs e)
         {
-            string sourcePath = "path/to/source/dockerfile"; // Replace with actual path
-            string destinationPath = "path/to/destination/dockerfile"; // Replace with actual path
-            serverHandler.Server_CopyDockerFile(sourcePath, destinationPath);
+            serverHandler.Server_CopyDockerFiles();
         }
+
 
         private void Server_InitializeImageButton_Click(object sender, RoutedEventArgs e)
         {

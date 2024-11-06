@@ -11,6 +11,10 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
     public class ServerHandler
     {
+        private readonly string dockerComposeFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docker-compose.yml");
+        private readonly string mosquitoFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mosquitto.conf");
+        private string remoteDirectory;
+
         private SshClient? sshClient;
         private ShellStream? shellStream;
         public event Action<string>? TerminalOutputReceived;
@@ -30,6 +34,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                     shellStream = sshClient.CreateShellStream("xterm", 80, 24, 800, 600, 1024);
                     Task.Run(() => ReadFromShellStream());
                     TerminalOutputReceived?.Invoke("Connected to server.\n");
+
+                    // Set the remote directory dynamically based on the current user's home directory
+                    remoteDirectory = GetRemoteHomeDirectory();
                 }
                 else
                 {
@@ -63,6 +70,32 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
         }
 
+        private string GetRemoteHomeDirectory()
+        {
+            // Run 'whoami' command to get the current user's home directory path
+            string command = "echo $HOME";
+            string homeDirectory = ExecuteCommandWithResult(command).Trim();
+
+            if (string.IsNullOrEmpty(homeDirectory))
+            {
+                TerminalOutputReceived?.Invoke("Failed to retrieve remote home directory.\n");
+                throw new Exception("Failed to retrieve remote home directory.");
+            }
+
+            TerminalOutputReceived?.Invoke($"Remote home directory set to: {homeDirectory}/SmartPacifier\n");
+            return $"{homeDirectory}/SmartPacifier";
+        }
+
+        private string ExecuteCommandWithResult(string command)
+        {
+            if (sshClient == null || !sshClient.IsConnected) return string.Empty;
+
+            using (var cmd = sshClient.CreateCommand(command))
+            {
+                return cmd.Execute();
+            }
+        }
+
         public void ExecuteCommand(string command)
         {
             if (shellStream != null && sshClient.IsConnected)
@@ -81,37 +114,91 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
         }
 
-        // New methods for Docker and file operations, prefixed with "Server_"
-
-        public void Server_CopyDockerFile(string sourcePath, string destinationPath)
+        // Copy necessary Docker and config files to the server
+        public void Server_CopyDockerFiles()
         {
             try
             {
-                File.Copy(sourcePath, destinationPath, true);
-                TerminalOutputReceived?.Invoke($"Docker file copied from {sourcePath} to {destinationPath}.\n");
+                // Ensure the remote directory exists, using sudo for permissions
+                ExecuteCommand($"sudo mkdir -p {remoteDirectory}");
+
+                string remoteComposeFilePath = $"{remoteDirectory}/docker-compose.yml";
+                string remoteMosquittoConfigPath = $"{remoteDirectory}/mosquitto.conf";
+
+                if (sshClient?.IsConnected == true)
+                {
+                    using (var sftp = new SftpClient(sshClient.ConnectionInfo))
+                    {
+                        sftp.Connect();
+
+                        // Re-upload docker-compose.yml
+                        if (UploadFile(sftp, dockerComposeFilePath, remoteComposeFilePath, "docker-compose.yml"))
+                        {
+                            // Re-upload mosquitto.conf only if docker-compose.yml was uploaded
+                            UploadFile(sftp, mosquitoFilePath, remoteMosquittoConfigPath, "mosquitto.conf");
+                        }
+
+                        sftp.Disconnect();
+                        TerminalOutputReceived?.Invoke("All files re-uploaded to the user's SmartPacifier directory.\n");
+                    }
+                }
+                else
+                {
+                    TerminalOutputReceived?.Invoke("SSH client is not connected.\n");
+                }
             }
             catch (Exception ex)
             {
-                TerminalOutputReceived?.Invoke($"Error copying Docker file: {ex.Message}\n");
+                TerminalOutputReceived?.Invoke($"Error in Server_CopyDockerFiles: {ex.Message}\n");
+            }
+        }
+
+        // Helper method to upload a file via SFTP
+        private bool UploadFile(SftpClient sftp, string localPath, string remotePath, string fileName)
+        {
+            if (File.Exists(localPath))
+            {
+                try
+                {
+                    using (var fileStream = new FileStream(localPath, FileMode.Open))
+                    {
+                        sftp.UploadFile(fileStream, remotePath, true);
+                        TerminalOutputReceived?.Invoke($"{fileName} uploaded to {remotePath}.\n");
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TerminalOutputReceived?.Invoke($"Error uploading {fileName}: {ex.Message}\n");
+                    return false;
+                }
+            }
+            else
+            {
+                TerminalOutputReceived?.Invoke($"Local {fileName} not found.\n");
+                return false;
             }
         }
 
         public void Server_InitializeDockerImage()
         {
-            ExecuteCommand("docker image build -t my_docker_image .");
-            TerminalOutputReceived?.Invoke("Docker image initialization command executed.\n");
+            // Ensure that Docker Compose file and config file exist remotely before initializing
+            ExecuteCommand($"export MOSQUITTO_CONF_PATH='{remoteDirectory}/mosquitto.conf' && sudo docker-compose -f {remoteDirectory}/docker-compose.yml up --build");
+            TerminalOutputReceived?.Invoke("Docker Compose build and up command executed with sudo.\n");
         }
 
         public void Server_StartDocker()
         {
-            ExecuteCommand("docker start my_docker_container");
-            TerminalOutputReceived?.Invoke("Docker start command executed.\n");
+            ExecuteCommand($"sudo docker start mosquitto");
+            ExecuteCommand($"sudo docker start influxdb");
+            TerminalOutputReceived?.Invoke("Docker containers started with sudo.\n");
         }
 
         public void Server_StopDocker()
         {
-            ExecuteCommand("docker stop my_docker_container");
-            TerminalOutputReceived?.Invoke("Docker stop command executed.\n");
+            ExecuteCommand($"sudo docker stop mosquitto");
+            ExecuteCommand($"sudo docker stop influxdb");
+            TerminalOutputReceived?.Invoke("Docker containers stopped with sudo.\n");
         }
     }
 }
