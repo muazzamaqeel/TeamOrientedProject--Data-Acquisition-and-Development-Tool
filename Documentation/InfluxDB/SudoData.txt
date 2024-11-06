@@ -1,0 +1,18 @@
+campaign_metadata,campaign_name=Campaign1 status="created" 1730385600000000000
+campaign_metadata,campaign_name=Campaign1 status="started" 1730385900000000000
+campaign_metadata,campaign_name=Campaign1 status="stopped" 1730389200000000000
+
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier1,sensor_type=ppg led1=100i,led2=110i,led3=105i,temperature=36.5 1730475368000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier1,sensor_type=imu acc_x=-0.02,acc_y=0.03,acc_z=-0.01,gyro_x=-0.0,gyro_y=-0.1,gyro_z=0.15,mag_x=0.03,mag_y=-0.05,mag_z=0.08 1730475369000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier1,sensor_type=ppg led1=102i,led2=108i,led3=107i,temperature=36.7 1730475370000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier1,sensor_type=imu acc_x=0.02,acc_y=-0.09,acc_z=0.2,gyro_x=0.04,gyro_y=0.08,gyro_z=-0.06,mag_x=-0.03,mag_y=0.09,mag_z=0.11 1730475371000000000
+
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier3,sensor_type=ppg led1=101i,led2=109i,led3=106i,temperature=36.8 1730475372000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier3,sensor_type=imu acc_x=-0.03,acc_y=0.02,acc_z=-0.01,gyro_x=0.03,gyro_y=-0.01,gyro_z=0.19,mag_x=0.05,mag_y=-0.02,mag_z=0.07 1730475373000000000
+
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier1,sensor_type=ppg led1=103i,led2=111i,led3=110i,temperature=36.6 1730475374000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier1,sensor_type=imu acc_x=0.01,acc_y=-0.02,acc_z=0.00,gyro_x=-0.01,gyro_y=0.12,gyro_z=-0.07,mag_x=0.04,mag_y=-0.01,mag_z=0.09 1730475375000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier2,sensor_type=ppg led1=99i,led2=107i,led3=104i,temperature=36.4 1730475376000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier2,sensor_type=imu acc_x=-0.01,acc_y=0.04,acc_z=0.00,gyro_x=0.05,gyro_y=-0.02,gyro_z=0.20,mag_x=0.01,mag_y=-0.03,mag_z=0.06 1730475377000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier3,sensor_type=ppg led1=100i,led2=108i,led3=105i,temperature=36.9 1730475378000000000
+campaigns,campaign_name=Campaign1,pacifier_name=Pacifier3,sensor_type=imu acc_x=0.03,acc_y=-0.01,acc_z=0.01,gyro_x=0.02,gyro_y=0.00,gyro_z=-0.12,mag_x=0.06,mag_y=0.04,mag_z=0.09 1730475379000000000
