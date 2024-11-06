@@ -218,7 +218,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void Campaign_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            ((MainWindow)Application.Current.MainWindow).NavigateTo(new MonitoringView());
+            //((MainWindow)Application.Current.MainWindow).NavigateTo(new MonitoringView());
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
