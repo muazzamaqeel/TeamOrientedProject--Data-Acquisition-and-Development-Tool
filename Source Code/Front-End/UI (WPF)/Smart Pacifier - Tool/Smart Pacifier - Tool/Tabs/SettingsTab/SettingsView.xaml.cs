@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Configuration;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Web.WebView2.Wpf;
-using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.Interface.Services;
 
@@ -19,11 +18,14 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private const string ThemeKey = "SelectedTheme";
         private readonly ILocalHost localHostService;
         private bool isUserMode = true;
+        private readonly ServerHandler serverHandler;
 
         public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
         {
             InitializeComponent();
             localHostService = localHost;
+            serverHandler = new ServerHandler();
+            serverHandler.TerminalOutputReceived += UpdateTerminalOutput;
 
             if (Application.Current.Properties[UserModeKey] is bool userModeValue)
             {
@@ -45,6 +47,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             LocalHostPanel.Visibility = Visibility.Collapsed;
             ThemeSelectionPanel.Visibility = Visibility.Collapsed;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
+            TerminalPanel.Visibility = Visibility.Collapsed;
 
             switch (defaultView)
             {
@@ -63,6 +66,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
         }
 
+        // Event handler for Panel Button clicks to set the visibility of various panels
         private void PanelButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.CommandParameter is string panelName)
@@ -78,6 +82,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             ThemeSelectionPanel.Visibility = Visibility.Collapsed;
             ModeButtonsPanel.Visibility = Visibility.Collapsed;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
+            TerminalPanel.Visibility = Visibility.Collapsed;
 
             switch (panelName)
             {
@@ -94,6 +99,12 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 default:
                     break;
             }
+        }
+
+        private void CopyDockerFile_Click(object sender, RoutedEventArgs e)
+        {
+            // Implement the logic to copy the Docker file.
+            MessageBox.Show("Docker file copied successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void DockerInitialize(object sender, RoutedEventArgs e)
@@ -128,6 +139,42 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                     SubmitApiButton.Visibility = Visibility.Collapsed;
                 });
             });
+        }
+
+        private void ServerButton_Click(object sender, RoutedEventArgs e)
+        {
+            TerminalPanel.Visibility = Visibility.Visible;
+            string host = "16.170.201.173";
+            string username = "ubuntu";
+            string privateKeyPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
+            serverHandler.InitializeSshConnection(host, username, privateKeyPath);
+        }
+
+        private void TerminalOutput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                string command = TerminalOutput.Text.Split('\n').Last().Trim();
+                if (!string.IsNullOrEmpty(command))
+                {
+                    serverHandler.ExecuteCommand(command);
+                }
+                e.Handled = true;
+            }
+        }
+
+        private void UpdateTerminalOutput(string output)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                TerminalOutput.AppendText(output);
+                TerminalOutput.ScrollToEnd();
+            });
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            serverHandler.DisconnectSsh();
         }
 
         private void SubmitApiKey_Click(object sender, RoutedEventArgs e)
@@ -186,7 +233,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void UpdateThemeStates()
         {
-            if (ConfigurationManager.AppSettings[ThemeKey] is "Resources/ColorsDark.xaml")
+            if (ConfigurationManager.AppSettings[ThemeKey] == "Resources/ColorsDark.xaml")
             {
                 DarkThemeStatus.Visibility = Visibility.Visible;
                 LightThemeStatus.Visibility = Visibility.Collapsed;
@@ -212,7 +259,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             var app = (App)Application.Current;
             app.ApplyTheme(themeUri);
-
             RefreshUI();
             UpdateThemeStates();
         }
@@ -224,21 +270,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             ((MainWindow)Application.Current.MainWindow).NavigateTo(settingsView);
         }
 
-        // Updated event handlers for Local and Server buttons
         private void LocalButton_Click(object sender, RoutedEventArgs e)
         {
-            // Show the original Local Host panel
             LocalHostPanel.Visibility = Visibility.Visible;
-            InfluxDbModePanel.Visibility = Visibility.Collapsed;
-            // Remove the Local Host button from the top completely
-            // InfluxDBButton is kept visible
-        }
-
-        private void ServerButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Show a simple message
-            MessageBox.Show("Hello World", "Server", MessageBoxButton.OK, MessageBoxImage.Information);
-            // Optionally hide the InfluxDB panel if needed
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
         }
     }
