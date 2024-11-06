@@ -127,6 +127,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// <param name="pacifierId"></param>
         private void FetchSensorsList(string pacifierId)
         {
+            /*
             var sensorDataList = ExposeSensorDataManager.Instance.GetAllSensorData();
 
             // Clear previous data
@@ -147,7 +148,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
             // Add unique sensor types to SensorItems
             AddSensorItems(uniqueSensorTypes);
-        }
+        
+            */
+            
+            }
 
         /// <summary>
         /// 
