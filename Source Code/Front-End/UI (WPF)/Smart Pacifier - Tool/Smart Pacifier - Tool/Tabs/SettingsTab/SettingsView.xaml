@@ -36,7 +36,7 @@
             </StackPanel>
 
             <!-- Main Content Panels -->
-            <Grid Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0">
+            <Grid Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,20,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
@@ -66,20 +66,27 @@
 
                 <!-- Localhost Interface Section -->
                 <Border x:Name="LocalHostPanel" BorderThickness="1" BorderBrush="Gray" CornerRadius="10" Padding="10" Margin="10,0,10,20" Visibility="Collapsed">
-                    <Grid>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="InfluxDB Localhost Interface" Foreground="White" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10"/>
+                        <!-- Heading with Refresh Button -->
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="InfluxDB Localhost Interface" Foreground="White" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,15"/>
+                        <Button Grid.Row="0" Grid.Column="2" x:Name="RefreshButton" Content="Refresh" Width="120" Margin="0" Click="RefreshButton_Click" Style="{StaticResource ModernButtonStyle}"/>
 
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Grid.Row="1">
-                            <wv2:WebView2 x:Name="InfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="1200" MinHeight="500" Visibility="Visible"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <wv2:WebView2 x:Name="InfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Visibility="Visible" Source="http://localhost:8086"/>
                         </ScrollViewer>
 
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Grid.Row="2">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Grid.Row="2" Grid.ColumnSpan="3">
                             <Button x:Name="IntializeDockerImage" Content="Initialize Image" Width="130" Margin="10" Click="DockerInitialize" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="DockerStartButton" Content="Start Docker" Width="120" Margin="10" Click="DockerStart_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="DockerStopButton" Content="Stop Docker" Width="120" Margin="10" Click="DockerStop_Click" Style="{StaticResource ModernButtonStyle}"/>
@@ -88,7 +95,7 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-
+                
                 <!-- Theme Selection Section -->
                 <StackPanel x:Name="ThemeSelectionPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Margin="0,200,0,0" Visibility="Collapsed">
                     <Button x:Name="DarkThemeButton" Style="{StaticResource ModernButtonStyle}" Width="180" Height="75" Margin="20" Click="DarkTheme_Click">

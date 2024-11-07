@@ -234,8 +234,10 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
         }
 
-
-
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            InfluxDbWebView.Reload();
+        }
 
         /// <summary>
         /// Server Operations
