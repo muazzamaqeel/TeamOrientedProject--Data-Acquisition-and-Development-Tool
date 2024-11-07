@@ -10,6 +10,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
     {
         private readonly string dockerComposeFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docker-compose.yml");
         private readonly string apiKeyFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apikey.txt");
+        private readonly string mosquittoConfigFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mosquitto.conf");
 
         public LocalHostSetup()
         {
@@ -46,6 +47,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
         {
             try
             {
+                SetEnvironmentVariableForMosquittoConfig();
+
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
@@ -65,7 +68,6 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                 MessageBox.Show($"Error initializing Docker: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
 
         public void StartDocker()
         {
@@ -162,6 +164,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                 return;
             }
 
+            SetEnvironmentVariableForMosquittoConfig();
+
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
@@ -179,30 +183,29 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                 string error = process.StandardError.ReadToEnd();
                 process.WaitForExit();
 
-                // Check if there's a genuine error in the output
                 if (process.ExitCode != 0 || (!string.IsNullOrEmpty(error) && !IsNormalDockerOutput(error)))
                 {
                     MessageBox.Show($"Docker command error:\n{error}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                else
+                else if (!string.IsNullOrWhiteSpace(output))
                 {
-                    // Show success for standard, non-critical messages
-                    if (!string.IsNullOrWhiteSpace(output))
-                    {
-                        MessageBox.Show($"Docker command succeeded:\n{output}", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
+                    MessageBox.Show($"Docker command succeeded:\n{output}", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
         }
 
-        // Helper method to determine if the output is a normal Docker operation, not an error
+        private void SetEnvironmentVariableForMosquittoConfig()
+        {
+            // Set environment variable for Mosquitto config file path
+            Environment.SetEnvironmentVariable("MOSQUITTO_CONF_PATH", mosquittoConfigFilePath);
+        }
+
         private bool IsNormalDockerOutput(string message)
         {
             return message.Contains("Created") || message.Contains("Starting") || message.Contains("Started") ||
                    message.Contains("Stopping") || message.Contains("Stopped") || message.Contains("Removing") ||
                    message.Contains("Removed") || message.Contains("Network");
         }
-
 
         public void SaveApiKey(string apiKey)
         {

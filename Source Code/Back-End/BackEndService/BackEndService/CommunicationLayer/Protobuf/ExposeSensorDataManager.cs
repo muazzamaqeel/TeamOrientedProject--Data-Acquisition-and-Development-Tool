@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Google.Protobuf;
-using Protos;
 using Google.Protobuf.Reflection;
-
+using Protos;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 {
@@ -43,32 +43,26 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 string jsonString = Encoding.UTF8.GetString(data);
                 JsonDocument jsonDoc = JsonDocument.Parse(jsonString);
 
-                // Instantiate a generic SensorData message
                 var sensorData = new SensorData
                 {
                     PacifierId = pacifierId
                 };
 
-                // Dynamically determine the type of message to parse by examining jsonDoc
                 var parsedMessage = ParseDynamicMessage(jsonDoc);
                 if (parsedMessage != null)
                 {
-                    // Serialize the message to bytes
-                    byte[] serializedData = parsedMessage.ToByteArray();
-
-                    // Use reflection to determine the sensor type from the message class name
                     string sensorType = parsedMessage.Descriptor.Name.ToLower();
-                    sensorData.SensorDataMap.Add(sensorType, ByteString.CopyFrom(serializedData));
+                    sensorData.DataMap.Add(sensorType, parsedMessage.ToByteString());
 
                     lock (_dataLock)
                     {
                         _sensorDataList.Add(sensorData);
                     }
 
-                    SensorDataUpdated?.Invoke(this, EventArgs.Empty); // Trigger event to notify listeners
+                    SensorDataUpdated?.Invoke(this, EventArgs.Empty);
 
                     Console.WriteLine($"Parsed {sensorType} data for Pacifier {pacifierId}:");
-                    DisplayProtobufFields(parsedMessage); // Display parsed data
+                    DisplayProtobufFields(parsedMessage);
                 }
             }
             catch (Exception ex)
@@ -78,22 +72,22 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
         }
 
         /// <summary>
-        /// Uses reflection to parse JSON data into a dynamically created Protobuf message.
+        /// Uses Protobuf reflection to parse JSON data into a dynamically created Protobuf message.
         /// </summary>
         private IMessage? ParseDynamicMessage(JsonDocument jsonDoc)
         {
             IMessage? parsedMessage = null;
 
-            // Attempt to parse as various known types by reflection
-            foreach (var descriptor in typeof(SensorData).Assembly.GetTypes()
-                         .Where(t => typeof(IMessage).IsAssignableFrom(t) && t != typeof(SensorData))
-                         .Select(t => Activator.CreateInstance(t) as IMessage)
-                         .Where(m => m != null))
+            foreach (var type in Assembly.GetExecutingAssembly().GetTypes()
+                     .Where(t => typeof(IMessage).IsAssignableFrom(t) && t != typeof(SensorData)))
             {
-                if (TryPopulateMessageFields(descriptor!, jsonDoc))
+                if (Activator.CreateInstance(type) is IMessage instance)
                 {
-                    parsedMessage = descriptor;
-                    break;
+                    if (TryPopulateMessageFieldsUsingReflection(instance, jsonDoc))
+                    {
+                        parsedMessage = instance;
+                        break;
+                    }
                 }
             }
 
@@ -101,9 +95,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
         }
 
         /// <summary>
-        /// Dynamically populates fields in a Protobuf message based on JSON data.
+        /// Dynamically populates fields in a Protobuf message using Protobuf reflection.
         /// </summary>
-        private bool TryPopulateMessageFields(IMessage message, JsonDocument jsonDoc)
+        private bool TryPopulateMessageFieldsUsingReflection(IMessage message, JsonDocument jsonDoc)
         {
             bool hasPopulated = false;
 
@@ -113,22 +107,23 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 if (field != null)
                 {
                     hasPopulated = true;
-                    switch (field.FieldType)
+                    object value = field.FieldType switch
                     {
-                        case FieldType.Float:
-                            field.Accessor.SetValue(message, property.Value.GetSingle());
-                            break;
-                        case FieldType.Int32:
-                            field.Accessor.SetValue(message, property.Value.GetInt32());
-                            break;
-                        case FieldType.Message:
-                            var nestedMessage = (IMessage)field.Accessor.GetValue(message);
-                            if (nestedMessage != null)
-                            {
-                                var nestedJson = JsonDocument.Parse(property.Value.GetRawText());
-                                TryPopulateMessageFields(nestedMessage, nestedJson);
-                            }
-                            break;
+                        FieldType.Float => property.Value.GetSingle(),
+                        FieldType.Int32 => property.Value.GetInt32(),
+                        FieldType.String => property.Value.GetString(),
+                        _ => null
+                    };
+
+                    if (value != null)
+                    {
+                        field.Accessor.SetValue(message, value);
+                    }
+                    else if (field.FieldType == FieldType.Message)
+                    {
+                        var nestedMessage = (IMessage)field.Accessor.GetValue(message);
+                        var nestedJson = JsonDocument.Parse(property.Value.GetRawText());
+                        TryPopulateMessageFieldsUsingReflection(nestedMessage, nestedJson);
                     }
                 }
             }
