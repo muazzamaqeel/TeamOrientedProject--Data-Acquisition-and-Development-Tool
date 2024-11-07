@@ -228,5 +228,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             ((MainWindow)Application.Current.MainWindow).NavigateTo(settingsView);
 
         }
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            InfluxDbWebView.Reload();
+        }
     }
 }
