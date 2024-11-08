@@ -11,6 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.Interface.Services;
 using Microsoft.Extensions.Configuration.Json;
+using System.Windows.Media;
+using Newtonsoft.Json;
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
     public partial class SettingsView : UserControl
@@ -348,8 +350,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 MessageBox.Show($"Invalid URL format: {url}. Error: {ex.Message}", "URL Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-
         private void CloseServerWebView_Click(object sender, RoutedEventArgs e)
         {
             ServerWebViewBorder.Visibility = Visibility.Collapsed;
@@ -361,5 +361,56 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             serverHandler.Server_StopDocker();
         }
+
+
+        private void ServerSubmitApiKey_Click(object sender, RoutedEventArgs e)
+        {
+            // Check if the input has placeholder text
+            if (ServerApiKeyInput.Text == "Enter Server API Key")
+            {
+                ServerApiKeyInput.Text = string.Empty;
+                ServerApiKeyInput.Foreground = Brushes.Black;
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string apiKey = ServerApiKeyInput.Text;
+
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                SaveApiKeyToConfig(apiKey);
+                MessageBox.Show("Server API Key submitted and saved successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void SaveApiKeyToConfig(string apiKey)
+        {
+            // Path to your config.json file
+            var configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "config.json");
+
+            try
+            {
+                // Load the JSON file
+                var json = File.ReadAllText(configFilePath);
+                dynamic config = JsonConvert.DeserializeObject(json);
+
+                // Update the API Key in the ServerDatabaseConfiguration section
+                config.ServerDatabaseConfiguration.ApiKey = apiKey;
+
+                // Save the updated JSON back to the file
+                string output = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configFilePath, output);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save API Key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
     }
 }
