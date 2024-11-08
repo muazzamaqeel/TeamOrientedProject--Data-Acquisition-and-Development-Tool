@@ -27,6 +27,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private readonly string? serverHost;
         private readonly string? serverUsername;
         private readonly string? serverApiKey;
+        private readonly string? serverPort;
 
         public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
         {
@@ -37,15 +38,14 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
             // Load configuration
             // Load configuration
+            // Load configuration
             configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json"), optional: true, reloadOnChange: true)
                 .Build();
 
-
-
-
             // Retrieve server configuration values
             serverHost = configuration["ServerDatabaseConfiguration:Host"];
+            serverPort = configuration["ServerDatabaseConfiguration:Port"];
             serverUsername = configuration["ServerDatabaseConfiguration:Username"];
             serverApiKey = configuration["ServerDatabaseConfiguration:ApiKey"];
 
@@ -274,12 +274,14 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             TerminalPanel.Visibility = Visibility.Visible;
             string privateKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
+
+            // Initialize SSH connection with server details
             serverHandler.InitializeSshConnection(serverHost, serverUsername, privateKeyPath);
 
-            // Construct the full URL with protocol check
+            // Construct the full URL using serverHost and serverPort
             string fullUrl = serverHost.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                             ? $"{serverHost}:8086"
-                             : $"http://{serverHost}:8086";
+                             ? $"{serverHost}:{serverPort}"
+                             : $"http://{serverHost}:{serverPort}";
 
             OpenServerWebView(fullUrl);
         }
@@ -325,7 +327,13 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private void Server_StartDockerButton_Click(object sender, RoutedEventArgs e)
         {
             serverHandler.Server_StartDocker();
-            OpenServerWebView($"http://{serverHost}:8086");
+
+            // Use serverHost and serverPort for the URL
+            string fullUrl = serverHost.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                             ? $"{serverHost}:{serverPort}"
+                             : $"http://{serverHost}:{serverPort}";
+
+            OpenServerWebView(fullUrl);
         }
 
         private void OpenServerWebView(string url)
@@ -340,6 +348,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 MessageBox.Show($"Invalid URL format: {url}. Error: {ex.Message}", "URL Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void CloseServerWebView_Click(object sender, RoutedEventArgs e)
         {
