@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
@@ -34,7 +35,6 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
 
             if (IsDockerInstalled())
             {
-                MessageBox.Show("Docker is already installed and ready to use.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 RunDockerInstall();
             }
             else
@@ -166,10 +166,21 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
 
             SetEnvironmentVariableForMosquittoConfig();
 
+            string finalCommand = $"/C docker-compose -f \"{dockerComposeFilePath}\" {command}";
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                finalCommand = $"/C docker-compose -f \"{dockerComposeFilePath}\" {command}";
+            }
+            else
+            {
+                // Linux/MacOS specific logic if necessary
+            }
+
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = $"/C docker-compose -f \"{dockerComposeFilePath}\" {command}",
+                Arguments = finalCommand,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,

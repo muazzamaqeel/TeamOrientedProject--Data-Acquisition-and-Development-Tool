@@ -72,7 +72,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private string GetRemoteHomeDirectory()
         {
-            // Run 'whoami' command to get the current user's home directory path
             string command = "echo $HOME";
             string homeDirectory = ExecuteCommandWithResult(command).Trim();
 
@@ -119,8 +118,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             try
             {
-                // Ensure the remote directory exists, using sudo for permissions
+                // Ensure the remote directory exists and set permissions for the ubuntu user
                 ExecuteCommand($"sudo mkdir -p {remoteDirectory}");
+                ExecuteCommand($"sudo chown ubuntu:ubuntu {remoteDirectory}"); // Change ownership to ubuntu user
 
                 string remoteComposeFilePath = $"{remoteDirectory}/docker-compose.yml";
                 string remoteMosquittoConfigPath = $"{remoteDirectory}/mosquitto.conf";
@@ -153,6 +153,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
         }
 
+
         // Helper method to upload a file via SFTP
         private bool UploadFile(SftpClient sftp, string localPath, string remotePath, string fileName)
         {
@@ -182,8 +183,8 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         public void Server_InitializeDockerImage()
         {
-            // Ensure that Docker Compose file and config file exist remotely before initializing
-            ExecuteCommand($"export MOSQUITTO_CONF_PATH='{remoteDirectory}/mosquitto.conf' && sudo docker-compose -f {remoteDirectory}/docker-compose.yml up --build");
+            // Set the MOSQUITTO_CONF_PATH environment variable and initialize Docker Compose remotely
+            ExecuteCommand($"export MOSQUITTO_CONF_PATH='{remoteDirectory}/mosquitto.conf' && sudo docker-compose -f {remoteDirectory}/docker-compose.yml up --build -d");
             TerminalOutputReceived?.Invoke("Docker Compose build and up command executed with sudo.\n");
         }
 

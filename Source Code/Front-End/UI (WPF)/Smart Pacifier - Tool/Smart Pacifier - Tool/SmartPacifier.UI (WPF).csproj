@@ -15,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\OutputResources\TeamKey.pem" />
     <None Remove="Tabs\SettingsTab\.pem" />
   </ItemGroup>
 
@@ -49,6 +50,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\OutputResources\TeamKey.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <AutoGen>True</AutoGen>
@@ -65,9 +72,9 @@
 
 	<Target Name="PostBuildCopy" AfterTargets="PostBuildEvent">
 		<Copy SourceFiles="Resources\OutputResources\docker-compose.yml" DestinationFiles="$(OutputPath)docker-compose.yml" Condition="Exists('Resources\OutputResources\docker-compose.yml')" SkipUnchangedFiles="true" />
-
 		<Copy SourceFiles="Resources\OutputResources\mosquitto.conf" DestinationFiles="$(OutputPath)mosquitto.conf" Condition="Exists('Resources\OutputResources\mosquitto.conf')" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="Resources\OutputResources\TeamKey.pem" DestinationFiles="$(OutputPath)TeamKey.pem" Condition="Exists('Resources\OutputResources\TeamKey.pem')" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="Resources\OutputResources\config.env" DestinationFiles="$(OutputPath)config.env" Condition="Exists('Resources\OutputResources\config.env')" SkipUnchangedFiles="true" />
 
 	</Target>
 
