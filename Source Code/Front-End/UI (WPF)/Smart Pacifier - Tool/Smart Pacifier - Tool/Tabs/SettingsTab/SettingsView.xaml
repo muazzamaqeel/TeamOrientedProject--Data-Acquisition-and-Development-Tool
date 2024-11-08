@@ -138,7 +138,7 @@
                         <StackPanel Orientation="Vertical" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,10,0">
                             <Button x:Name="CopyDockerFileButton" Content="Copy Docker File" Width="150" Height="40" Margin="5" Click="CopyDockerFile_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="InitializeImageButton" Content="Initialize Image" Width="150" Height="40" Margin="5" Click="Server_InitializeImageButton_Click" Style="{StaticResource ModernButtonStyle}"/>
-                            <Button x:Name="StartDockerButton" Content="Start Docker" Width="150" Height="40" Margin="5" Click="Server_StartDockerButton_Click" Style="{StaticResource ModernButtonStyle}"/>
+                            <Button x:Name="StartDockerButton" Content="Open WebView" Width="150" Height="40" Margin="5" Click="Server_StartDockerButton_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="StopDockerButton" Content="Stop Docker" Width="150" Height="40" Margin="5" Click="Server_StopDockerButton_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="CloseServerWebview" Content="Close WebView" Width="150" Height="40" Margin="5" Click="CloseServerWebView_Click" Style="{StaticResource ModernButtonStyle}"/>
                         </StackPanel>
