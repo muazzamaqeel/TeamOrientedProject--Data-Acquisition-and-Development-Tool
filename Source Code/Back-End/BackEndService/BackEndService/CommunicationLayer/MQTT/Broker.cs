@@ -164,7 +164,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         */
 
         // Event handler for received messages
-        // Event handler for received messages
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
@@ -181,6 +180,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
                     // Call ParseSensorData without the sensorType
                     ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, rawPayload);
+
+                    MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload));
                 }
                 else
                 {
@@ -226,9 +227,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         public class MessageReceivedEventArgs : EventArgs
         {
             public string Topic { get; set; }
-            public string Payload { get; set; }
+            public byte[] Payload { get; set; }
 
-            public MessageReceivedEventArgs(string topic, string payload)
+            public MessageReceivedEventArgs(string topic, byte[] payload)
             {
                 Topic = topic;
                 Payload = payload;
