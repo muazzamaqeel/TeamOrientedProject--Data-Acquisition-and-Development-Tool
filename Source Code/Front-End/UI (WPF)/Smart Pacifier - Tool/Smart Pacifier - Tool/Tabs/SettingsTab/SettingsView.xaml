@@ -95,7 +95,7 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-                
+
                 <!-- Theme Selection Section -->
                 <StackPanel x:Name="ThemeSelectionPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Margin="0,200,0,0" Visibility="Collapsed">
                     <Button x:Name="DarkThemeButton" Style="{StaticResource ModernButtonStyle}" Width="180" Height="75" Margin="20" Click="DarkTheme_Click">
@@ -140,33 +140,39 @@
                             <Button x:Name="InitializeImageButton" Content="Initialize Image" Width="150" Height="40" Margin="5" Click="Server_InitializeImageButton_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="StartDockerButton" Content="Start Docker" Width="150" Height="40" Margin="5" Click="Server_StartDockerButton_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="StopDockerButton" Content="Stop Docker" Width="150" Height="40" Margin="5" Click="Server_StopDockerButton_Click" Style="{StaticResource ModernButtonStyle}"/>
+                            <Button x:Name="CloseServerWebview" Content="Close WebView" Width="150" Height="40" Margin="5" Click="CloseServerWebView_Click" Style="{StaticResource ModernButtonStyle}"/>
                         </StackPanel>
 
                         <!-- Terminal Output Section -->
                         <TextBox x:Name="TerminalOutput" Grid.Column="1"
-                                 AcceptsReturn="True"
-                                 AcceptsTab="True"
-                                 FontFamily="Consolas"
-                                 FontSize="14"
-                                 Background="Black"
-                                 Foreground="Lime"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Disabled"
-                                 IsReadOnly="True"
-                                 Margin="0,0,0,5"/>
+                                         AcceptsReturn="True"
+                                         AcceptsTab="True"
+                                         FontFamily="Consolas"
+                                         FontSize="14"
+                                         Background="Black"
+                                         Foreground="Lime"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Disabled"
+                                         IsReadOnly="True"
+                                         Margin="0,0,0,5"/>
 
-                        <!-- WebView Section with Close Button -->
-                        <Border x:Name="WebViewBorder" Grid.Column="1" Background="White" Visibility="Collapsed" Margin="0,10,0,0">
+                        <!-- WebView Section with Close Button for Server -->
+                        <Border x:Name="ServerWebViewBorder" Grid.Column="1" Background="White" BorderBrush="Gray" BorderThickness="1" CornerRadius="10" Visibility="Collapsed" Margin="0,0,0,0">
                             <Grid>
                                 <wv2:WebView2 x:Name="ServerInfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                                <Button x:Name="CloseWebViewButton" Content="X" Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseWebView_Click"/>
                             </Grid>
                         </Border>
-
                     </Grid>
                 </Border>
+
             </Grid>
+
+            <!-- Close Button on Top Right for WebView -->
+            <Button x:Name="CloseWebViewOverlayButton" Content="X" Width="30" Height="30" 
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,90,10,0"
+                    Click="CloseServerWebView_Click" Visibility="Collapsed" 
+                    Background="Red" Foreground="White" FontWeight="Bold"/>
         </Grid>
     </Grid>
 </UserControl>
