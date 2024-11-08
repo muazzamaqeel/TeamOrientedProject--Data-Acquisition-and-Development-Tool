@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using InfluxDB.Client.Api.Client;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.Interface.Services;
-
+using Microsoft.Extensions.Configuration.Json;
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
     public partial class SettingsView : UserControl
@@ -20,6 +23,11 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private bool isUserMode = true;
         private readonly ServerHandler serverHandler;
 
+        private readonly IConfiguration? configuration;
+        private readonly string? serverHost;
+        private readonly string? serverUsername;
+        private readonly string? serverApiKey;
+
         public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
         {
             InitializeComponent();
@@ -27,6 +35,21 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             serverHandler = new ServerHandler();
             serverHandler.TerminalOutputReceived += UpdateTerminalOutput;
 
+            // Load configuration
+            // Load configuration
+            configuration = new ConfigurationBuilder()
+                .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json"), optional: true, reloadOnChange: true)
+                .Build();
+
+
+
+
+            // Retrieve server configuration values
+            serverHost = configuration["ServerDatabaseConfiguration:Host"];
+            serverUsername = configuration["ServerDatabaseConfiguration:Username"];
+            serverApiKey = configuration["ServerDatabaseConfiguration:ApiKey"];
+
+            // Set other properties and initialize UI
             if (Application.Current.Properties[UserModeKey] is bool userModeValue)
             {
                 isUserMode = userModeValue;
@@ -40,6 +63,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             UpdateThemeStates();
             SetDefaultView(defaultView);
         }
+
 
         private void SetDefaultView(string defaultView)
         {
@@ -191,7 +215,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void UpdateThemeStates()
         {
-            if (ConfigurationManager.AppSettings[ThemeKey] == "Resources/ColorsDark.xaml")
+            if (System.Configuration.ConfigurationManager.AppSettings[ThemeKey] == "Resources/ColorsDark.xaml")
             {
                 DarkThemeStatus.Visibility = Visibility.Visible;
                 LightThemeStatus.Visibility = Visibility.Collapsed;
@@ -202,6 +226,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 LightThemeStatus.Visibility = Visibility.Visible;
             }
         }
+
 
         private void DarkTheme_Click(object sender, RoutedEventArgs e)
         {
@@ -248,14 +273,17 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private void ServerButton_Click(object sender, RoutedEventArgs e)
         {
             TerminalPanel.Visibility = Visibility.Visible;
-            string host = "18.194.233.197";
-            string username = "ubuntu";
-            string privateKeyPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
-            serverHandler.InitializeSshConnection(host, username, privateKeyPath);
+            string privateKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
+            serverHandler.InitializeSshConnection(serverHost, serverUsername, privateKeyPath);
 
-            // Open the Server WebView and show the close button
-            OpenServerWebView("http://18.194.233.197:8086"); // Replace <Server_IP> with the actual server IP
+            // Construct the full URL with protocol check
+            string fullUrl = serverHost.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                             ? $"{serverHost}:8086"
+                             : $"http://{serverHost}:8086";
+
+            OpenServerWebView(fullUrl);
         }
+
 
 
         private void TerminalOutput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -297,13 +325,22 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private void Server_StartDockerButton_Click(object sender, RoutedEventArgs e)
         {
             serverHandler.Server_StartDocker();
-            OpenServerWebView("http://18.194.233.197:8086"); // Replace <Server_IP> with the actual server IP
+            OpenServerWebView($"http://{serverHost}:8086");
         }
+
         private void OpenServerWebView(string url)
         {
-            ServerInfluxDbWebView.Source = new Uri(url);
-            ServerWebViewBorder.Visibility = Visibility.Visible;
+            try
+            {
+                ServerInfluxDbWebView.Source = new Uri(url);
+                ServerWebViewBorder.Visibility = Visibility.Visible;
+            }
+            catch (UriFormatException ex)
+            {
+                MessageBox.Show($"Invalid URL format: {url}. Error: {ex.Message}", "URL Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
         private void CloseServerWebView_Click(object sender, RoutedEventArgs e)
         {
             ServerWebViewBorder.Visibility = Visibility.Collapsed;
