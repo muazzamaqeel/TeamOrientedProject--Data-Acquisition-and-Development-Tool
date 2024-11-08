@@ -138,31 +138,40 @@
                         <StackPanel Orientation="Vertical" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,10,0">
                             <Button x:Name="CopyDockerFileButton" Content="Copy Docker File" Width="150" Height="40" Margin="5" Click="CopyDockerFile_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="InitializeImageButton" Content="Initialize Image" Width="150" Height="40" Margin="5" Click="Server_InitializeImageButton_Click" Style="{StaticResource ModernButtonStyle}"/>
-                            <Button x:Name="StartDockerButton" Content="Open WebView" Width="150" Height="40" Margin="5" Click="Server_StartDockerButton_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="StopDockerButton" Content="Stop Docker" Width="150" Height="40" Margin="5" Click="Server_StopDockerButton_Click" Style="{StaticResource ModernButtonStyle}"/>
+                            <Button x:Name="StartDockerButton" Content="Open WebView" Width="150" Height="40" Margin="5" Click="Server_StartDockerButton_Click" Style="{StaticResource ModernButtonStyle}"/>
                             <Button x:Name="CloseServerWebview" Content="Close WebView" Width="150" Height="40" Margin="5" Click="CloseServerWebView_Click" Style="{StaticResource ModernButtonStyle}"/>
                         </StackPanel>
 
                         <!-- Terminal Output Section -->
                         <TextBox x:Name="TerminalOutput" Grid.Column="1"
-                                         AcceptsReturn="True"
-                                         AcceptsTab="True"
-                                         FontFamily="Consolas"
-                                         FontSize="14"
-                                         Background="Black"
-                                         Foreground="Lime"
-                                         TextWrapping="Wrap"
-                                         VerticalScrollBarVisibility="Auto"
-                                         HorizontalScrollBarVisibility="Disabled"
-                                         IsReadOnly="True"
-                                         Margin="0,0,0,5"/>
+                                     AcceptsReturn="True"
+                                     AcceptsTab="True"
+                                     FontFamily="Consolas"
+                                     FontSize="14"
+                                     Background="Black"
+                                     Foreground="Lime"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Disabled"
+                                     IsReadOnly="True"
+                                     Margin="10,-100,10,25"
+                                     Height="510"/>
 
                         <!-- WebView Section with Close Button for Server -->
-                        <Border x:Name="ServerWebViewBorder" Grid.Column="1" Background="White" BorderBrush="Gray" BorderThickness="1" CornerRadius="10" Visibility="Collapsed" Margin="0,0,0,0">
+                        <Border x:Name="ServerWebViewBorder" Grid.Column="1" Background="White" BorderBrush="Gray" BorderThickness="1" CornerRadius="10" Visibility="Collapsed" Margin="10,0,10,130">
                             <Grid>
-                                <wv2:WebView2 x:Name="ServerInfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                                <wv2:WebView2 x:Name="ServerInfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
                             </Grid>
                         </Border>
+
+                        <!-- New API Key Input and Submit Button for Server -->
+                        <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center" Margin="0,570,60,0">
+                            <TextBox x:Name="ServerApiKeyInput" Width="300" Margin="20,0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Text="Enter Server API Key" Foreground="Gray"/>
+                            <Button x:Name="ServerSubmitApiButton" Content="Submit API Key" Style="{StaticResource ModernButtonStyle}" 
+                                    Click="ServerSubmitApiKey_Click" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="450,-27,-10,0"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
 

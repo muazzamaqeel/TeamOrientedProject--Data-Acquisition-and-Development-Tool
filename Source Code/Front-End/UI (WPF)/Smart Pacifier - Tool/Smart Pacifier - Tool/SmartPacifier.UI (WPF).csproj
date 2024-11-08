@@ -29,6 +29,8 @@
     <PackageReference Include="InfluxData.Net" Version="8.0.1" />
     <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
     <PackageReference Include="IronPython" Version="3.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2849.39" />
     <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
@@ -74,7 +76,7 @@
 		<Copy SourceFiles="Resources\OutputResources\docker-compose.yml" DestinationFiles="$(OutputPath)docker-compose.yml" Condition="Exists('Resources\OutputResources\docker-compose.yml')" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="Resources\OutputResources\mosquitto.conf" DestinationFiles="$(OutputPath)mosquitto.conf" Condition="Exists('Resources\OutputResources\mosquitto.conf')" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="Resources\OutputResources\TeamKey.pem" DestinationFiles="$(OutputPath)TeamKey.pem" Condition="Exists('Resources\OutputResources\TeamKey.pem')" SkipUnchangedFiles="true" />
-		<Copy SourceFiles="Resources\OutputResources\config.env" DestinationFiles="$(OutputPath)config.env" Condition="Exists('Resources\OutputResources\config.env')" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="Resources\OutputResources\config.json" DestinationFiles="$(OutputPath)config.json" Condition="Exists('Resources\OutputResources\config.json')" />
 
 	</Target>
 

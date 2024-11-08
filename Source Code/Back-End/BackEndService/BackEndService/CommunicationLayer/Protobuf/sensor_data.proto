@@ -21,8 +21,8 @@ message IMUData {
 }
 
 message PPGData {
-    int32 led1 = 1;
-    int32 led2 = 2;
-    int32 led3 = 3;
+    int32 led_1 = 1;
+    int32 led_2 = 2;
+    int32 led_3 = 3;
     float temperature = 4;
 }

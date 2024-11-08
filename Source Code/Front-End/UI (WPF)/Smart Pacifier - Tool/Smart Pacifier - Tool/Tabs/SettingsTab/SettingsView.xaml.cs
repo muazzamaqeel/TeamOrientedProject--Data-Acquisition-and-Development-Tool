@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using InfluxDB.Client.Api.Client;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.Interface.Services;
-
+using Microsoft.Extensions.Configuration.Json;
+using System.Windows.Media;
+using Newtonsoft.Json;
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
     public partial class SettingsView : UserControl
@@ -20,6 +25,12 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private bool isUserMode = true;
         private readonly ServerHandler serverHandler;
 
+        private readonly IConfiguration? configuration;
+        private readonly string? serverHost;
+        private readonly string? serverUsername;
+        private readonly string? serverApiKey;
+        private readonly string? serverPort;
+
         public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
         {
             InitializeComponent();
@@ -27,6 +38,20 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             serverHandler = new ServerHandler();
             serverHandler.TerminalOutputReceived += UpdateTerminalOutput;
 
+            // Load configuration
+            // Load configuration
+            // Load configuration
+            configuration = new ConfigurationBuilder()
+                .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json"), optional: true, reloadOnChange: true)
+                .Build();
+
+            // Retrieve server configuration values
+            serverHost = configuration["ServerDatabaseConfiguration:Host"];
+            serverPort = configuration["ServerDatabaseConfiguration:Port"];
+            serverUsername = configuration["ServerDatabaseConfiguration:Username"];
+            serverApiKey = configuration["ServerDatabaseConfiguration:ApiKey"];
+
+            // Set other properties and initialize UI
             if (Application.Current.Properties[UserModeKey] is bool userModeValue)
             {
                 isUserMode = userModeValue;
@@ -40,6 +65,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             UpdateThemeStates();
             SetDefaultView(defaultView);
         }
+
 
         private void SetDefaultView(string defaultView)
         {
@@ -191,7 +217,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void UpdateThemeStates()
         {
-            if (ConfigurationManager.AppSettings[ThemeKey] == "Resources/ColorsDark.xaml")
+            if (System.Configuration.ConfigurationManager.AppSettings[ThemeKey] == "Resources/ColorsDark.xaml")
             {
                 DarkThemeStatus.Visibility = Visibility.Visible;
                 LightThemeStatus.Visibility = Visibility.Collapsed;
@@ -202,6 +228,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 LightThemeStatus.Visibility = Visibility.Visible;
             }
         }
+
 
         private void DarkTheme_Click(object sender, RoutedEventArgs e)
         {
@@ -248,14 +275,19 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private void ServerButton_Click(object sender, RoutedEventArgs e)
         {
             TerminalPanel.Visibility = Visibility.Visible;
-            string host = "18.194.233.197";
-            string username = "ubuntu";
-            string privateKeyPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
-            serverHandler.InitializeSshConnection(host, username, privateKeyPath);
+            string privateKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
 
-            // Open the Server WebView and show the close button
-            OpenServerWebView("http://18.194.233.197:8086"); // Replace <Server_IP> with the actual server IP
+            // Initialize SSH connection with server details
+            serverHandler.InitializeSshConnection(serverHost, serverUsername, privateKeyPath);
+
+            // Construct the full URL using serverHost and serverPort
+            string fullUrl = serverHost.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                             ? $"{serverHost}:{serverPort}"
+                             : $"http://{serverHost}:{serverPort}";
+
+            OpenServerWebView(fullUrl);
         }
+
 
 
         private void TerminalOutput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -297,12 +329,26 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private void Server_StartDockerButton_Click(object sender, RoutedEventArgs e)
         {
             serverHandler.Server_StartDocker();
-            OpenServerWebView("http://18.194.233.197:8086"); // Replace <Server_IP> with the actual server IP
+
+            // Use serverHost and serverPort for the URL
+            string fullUrl = serverHost.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                             ? $"{serverHost}:{serverPort}"
+                             : $"http://{serverHost}:{serverPort}";
+
+            OpenServerWebView(fullUrl);
         }
+
         private void OpenServerWebView(string url)
         {
-            ServerInfluxDbWebView.Source = new Uri(url);
-            ServerWebViewBorder.Visibility = Visibility.Visible;
+            try
+            {
+                ServerInfluxDbWebView.Source = new Uri(url);
+                ServerWebViewBorder.Visibility = Visibility.Visible;
+            }
+            catch (UriFormatException ex)
+            {
+                MessageBox.Show($"Invalid URL format: {url}. Error: {ex.Message}", "URL Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         private void CloseServerWebView_Click(object sender, RoutedEventArgs e)
         {
@@ -315,5 +361,56 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             serverHandler.Server_StopDocker();
         }
+
+
+        private void ServerSubmitApiKey_Click(object sender, RoutedEventArgs e)
+        {
+            // Check if the input has placeholder text
+            if (ServerApiKeyInput.Text == "Enter Server API Key")
+            {
+                ServerApiKeyInput.Text = string.Empty;
+                ServerApiKeyInput.Foreground = Brushes.Black;
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string apiKey = ServerApiKeyInput.Text;
+
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                SaveApiKeyToConfig(apiKey);
+                MessageBox.Show("Server API Key submitted and saved successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void SaveApiKeyToConfig(string apiKey)
+        {
+            // Path to your config.json file
+            var configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "config.json");
+
+            try
+            {
+                // Load the JSON file
+                var json = File.ReadAllText(configFilePath);
+                dynamic config = JsonConvert.DeserializeObject(json);
+
+                // Update the API Key in the ServerDatabaseConfiguration section
+                config.ServerDatabaseConfiguration.ApiKey = apiKey;
+
+                // Save the updated JSON back to the file
+                string output = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configFilePath, output);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save API Key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
     }
 }

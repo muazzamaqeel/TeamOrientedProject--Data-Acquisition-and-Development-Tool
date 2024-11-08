@@ -70,10 +70,6 @@ namespace Smart_Pacifier___Tool
                 return;
             }
 
-            // Load environment variables from config.env
-            string envFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.env");
-            //Smart_Pacifier___Tool.Resources.OutputResources.EnvLoader.LoadEnvFile(envFilePath);
-
             // Allocate a console window for logging
             AllocConsole();
 
