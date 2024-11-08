@@ -36,7 +36,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
         /// <summary>
         /// Parses sensor data dynamically without hardcoding any message type names.
         /// </summary>
-        public void ParseSensorData(string pacifierId, byte[] data)
+        public (string pacifierId, string sensorType, Dictionary<string, object> parsedData) ParseSensorData(string pacifierId, byte[] data)
         {
             try
             {
@@ -51,7 +51,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 var parsedMessage = ParseDynamicMessage(jsonDoc);
                 if (parsedMessage != null)
                 {
-                    string sensorType = parsedMessage.Descriptor.Name.ToLower();
+                    string sensorType = parsedMessage.Descriptor.Name.ToUpper();
                     sensorData.DataMap.Add(sensorType, parsedMessage.ToByteString());
 
                     lock (_dataLock)
@@ -63,12 +63,21 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 
                     Console.WriteLine($"Parsed {sensorType} data for Pacifier {pacifierId}:");
                     DisplayProtobufFields(parsedMessage);
+
+                    // Extract all the fields into a dictionary
+                    var sensorFields = GetSensorData(parsedMessage);
+
+                    // Return the result as a Tuple (pacifierId, sensorType, sensorFields)
+                    return (pacifierId, sensorType, sensorFields);
+
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to parse sensor data for Pacifier '{pacifierId}': {ex.Message}");
             }
+
+            return (null, null, null);
         }
 
         /// <summary>
@@ -202,6 +211,29 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 
                 return pacifierIds;
             }
+        }
+
+        /// <summary>
+        /// Extracts sensor data dynamically as a dictionary (field name and value).
+        /// </summary>
+        private Dictionary<string, object> GetSensorData(IMessage parsedMessage)
+        {
+            var sensorData = new Dictionary<string, object>();
+
+            // Iterate over all fields in the parsedMessage
+            foreach (var field in parsedMessage.Descriptor.Fields.InFieldNumberOrder())
+            {
+                // Dynamically retrieve the field value
+                var fieldValue = field.Accessor.GetValue(parsedMessage);
+
+                if (fieldValue != null)
+                {
+                    // Store field name (sensor type) and value in the dictionary
+                    sensorData[field.Name] = fieldValue;
+                }
+            }
+
+            return sensorData;
         }
     }
 }
