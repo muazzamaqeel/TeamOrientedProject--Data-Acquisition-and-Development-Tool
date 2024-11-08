@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Smart_Pacifier___Tool.Resources.OutputResources
 {
-    class EnvLoader
+    class JSONLoader
     {
     }
 }
