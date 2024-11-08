@@ -248,7 +248,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private void ServerButton_Click(object sender, RoutedEventArgs e)
         {
             TerminalPanel.Visibility = Visibility.Visible;
-            string host = "16.170.201.173";
+            string host = "18.194.233.197";
             string username = "ubuntu";
             string privateKeyPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
             serverHandler.InitializeSshConnection(host, username, privateKeyPath);
@@ -293,12 +293,31 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private void Server_StartDockerButton_Click(object sender, RoutedEventArgs e)
         {
             serverHandler.Server_StartDocker();
+            OpenServerWebView("http://18.194.233.197:8086"); // Replace <Server_IP> with the actual server IP
         }
+        private void OpenServerWebView(string url)
+        {
+            ServerInfluxDbWebView.Source = new Uri(url);
+            ServerInfluxDbWebView.Visibility = Visibility.Visible;
+            CloseWebViewButton.Visibility = Visibility.Visible;
+            WebViewBorder.Visibility = Visibility.Visible; // Show the WebView border
+        }
+
+
 
         private void Server_StopDockerButton_Click(object sender, RoutedEventArgs e)
         {
             serverHandler.Server_StopDocker();
         }
+
+
+        private void CloseWebView_Click(object sender, RoutedEventArgs e)
+        {
+            ServerInfluxDbWebView.Visibility = Visibility.Collapsed;
+            CloseWebViewButton.Visibility = Visibility.Collapsed;
+            WebViewBorder.Visibility = Visibility.Collapsed; // Hide the WebView border when closing
+        }
+
 
 
 

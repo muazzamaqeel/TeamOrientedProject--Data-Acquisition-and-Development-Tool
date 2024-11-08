@@ -15,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\OutputResources\TeamKey.pem" />
     <None Remove="Tabs\SettingsTab\.pem" />
   </ItemGroup>
 
@@ -46,6 +47,12 @@
     <Reference Include="Python.Runtime">
       <HintPath>..\..\..\..\AlgorithmLayer\AlgorithmLayer\AlgorithmLayer\lib\Python.Runtime.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\OutputResources\TeamKey.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>

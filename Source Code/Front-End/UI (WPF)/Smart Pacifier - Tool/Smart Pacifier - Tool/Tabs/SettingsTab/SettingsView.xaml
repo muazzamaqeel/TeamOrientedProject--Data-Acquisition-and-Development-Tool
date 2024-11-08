@@ -153,7 +153,17 @@
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
                                  HorizontalScrollBarVisibility="Disabled"
-                                 IsReadOnly="True"/>
+                                 IsReadOnly="True"
+                                 Margin="0,0,0,5"/>
+
+                        <!-- WebView Section with Close Button -->
+                        <Border x:Name="WebViewBorder" Grid.Column="1" Background="White" Visibility="Collapsed" Margin="0,10,0,0">
+                            <Grid>
+                                <wv2:WebView2 x:Name="ServerInfluxDbWebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                                <Button x:Name="CloseWebViewButton" Content="X" Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseWebView_Click"/>
+                            </Grid>
+                        </Border>
+
                     </Grid>
                 </Border>
             </Grid>
