@@ -22,7 +22,7 @@
         </Grid>
 
         <StackPanel Grid.Row="1">
-            <!-- Placeholder TextBox setup for campaign name and button on the same line -->
+            <!-- Campaign name text box -->
             <Grid Margin="20" Width="400">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
