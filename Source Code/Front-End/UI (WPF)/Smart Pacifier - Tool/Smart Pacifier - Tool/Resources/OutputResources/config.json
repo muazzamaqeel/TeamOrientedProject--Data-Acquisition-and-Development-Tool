@@ -1,13 +1,13 @@
 {
-	"UseLocal": false,
-	"Local": {
-		"Host": "http://localhost:8086",
-		"ApiKey": "PUrnVTrvTNoFAc6OGDUGbx4XvPD9v2pISxw3W-YLGbWU2IlrD39AlS3TxAiLyTuFgUtePKQ8dlQ85dY1ic6sew=="
-	},
-	"Server": {
-		"Host": "http://18.194.233.197",
-		"Port": "8086",
-		"Username": "ubuntu",
-		"ApiKey": "YourServerApiKey"
-	}
+  "UseLocal": true,
+  "Local": {
+    "Host": "localhost:8086",
+    "ApiKey": "PUrnVTrvTNoFAc6OGDUGbx4XvPD9v2pISxw3W-YLGbWU2IlrD39AlS3TxAiLyTuFgUtePKQ8dlQ85dY1ic6sew=="
+  },
+  "Server": {
+    "Host": "18.194.233.197",
+    "Port": "8086",
+    "Username": "ubuntu",
+    "ApiKey": "N8VHmvjqq2SnYLR4R_BbS6ggM2cCDyvrID6XZqYUJ-0DMDQUxLDHiwVGYNtJAhqnxupX4X7TZwNYkOUc1FIX8A=="
+  }
 }

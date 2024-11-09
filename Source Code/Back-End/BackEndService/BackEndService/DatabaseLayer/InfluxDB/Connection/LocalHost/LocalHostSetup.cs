@@ -265,7 +265,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                 projectDirectory = Directory.GetParent(projectDirectory)?.FullName;
             }
 
-            // Now, define the path to the original config.json in the project structure
+            // Define the path to the original config.json in the project structure
             string configFilePath = Path.Combine(projectDirectory, "Resources", "OutputResources", "config.json");
 
             if (!File.Exists(configFilePath))
@@ -283,11 +283,11 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                 // Update the correct API key based on the isLocal flag
                 if (isLocal)
                 {
-                    config.LocalDatabaseConfiguration.ApiKey = apiKey;
+                    config.Local.ApiKey = apiKey; // Use 'Local' as defined in your JSON
                 }
                 else
                 {
-                    config.ServerDatabaseConfiguration.ApiKey = apiKey;
+                    config.Server.ApiKey = apiKey; // Use 'Server' as defined in your JSON
                 }
 
                 // Save the updated JSON back to the original file
@@ -301,6 +301,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                 MessageBox.Show($"Failed to save API Key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         public string GetApiKey(bool isLocal)
         {
