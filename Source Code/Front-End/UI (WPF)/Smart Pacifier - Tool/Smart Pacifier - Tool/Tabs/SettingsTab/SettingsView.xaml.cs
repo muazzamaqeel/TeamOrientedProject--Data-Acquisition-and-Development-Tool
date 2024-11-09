@@ -259,6 +259,8 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             LocalHostPanel.Visibility = Visibility.Visible;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
+            InfluxDbWebView.Visibility = Visibility.Hidden;
+
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)

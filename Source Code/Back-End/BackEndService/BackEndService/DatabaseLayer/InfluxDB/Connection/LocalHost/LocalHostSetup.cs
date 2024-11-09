@@ -25,23 +25,6 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
             }
         }
 
-        public void DockerInitialize()
-        {
-            if (!File.Exists(dockerComposeFilePath))
-            {
-                MessageBox.Show("Docker Compose file is missing. Initialization failed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (IsDockerInstalled())
-            {
-                RunDockerInstall();
-            }
-            else
-            {
-                MessageBox.Show("Docker is not installed. Please install Docker Desktop to continue.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
 
         private void RunDockerInstall()
         {
@@ -57,7 +40,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                     UseShellExecute = true
                 };
 
-                Process process = Process.Start(startInfo);
+                Process? process = Process.Start(startInfo);
                 if (process == null)
                 {
                     MessageBox.Show("Failed to start Docker initialization process.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -127,6 +110,58 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                 return !string.IsNullOrEmpty(output);
             }
         }
+
+        public void DockerInitialize()
+        {
+            if (!File.Exists(dockerComposeFilePath))
+            {
+                MessageBox.Show("Docker Compose file is missing. Initialization failed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!IsDockerInstalled())
+            {
+                MessageBox.Show("Docker is not installed. Please install Docker Desktop to continue.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!IsDockerRunning())
+            {
+                MessageBox.Show("Docker Desktop is not running. Please open Docker Desktop and initialize it locally to continue.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            RunDockerInstall();
+        }
+
+        private bool IsDockerRunning()
+        {
+            try
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/C docker info",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process process = new Process { StartInfo = startInfo })
+                {
+                    process.Start();
+                    process.WaitForExit();
+                    return process.ExitCode == 0;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
 
         private bool IsDockerInstalled()
         {
