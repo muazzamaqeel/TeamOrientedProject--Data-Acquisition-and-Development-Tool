@@ -1,16 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using InfluxDB.Client.Api.Domain;
+using InfluxDB.Client.Api.Client;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Web.WebView2.Wpf;
-using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection;
 using SmartPacifier.Interface.Services;
-
+using Microsoft.Extensions.Configuration.Json;
+using System.Windows.Media;
+using Newtonsoft.Json;
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
     public partial class SettingsView : UserControl
@@ -21,13 +23,35 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private const string ThemeKey = "SelectedTheme";
         private readonly ILocalHost localHostService;
         private bool isUserMode = true;
+        private readonly ServerHandler serverHandler;
+
+        private readonly IConfiguration? configuration;
+        private readonly string? serverHost;
+        private readonly string? serverUsername;
+        private readonly string? serverApiKey;
+        private readonly string? serverPort;
 
         public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
         {
             InitializeComponent();
             localHostService = localHost;
+            serverHandler = new ServerHandler();
+            serverHandler.TerminalOutputReceived += UpdateTerminalOutput;
 
-            // Retrieve persisted state when the view is loaded
+            // Load configuration
+            // Load configuration
+            // Load configuration
+            configuration = new ConfigurationBuilder()
+                .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json"), optional: true, reloadOnChange: true)
+                .Build();
+
+            // Retrieve server configuration values
+            serverHost = configuration["ServerDatabaseConfiguration:Host"];
+            serverPort = configuration["ServerDatabaseConfiguration:Port"];
+            serverUsername = configuration["ServerDatabaseConfiguration:Username"];
+            serverApiKey = configuration["ServerDatabaseConfiguration:ApiKey"];
+
+            // Set other properties and initialize UI
             if (Application.Current.Properties[UserModeKey] is bool userModeValue)
             {
                 isUserMode = userModeValue;
@@ -39,16 +63,17 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
             UpdateButtonStates();
             UpdateThemeStates();
-
-            // Ensure the User Mode and Developer Mode buttons are visible by default
             SetDefaultView(defaultView);
         }
+
 
         private void SetDefaultView(string defaultView)
         {
             ModeButtonsPanel.Visibility = Visibility.Collapsed;
             LocalHostPanel.Visibility = Visibility.Collapsed;
             ThemeSelectionPanel.Visibility = Visibility.Collapsed;
+            InfluxDbModePanel.Visibility = Visibility.Collapsed;
+            TerminalPanel.Visibility = Visibility.Collapsed;
 
             switch (defaultView)
             {
@@ -59,12 +84,15 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                     ThemeSelectionPanel.Visibility = Visibility.Visible;
                     break;
                 case "ModeButtons":
-                default:
                     ModeButtonsPanel.Visibility = Visibility.Visible;
+                    break;
+                case "InfluxDbModePanel":
+                    InfluxDbModePanel.Visibility = Visibility.Visible;
                     break;
             }
         }
 
+        // Event handler for Panel Button clicks to set the visibility of various panels
         private void PanelButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.CommandParameter is string panelName)
@@ -79,6 +107,8 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             PinEntryPanel.Visibility = Visibility.Collapsed;
             ThemeSelectionPanel.Visibility = Visibility.Collapsed;
             ModeButtonsPanel.Visibility = Visibility.Collapsed;
+            InfluxDbModePanel.Visibility = Visibility.Collapsed;
+            TerminalPanel.Visibility = Visibility.Collapsed;
 
             switch (panelName)
             {
@@ -88,12 +118,11 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 case "ThemeSelectionPanel":
                     ThemeSelectionPanel.Visibility = Visibility.Visible;
                     break;
-                case "LocalHostPanel":
-                    LocalHostPanel.Visibility = Visibility.Visible;
+                case "InfluxDbModePanel":
+                    InfluxDbModePanel.Visibility = Visibility.Visible;
                     break;
                 case "None":
                 default:
-                    // No panel to show
                     break;
             }
         }
@@ -138,7 +167,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
             if (!string.IsNullOrWhiteSpace(apiKey))
             {
-                // Save the API key using the localHostService instance
                 ((LocalHostSetup)localHostService).SaveApiKey(apiKey);
                 MessageBox.Show("API Key submitted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -189,7 +217,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void UpdateThemeStates()
         {
-            if (ConfigurationManager.AppSettings[ThemeKey] is "Resources/ColorsDark.xaml")
+            if (System.Configuration.ConfigurationManager.AppSettings[ThemeKey] == "Resources/ColorsDark.xaml")
             {
                 DarkThemeStatus.Visibility = Visibility.Visible;
                 LightThemeStatus.Visibility = Visibility.Collapsed;
@@ -200,6 +228,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 LightThemeStatus.Visibility = Visibility.Visible;
             }
         }
+
 
         private void DarkTheme_Click(object sender, RoutedEventArgs e)
         {
@@ -215,8 +244,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             var app = (App)Application.Current;
             app.ApplyTheme(themeUri);
-
-            // Force the UI to refresh, to apply new theme
             RefreshUI();
             UpdateThemeStates();
         }
@@ -226,7 +253,164 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             var settingsViewFactory = ((App)Application.Current).ServiceProvider.GetRequiredService<Func<string, SettingsView>>();
             var settingsView = settingsViewFactory("ThemeSelection");
             ((MainWindow)Application.Current.MainWindow).NavigateTo(settingsView);
-
         }
+
+        private void LocalButton_Click(object sender, RoutedEventArgs e)
+        {
+            LocalHostPanel.Visibility = Visibility.Visible;
+            InfluxDbModePanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            InfluxDbWebView.Reload();
+        }
+
+        /// <summary>
+        /// Server Operations
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+
+        private void ServerButton_Click(object sender, RoutedEventArgs e)
+        {
+            TerminalPanel.Visibility = Visibility.Visible;
+            string privateKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
+
+            // Initialize SSH connection with server details
+            serverHandler.InitializeSshConnection(serverHost, serverUsername, privateKeyPath);
+
+            // Construct the full URL using serverHost and serverPort
+            string fullUrl = serverHost.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                             ? $"{serverHost}:{serverPort}"
+                             : $"http://{serverHost}:{serverPort}";
+
+            OpenServerWebView(fullUrl);
+        }
+
+
+
+        private void TerminalOutput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                string command = TerminalOutput.Text.Split('\n').Last().Trim();
+                if (!string.IsNullOrEmpty(command))
+                {
+                    serverHandler.ExecuteCommand(command);
+                }
+                e.Handled = true;
+            }
+        }
+        private void UpdateTerminalOutput(string output)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                TerminalOutput.AppendText(output);
+                TerminalOutput.ScrollToEnd();
+            });
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            serverHandler.DisconnectSsh();
+        }
+        private void CopyDockerFile_Click(object sender, RoutedEventArgs e)
+        {
+            serverHandler.Server_CopyDockerFiles();
+        }
+
+
+        private void Server_InitializeImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            serverHandler.Server_InitializeDockerImage();
+        }
+
+        private void Server_StartDockerButton_Click(object sender, RoutedEventArgs e)
+        {
+            serverHandler.Server_StartDocker();
+
+            // Use serverHost and serverPort for the URL
+            string fullUrl = serverHost.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                             ? $"{serverHost}:{serverPort}"
+                             : $"http://{serverHost}:{serverPort}";
+
+            OpenServerWebView(fullUrl);
+        }
+
+        private void OpenServerWebView(string url)
+        {
+            try
+            {
+                ServerInfluxDbWebView.Source = new Uri(url);
+                ServerWebViewBorder.Visibility = Visibility.Visible;
+            }
+            catch (UriFormatException ex)
+            {
+                MessageBox.Show($"Invalid URL format: {url}. Error: {ex.Message}", "URL Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void CloseServerWebView_Click(object sender, RoutedEventArgs e)
+        {
+            ServerWebViewBorder.Visibility = Visibility.Collapsed;
+            TerminalPanel.Visibility = Visibility.Visible; // Show the terminal panel again
+        }
+
+
+        private void Server_StopDockerButton_Click(object sender, RoutedEventArgs e)
+        {
+            serverHandler.Server_StopDocker();
+        }
+
+
+        private void ServerSubmitApiKey_Click(object sender, RoutedEventArgs e)
+        {
+            // Check if the input has placeholder text
+            if (ServerApiKeyInput.Text == "Enter Server API Key")
+            {
+                ServerApiKeyInput.Text = string.Empty;
+                ServerApiKeyInput.Foreground = Brushes.Black;
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string apiKey = ServerApiKeyInput.Text;
+
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                SaveApiKeyToConfig(apiKey);
+                MessageBox.Show("Server API Key submitted and saved successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void SaveApiKeyToConfig(string apiKey)
+        {
+            // Path to your config.json file
+            var configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "config.json");
+
+            try
+            {
+                // Load the JSON file
+                var json = File.ReadAllText(configFilePath);
+                dynamic config = JsonConvert.DeserializeObject(json);
+
+                // Update the API Key in the ServerDatabaseConfiguration section
+                config.ServerDatabaseConfiguration.ApiKey = apiKey;
+
+                // Save the updated JSON back to the file
+                string output = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configFilePath, output);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save API Key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
     }
 }

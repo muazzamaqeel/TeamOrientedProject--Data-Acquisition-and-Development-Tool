@@ -1,12 +1,12 @@
 ﻿using SmartPacifier.Interface.Services;
-using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.ComponentModel;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.DataManipulation;
 
 namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
@@ -14,10 +14,10 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
     {
         private readonly IDatabaseService _databaseService;
         private readonly IManagerPacifiers _managerPacifiers;
-        private readonly IManagerCampaign _managerCampaign; 
+        private readonly IManagerCampaign _managerCampaign;
+        private readonly IDataManipulationHandler _dataManipulationHandler; // Added field
 
-        private List<SensorData> allData = new List<SensorData>();
-        private List<SensorData> currentPageData = new List<SensorData>();
+        private DataTable allData = new DataTable();
         private int currentPage = 1;
         private int pageSize = 10;
 
@@ -28,6 +28,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             _managerPacifiers = managerPacifiers;
             _managerCampaign = managerCampaign;
 
+            _dataManipulationHandler = new DataManipulationHandler(_databaseService); // Initialize handler
+
             _ = LoadDataAsync();  // Call the async method but don't await, suppressing CS4014
         }
 
@@ -35,26 +37,20 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         {
             try
             {
+                // Load campaigns
                 var campaigns = await _databaseService.GetCampaignsAsync();
                 Campaign.ItemsSource = campaigns;
 
-                allData.Clear();
-                foreach (var campaign in campaigns)
+                // Load pacifiers for the first selected campaign if any
+                if (campaigns.Any())
                 {
-                    var pacifiers = await _managerPacifiers.GetPacifiersAsync(campaign); // Fetch actual pacifiers for each campaign
-
-                    foreach (var pacifier in pacifiers)
-                    {
-                        allData.Add(new SensorData
-                        {
-                            Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-                            Campaign = campaign,
-                            Pacifier = pacifier, // Use the actual pacifier from data source
-                            Sensor = "sensor_1", // Replace with actual sensor data if available
-                            Value = 36.5 // Replace with actual sensor values if available
-                        });
-                    }
+                    var pacifiers = await _managerPacifiers.GetPacifiersAsync(campaigns.First());
+                    Pacifier.ItemsSource = pacifiers;
                 }
+
+                // Load all sensor data from the database
+                allData.Clear();
+                allData = await _databaseService.GetSensorDataAsync(); // Ensure that this returns data correctly
 
                 DisplayData();
             }
@@ -64,26 +60,49 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-
-
         private void DisplayData()
         {
-            currentPageData = allData.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
-            DataListView.ItemsSource = currentPageData;
+            if (allData.Rows.Count == 0)
+            {
+                MessageBox.Show("No data to display.");
+                return;
+            }
+
+            DataTable paginatedData = allData.Clone();
+            int startIndex = (currentPage - 1) * pageSize;
+            int endIndex = Math.Min(startIndex + pageSize, allData.Rows.Count);
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                paginatedData.ImportRow(allData.Rows[i]);
+            }
+
+            DataListView.ItemsSource = paginatedData.DefaultView;
         }
 
-        // Apply Button Click Event Handler
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            var filteredData = allData.Where(d =>
-                d.Campaign == Campaign.SelectedItem?.ToString() &&
-                d.Pacifier == Pacifier.SelectedItem?.ToString() &&
-                d.Sensor == Sensor.SelectedItem?.ToString()).ToList();
+            string selectedCampaign = Campaign.SelectedItem?.ToString();
+            string selectedPacifier = Pacifier.SelectedItem?.ToString();
+            string selectedSensorType = Sensor.SelectedItem?.ToString();
 
-            DataListView.ItemsSource = filteredData;
+            var filteredData = allData.AsEnumerable().Where(row =>
+                (string.IsNullOrEmpty(selectedCampaign) || row["Campaign Name"].ToString() == selectedCampaign) &&
+                (string.IsNullOrEmpty(selectedPacifier) || row["Pacifier Name"].ToString() == selectedPacifier) &&
+                (string.IsNullOrEmpty(selectedSensorType) || row["Sensor Type"].ToString() == selectedSensorType));
+
+            if (filteredData.Any())
+            {
+                DataTable filteredTable = filteredData.CopyToDataTable();
+                DataListView.ItemsSource = filteredTable.DefaultView;
+            }
+            else
+            {
+                DataListView.ItemsSource = null;
+                MessageBox.Show("No data matches the selected filters.");
+            }
         }
 
-        // Pagination: Previous Button Click Event Handler
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentPage > 1)
@@ -93,17 +112,15 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-        // Pagination: Next Button Click Event Handler
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentPage * pageSize < allData.Count)
+            if (currentPage * pageSize < allData.Rows.Count)
             {
                 currentPage++;
                 DisplayData();
             }
         }
 
-        // ComboBox Selection Changed Event Handler
         private async void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender == Campaign)
@@ -113,71 +130,65 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 {
                     var pacifiers = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
                     Pacifier.ItemsSource = pacifiers;
+
+                    // Filter and display data for the selected campaign
+                    var filteredData = allData.AsEnumerable().Where(row =>
+                        row["Campaign Name"].ToString() == selectedCampaign);
+                    if (filteredData.Any())
+                    {
+                        DataListView.ItemsSource = filteredData.CopyToDataTable().DefaultView;
+                    }
+                    else
+                    {
+                        DataListView.ItemsSource = null;
+                        MessageBox.Show("No data for the selected campaign.");
+                    }
                 }
             }
         }
 
-        // Add Button Click Event Handler
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
-
-            _managerCampaign.EndCampaignAsync("Campaign 10");
-
-
-            //AddDataWindow addDataWindow = new AddDataWindow();
-            //addDataWindow.ShowDialog();
+            // Implement your add functionality here
         }
 
-
-        // Edit Button Click Event Handler
-        // Edit Button Click Event Handler
         private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            var selectedItems = allData.Where(item => item.IsSelected).ToList();
-            if (selectedItems.Count != 1)
+            if (DataListView.SelectedItem is DataRowView selectedRow)
             {
-                MessageBox.Show("Please select exactly one item to edit.");
-                return;
-            }
+                // Extract the selected row data into a dictionary
+                var originalData = selectedRow.Row
+                    .Table.Columns.Cast<DataColumn>()
+                    .ToDictionary(col => col.ColumnName, col => selectedRow.Row[col] ?? string.Empty); // Ensure no null values
 
-            var editDataWindow = new EditDataWindow(selectedItems.First(), _managerCampaign, _managerPacifiers);
-            bool? result = editDataWindow.ShowDialog();
+                // Create an instance of the EditDataWindow and pass the data
+                var editWindow = new EditDataWindow(_dataManipulationHandler, originalData);
 
-            // Check if the dialog result was OK
-            if (result == true)
-            {
-                await LoadDataAsync(); // Reload the data if Save was successful
-            }
-        }
-
-
-
-
-        private async void OpenEditDataWindow(SensorData data)
-        {
-            var editDataWindow = new EditDataWindow(data, _managerCampaign, _managerPacifiers);
-            if (editDataWindow.ShowDialog() == true)
-            {
-                await LoadDataAsync(); // Refresh data after edit
-            }
-        }
-
-
-        // Delete Button Click Event Handler
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedItems = DataListView.SelectedItems.Cast<SensorData>().ToList();
-            if (selectedItems.Any())
-            {
-                // Confirm and delete
+                // Show the EditDataWindow as a dialog and refresh data if changes were saved
+                if (editWindow.ShowDialog() == true)
+                {
+                    await LoadDataAsync();
+                }
             }
             else
             {
-                MessageBox.Show("Please select at least one entry to delete.");
+                MessageBox.Show("Please select a row to edit.");
             }
         }
 
-        // Select All CheckBox Checked Event Handler
+        private void RowCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.DataContext is DataRowView dataRow)
+            {
+                DataListView.SelectedItem = dataRow;
+            }
+        }
+
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Delete functionality not implemented for direct database rows.");
+        }
+
         private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             foreach (var item in DataListView.Items)
@@ -190,7 +201,6 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-        // Select All CheckBox Unchecked Event Handler
         private void SelectAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
             foreach (var item in DataListView.Items)
@@ -203,58 +213,4 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
     }
-
-
-
-public class SensorData : INotifyPropertyChanged
-    {
-        private string _timestamp;
-        private string _campaign;
-        private string _pacifier;
-        private string _sensor;
-        private double _value;
-        private bool _isSelected;
-
-        public string Timestamp
-        {
-            get => _timestamp;
-            set { _timestamp = value; OnPropertyChanged(nameof(Timestamp)); }
-        }
-
-        public string Campaign
-        {
-            get => _campaign;
-            set { _campaign = value; OnPropertyChanged(nameof(Campaign)); }
-        }
-
-        public string Pacifier
-        {
-            get => _pacifier;
-            set { _pacifier = value; OnPropertyChanged(nameof(Pacifier)); }
-        }
-
-        public string Sensor
-        {
-            get => _sensor;
-            set { _sensor = value; OnPropertyChanged(nameof(Sensor)); }
-        }
-
-        public double Value
-        {
-            get => _value;
-            set { _value = value; OnPropertyChanged(nameof(Value)); }
-        }
-
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set { _isSelected = value; OnPropertyChanged(nameof(IsSelected)); }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-
 }

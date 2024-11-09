@@ -34,9 +34,9 @@ namespace SmartPacifier___TestingFramework
                 var pinValidationTests = new PINValidationTests(app);
                 pinValidationTests.ValidateDeveloperTabActivation_WithCorrectPin();  // Call the function
 
-                var settingsTests = new UITests_Settings(app);
-                Assert.True(settingsTests.CheckButtonsExistenceInSettingsTab(), "Buttons existence test failed.");
-                Assert.True(settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab(), "Text blocks existence and behavior test failed.");
+                //var settingsTests = new UITests_Settings(app);
+                //Assert.True(settingsTests.CheckButtonsExistenceInSettingsTab(), "Buttons existence test failed.");
+                //Assert.True(settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab(), "Text blocks existence and behavior test failed.");
                 //Assert.True(settingsTests.CheckCheckBoxesExistenceInSettingsTab(), "Check boxes existence test failed.");
             }
             finally

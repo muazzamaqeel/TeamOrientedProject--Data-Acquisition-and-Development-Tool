@@ -1,30 +1,20 @@
 ﻿<Window x:Class="Smart_Pacifier___Tool.Tabs.DeveloperTab.EditDataWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Edit Data" Height="350" Width="400" WindowStartupLocation="CenterOwner">
+        Title="Edit Data" Height="600" Width="500" WindowStartupLocation="CenterOwner">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Form layout similar to AddData -->
-        <StackPanel Grid.Row="0" Orientation="Vertical" Margin="10">
-            <TextBlock Text="Timestamp"/>
-            <TextBox Name="TimestampTextBox"/>
-            <TextBlock Text="Pacifier"/>
-            <TextBox Name="PacifierTextBox"/>
-            <TextBlock Text="Campaign"/>
-            <TextBox Name="CampaignTextBox"/>
-            <TextBlock Text="Sensor"/>
-            <TextBox Name="SensorTextBox"/>
-            <TextBlock Text="Value"/>
-            <TextBox Name="ValueTextBox"/>
-        </StackPanel>
+        <!-- Placeholder for Dynamic Fields -->
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="DynamicFieldsPanel" Margin="10"/>
+        </ScrollViewer>
 
         <!-- Error Message -->
-        <TextBlock Name="ErrorMessage" Grid.Row="1" Foreground="Red" Margin="10" Visibility="Collapsed"/>
+        <TextBlock Name="ErrorMessage" Grid.Row="1" Foreground="Red" Margin="10" Visibility="Collapsed" TextWrapping="Wrap"/>
 
         <!-- Save and Cancel Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">

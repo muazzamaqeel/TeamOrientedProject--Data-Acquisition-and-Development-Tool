@@ -9,16 +9,12 @@
 
   <ItemGroup>
     <Compile Remove="CommunicationLayer\NewFolder\**" />
-    <Compile Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
     <Compile Remove="NewFolder\**" />
     <EmbeddedResource Remove="CommunicationLayer\NewFolder\**" />
-    <EmbeddedResource Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
     <EmbeddedResource Remove="NewFolder\**" />
     <None Remove="CommunicationLayer\NewFolder\**" />
-    <None Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
     <None Remove="NewFolder\**" />
     <Page Remove="CommunicationLayer\NewFolder\**" />
-    <Page Remove="DatabaseLayer\InfluxDB\NewFolder\**" />
     <Page Remove="NewFolder\**" />
   </ItemGroup>
 
@@ -33,6 +29,7 @@
     <PackageReference Include="InfluxData.Net" Version="8.0.1" />
     <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
     <PackageReference Include="IronPython" Version="3.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2849.39" />

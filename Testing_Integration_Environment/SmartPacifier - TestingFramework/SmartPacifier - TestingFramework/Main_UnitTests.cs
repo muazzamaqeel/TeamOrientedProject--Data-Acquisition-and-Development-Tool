@@ -8,6 +8,8 @@ using SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.UnitTest_Ser
 using SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using SmartPacifier.Interface.Services;
+using SmartPacifier.BackEnd.CommunicationLayer.MQTT; // Ensure this matches the namespace where IBroker and MQTTBroker are defined ADDED DUDU Nov4
+using SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLayer.MQTT; // For MQTTBrokerTestCases
 
 namespace SmartPacifier___TestingFramework
 {
@@ -17,6 +19,9 @@ namespace SmartPacifier___TestingFramework
         private readonly CampaignWrap _managerCampaignWrapper;
         private readonly Mock<IDatabaseService> _mockDatabaseService;
         private readonly Mock<IManagerPacifiers> _mockManagerPacifiers;
+        private readonly Broker _broker; //-------------ADDED DUDU Nov4
+        private bool _isBrokerConnected;  // Flag to check if broker is connected DUDU NOv4
+
 
         public Main_UnitTests()
         {
@@ -30,7 +35,26 @@ namespace SmartPacifier___TestingFramework
             // Create an instance of ManagerCampaign and wrap it with ManagerCampaignWrapper
             var managerCampaign = new ManagerCampaign(_mockDatabaseService.Object, _mockManagerPacifiers.Object);
             _managerCampaignWrapper = new CampaignWrap(managerCampaign, "SmartPacifier-Bucket1");
+
+            _broker = Broker.Instance; //------------Initialize the broker singleton ADDED DUDU Nov4
         }
+
+
+        private async Task EnsureBrokerConnected() //-------------------- ADDED DUDU Nov4
+        {
+            if (!_isBrokerConnected)
+            {
+                await _broker.ConnectBroker(); // Connect the broker
+                _isBrokerConnected = true; // Mark as connected
+            }
+        }
+
+
+
+
+
+
+
 
         [Fact]
         public async Task RunTest_ValidToken_Should_Allow_Connection()
@@ -112,6 +136,51 @@ namespace SmartPacifier___TestingFramework
             // Assert
             Assert.Empty(result);
         }
+
+
+
+        // ---------!!!!--------BELOW 4 [Fact] are related to : MQTT Broker DATA retrieval--trial Duygu Nov-4
+        // Add tests for MQTT Broker functionality
+        // Add a method to ensure the broker is connected before running tests
+        // ---------!!!!--------BELOW 4 [Fact] are related to : MQTT Broker DATA retrieval
+        [Fact]
+        public async Task TestMQTTConnectBroker()
+        {
+            await EnsureBrokerConnected(); // Ensure broker is connected
+            // No exception expected if connected successfully
+        }
+
+        [Fact]
+        public async Task TestMQTTSubscribe()
+        {
+            await EnsureBrokerConnected(); // Ensure broker is connected
+            string topic = "Pacifier/test";
+
+            Exception exception = await Record.ExceptionAsync(async () => await _broker.Subscribe(topic));
+            Assert.Null(exception); // Verify that no exception was thrown during subscription
+        }
+
+        [Fact]
+        public async Task TestMQTTSendMessage()
+        {
+            await EnsureBrokerConnected(); // Ensure broker is connected
+            string topic = "Pacifier/test";
+            string message = "Test Message";
+
+            Exception exception = await Record.ExceptionAsync(async () => await _broker.SendMessage(topic, message));
+            Assert.Null(exception); // Verify that no exception was thrown during message sending
+        }
+
+        [Fact]
+        public async Task RunMQTTBrokerTests()
+        {
+            var mqttBrokerTests = new UnitTests.UTBackEnd.UTCommunicationLayer.MQTT.MQTTBrokerTestCases();
+
+            await mqttBrokerTests.TestMQTTConnectBroker();
+            await mqttBrokerTests.TestMQTTSubscribe();
+            await mqttBrokerTests.TestMQTTSendMessage();
+        }
+
 
     }
 }

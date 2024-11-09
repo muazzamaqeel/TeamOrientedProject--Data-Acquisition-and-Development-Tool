@@ -2,31 +2,27 @@
 
 package Protos;
 
+message SensorData {
+    string pacifier_id = 1;
+    string sensor_type = 2;
+    map<string, bytes> data_map = 3; // Dynamic key-value pairs for sensor data
+}
+
 message IMUData {
-    float acc_x = 1;
-    float acc_y = 2;
-    float acc_z = 3;
-    float gyro_x = 4;
-    float gyro_y = 5;
-    float gyro_z = 6;
-    float mag_x = 7;
-    float mag_y = 8;
-    float mag_z = 9;
+    float gyro_x = 1;
+    float gyro_y = 2;
+    float gyro_z = 3;
+    float mag_x = 4;
+    float mag_y = 5;
+    float mag_z = 6;
+    float acc_x = 7;
+    float acc_y = 8;
+    float acc_z = 9;
 }
 
 message PPGData {
-    int32 led1 = 1;
-    int32 led2 = 2;
-    int32 led3 = 3;
+    int32 led_1 = 1;
+    int32 led_2 = 2;
+    int32 led_3 = 3;
     float temperature = 4;
-}
-
-message PacifierData {
-    string pacifier_id = 1;  // Identifier for each pacifier (e.g., Pacifier 1, Pacifier 2)
-    IMUData imu_data = 2;
-    PPGData ppg_data = 3;
-}
-
-message SensorData {
-    repeated PacifierData pacifiers = 1;  // List of all pacifiers with their respective data
 }

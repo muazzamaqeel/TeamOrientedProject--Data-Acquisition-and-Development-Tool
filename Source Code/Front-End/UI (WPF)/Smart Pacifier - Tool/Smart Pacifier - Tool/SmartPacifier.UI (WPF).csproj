@@ -1,5 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup Label="Globals">
+    <WV2WinRTDisallowEmptyAdapter>True</WV2WinRTDisallowEmptyAdapter>
+  </PropertyGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -11,6 +15,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\OutputResources\TeamKey.pem" />
+    <None Remove="Tabs\SettingsTab\.pem" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.1" />
     <PackageReference Include="Google.Protobuf" Version="3.28.3" />
     <PackageReference Include="Grpc.Tools" Version="2.67.0">
@@ -20,10 +29,14 @@
     <PackageReference Include="InfluxData.Net" Version="8.0.1" />
     <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
     <PackageReference Include="IronPython" Version="3.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2849.39" />
+    <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.2.0" />
     <PackageReference Include="Python.Runtime" Version="2.7.9" />
+    <PackageReference Include="SSH.NET" Version="2024.1.0" />
     <PackageReference Include="YamlDotNet" Version="16.1.3" />
   </ItemGroup>
 
@@ -36,6 +49,12 @@
     <Reference Include="Python.Runtime">
       <HintPath>..\..\..\..\AlgorithmLayer\AlgorithmLayer\AlgorithmLayer\lib\Python.Runtime.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\OutputResources\TeamKey.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>
@@ -55,8 +74,10 @@
 
 	<Target Name="PostBuildCopy" AfterTargets="PostBuildEvent">
 		<Copy SourceFiles="Resources\OutputResources\docker-compose.yml" DestinationFiles="$(OutputPath)docker-compose.yml" Condition="Exists('Resources\OutputResources\docker-compose.yml')" SkipUnchangedFiles="true" />
-
 		<Copy SourceFiles="Resources\OutputResources\mosquitto.conf" DestinationFiles="$(OutputPath)mosquitto.conf" Condition="Exists('Resources\OutputResources\mosquitto.conf')" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="Resources\OutputResources\TeamKey.pem" DestinationFiles="$(OutputPath)TeamKey.pem" Condition="Exists('Resources\OutputResources\TeamKey.pem')" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="Resources\OutputResources\config.json" DestinationFiles="$(OutputPath)config.json" Condition="Exists('Resources\OutputResources\config.json')" />
+
 	</Target>
 
 

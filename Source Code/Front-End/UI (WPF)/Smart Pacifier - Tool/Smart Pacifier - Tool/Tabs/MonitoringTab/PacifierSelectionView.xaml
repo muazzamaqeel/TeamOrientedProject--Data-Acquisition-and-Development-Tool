@@ -15,7 +15,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <!-- Header Grid (Non-Scrollable) -->
-        <Grid Grid.Row="0" Margin="0,0,0,5">
+        <Grid Background="{StaticResource AccentColor}"  Grid.Row="0" Margin="0,0,0,5">
             <TextBlock x:Name="headerTextBlock" Text="Create Campaign" 
                        HorizontalAlignment="Center" VerticalAlignment="Center" 
                        Foreground="White" FontSize="24" FontWeight="Bold"/>
@@ -41,7 +41,7 @@
                     </TextBlock.Style>
                 </TextBlock>
             </Grid>
-            <Button Content="Create" Click="CreateCampaign_Click" Width="100"/>
+            <Button Style="{StaticResource ModernButtonStyle}" Content="Create" Click="CreateCampaign_Click" Width="100"/>
             <ScrollViewer VerticalScrollBarVisibility="Auto" Height="Auto">
                 <!-- Using WrapPanel for wrapping pacifier components in multiple columns -->
                 <WrapPanel x:Name="PacifierStackPanel" ItemWidth="300" ItemHeight="200" />
@@ -49,13 +49,13 @@
         </StackPanel>
 
         <!-- Header Grid (Non-Scrollable) -->
-        <Grid Grid.Row="2" Margin="0,0,0,5">
+        <Grid Grid.Row="2" Margin="0,0,0,0">
             <TextBlock Text="Select at least 1 pacifier" 
                        HorizontalAlignment="Center" VerticalAlignment="Center" 
                        Foreground="White" FontSize="20"/>
         </Grid>
 
-        <ScrollViewer x:Name="ConnectedPacifiersList" Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="10,0,10,0">
+        <ScrollViewer x:Name="ConnectedPacifiersList" Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,0">
             <WrapPanel x:Name="ConnectedPacifierPanel" ItemWidth="210" ItemHeight="110" HorizontalAlignment="Center">
                 <!-- Dynamic items will be added here -->
             </WrapPanel>

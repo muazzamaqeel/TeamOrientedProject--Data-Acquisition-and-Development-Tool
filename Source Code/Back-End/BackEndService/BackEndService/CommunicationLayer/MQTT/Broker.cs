@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Google.Protobuf;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Protocol;
-using Protos; // Namespace for SensorData
+using Protos;
 using SmartPacifier.BackEnd.CommunicationLayer.Protobuf;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
@@ -31,8 +33,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         private Broker()
         {
             var factory = new MqttFactory();
-
-            // Create the MQTT client without the verbose logger
             _mqttClient = factory.CreateMqttClient();
 
             // Set up event handlers
@@ -54,7 +54,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             GC.SuppressFinalize(this);
         }
 
-        // Destructor (Finalizer) in case Dispose is not called manually
         ~Broker()
         {
             Dispose();
@@ -84,7 +83,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         public async Task ConnectBroker()
         {
             var options = new MqttClientOptionsBuilder()
-                .WithTcpServer(BROKER_ADDRESS, BROKER_PORT) // Connect to Docker Mosquitto
+                .WithTcpServer(BROKER_ADDRESS, BROKER_PORT)
                 .WithKeepAlivePeriod(TimeSpan.FromSeconds(20))
                 .WithCleanSession(false)
                 .Build();
@@ -97,7 +96,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             catch (Exception ex)
             {
                 Console.WriteLine("Failed to connect to MQTT broker: " + ex.Message);
-                throw; // Re-throw exception to be handled by caller
+                throw;
             }
         }
 
@@ -139,73 +138,82 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         }
 
         // Event handler for received messages
+        // Raw Data
+        /*
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
             {
-                // Convert the payload to a JSON string
-                var payloadJson = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-                var jsonData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(payloadJson);
+                // Convert the payload to a JSON string (or raw string if needed)
+                var rawPayload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
 
-                // Identify the pacifier from the topic, e.g., "Pacifier/3"
-                string pacifierId = e.ApplicationMessage.Topic.Split('/')[1];
+                // Extract the topic and log the raw message
+                string topic = e.ApplicationMessage.Topic;
+                Console.WriteLine($"Received raw data on topic '{topic}': {rawPayload}");
 
-                var pacifierData = new PacifierData { PacifierId = pacifierId };
+                // Optionally, raise an event with the raw payload if needed by other parts of the application
+                MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload));
 
-                // Populate IMU data if available
-                if (jsonData.ContainsKey("acc_x"))
+                await Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to process message: {ex.Message}");
+            }
+        }
+        */
+
+        // Event handler for received messages
+        private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
+        {
+            try
+            {
+                var rawPayload = e.ApplicationMessage.PayloadSegment.ToArray();
+                string topic = e.ApplicationMessage.Topic;
+                Console.WriteLine($"Received raw data on topic '{topic}'");
+
+                // Extract pacifier ID from the topic
+                string[] topicParts = topic.Split('/');
+                if (topicParts.Length >= 3 && topicParts[0] == "Pacifier")
                 {
-                    pacifierData.ImuData = new IMUData
+                    string pacifierId = topicParts[1];
+
+                    var (passedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, rawPayload);
+                    if (passedPacifierId != null)
                     {
-                        AccX = jsonData["acc_x"].GetSingle(),
-                        AccY = jsonData["acc_y"].GetSingle(),
-                        AccZ = jsonData["acc_z"].GetSingle(),
-                        GyroX = jsonData["gyro_x"].GetSingle(),
-                        GyroY = jsonData["gyro_y"].GetSingle(),
-                        GyroZ = jsonData["gyro_z"].GetSingle(),
-                        MagX = jsonData["mag_x"].GetSingle(),
-                        MagY = jsonData["mag_y"].GetSingle(),
-                        MagZ = jsonData["mag_z"].GetSingle()
-                    };
-                }
+                        //Console.WriteLine($"Pacifier ID: {passedPacifierId}");
+                        //Console.WriteLine($"Sensor Type: {sensorType}");
 
-                // Populate PPG data if available
-                if (jsonData.ContainsKey("led1"))
-                {
-                    pacifierData.PpgData = new PPGData
+                        // KeyValuePair kvp, SensorType: Value
+                        foreach (var kvp in parsedData)
+                        {
+                            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+                        }
+                    }
+                    else
                     {
-                        Led1 = jsonData["led1"].GetInt32(),
-                        Led2 = jsonData["led2"].GetInt32(),
-                        Led3 = jsonData["led3"].GetInt32(),
-                        Temperature = jsonData["temperature"].GetSingle()
-                    };
+                        //Console.WriteLine("Failed to parse sensor data.");
+                    }
+
+
+                    //// Allow the Front End to get updates in real-time
+                    MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, pacifierId, sensorType, parsedData));
                 }
-
-                // Update the ExposeSensorDataManager
-                ExposeSensorDataManager.Instance.UpdatePacifierData(pacifierData);
-
-                // Log the data for this pacifier
-                Console.WriteLine($"Received data for {pacifierId}");
-
-                if (pacifierData.ImuData != null)
+                else
                 {
-                    Console.WriteLine($"IMU Data - AccX: {pacifierData.ImuData.AccX}, AccY: {pacifierData.ImuData.AccY}, AccZ: {pacifierData.ImuData.AccZ}");
-                    Console.WriteLine($"Gyro Data - GyroX: {pacifierData.ImuData.GyroX}, GyroY: {pacifierData.ImuData.GyroY}, GyroZ: {pacifierData.ImuData.GyroZ}");
-                    Console.WriteLine($"Mag Data - MagX: {pacifierData.ImuData.MagX}, MagY: {pacifierData.ImuData.MagY}, MagZ: {pacifierData.ImuData.MagZ}");
-                }
-
-                if (pacifierData.PpgData != null)
-                {
-                    Console.WriteLine($"PPG Data - LED1: {pacifierData.PpgData.Led1}, LED2: {pacifierData.PpgData.Led2}, LED3: {pacifierData.PpgData.Led3}, Temperature: {pacifierData.PpgData.Temperature}");
+                    Console.WriteLine($"Invalid topic format: {topic}");
                 }
 
                 await Task.CompletedTask;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to parse message: {ex.Message}");
+                Console.WriteLine($"Failed to process message: {ex.Message}");
             }
         }
+
+
+
 
         // Event handler for successful connection
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)
@@ -235,13 +243,22 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         public class MessageReceivedEventArgs : EventArgs
         {
             public string Topic { get; set; }
-            public string Payload { get; set; }
+            public byte[] Payload { get; set; }
 
-            public MessageReceivedEventArgs(string topic, string payload)
+            // New properties
+            public string PacifierId { get; set; }
+            public string SensorType { get; set; }
+            public Dictionary<string, object> ParsedData { get; set; }
+
+            public MessageReceivedEventArgs(string topic, byte[] payload, string pacifierId, string sensorType, Dictionary<string, object> parsedData)
             {
                 Topic = topic;
                 Payload = payload;
+                PacifierId = pacifierId;
+                SensorType = sensorType;
+                ParsedData = parsedData;
             }
         }
+
     }
 }

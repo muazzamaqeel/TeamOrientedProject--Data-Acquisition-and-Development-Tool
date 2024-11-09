@@ -16,7 +16,7 @@ using Smart_Pacifier___Tool.Tabs.CampaignsTab;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using System.Configuration;
-
+using System.IO;
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
@@ -74,7 +74,7 @@ namespace Smart_Pacifier___Tool
             AllocConsole();
 
             // Retrieve the saved theme URI from settings
-            string themeUri = ConfigurationManager.AppSettings[ThemeKey];
+            string? themeUri = ConfigurationManager.AppSettings[ThemeKey];
             if (string.IsNullOrEmpty(themeUri))
             {
                 themeUri = "Resources/ColorsDark.xaml";

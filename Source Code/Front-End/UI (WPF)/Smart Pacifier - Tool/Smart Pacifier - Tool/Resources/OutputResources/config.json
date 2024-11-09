@@ -1,0 +1,12 @@
+{
+	"LocalDatabaseConfiguration": {
+		"Host": "http://localhost:8086",
+		"ApiKey": "your_local_api_key_here"
+	},
+	"ServerDatabaseConfiguration": {
+		"Host": "18.194.233.197",
+		"Port": "8086",
+		"Username": "ubuntu",
+		"ApiKey": "your_server_api_key_here"
+	}
+}
