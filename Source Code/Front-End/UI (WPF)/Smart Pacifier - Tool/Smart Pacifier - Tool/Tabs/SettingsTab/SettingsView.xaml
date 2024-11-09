@@ -10,7 +10,7 @@
         <Grid Background="{StaticResource AccentColor}" Height="70" VerticalAlignment="Top">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                 <TextBlock Text="Settings"
-                           Foreground="{StaticResource MainViewForegroundColor}" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
+                           Foreground="White" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
             </StackPanel>
         </Grid>
 
