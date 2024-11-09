@@ -7,28 +7,33 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
 
-    <Grid Background="{StaticResource MainViewSecondaryBackgroundColor}">
+    <Grid Background="{StaticResource MainViewBackgroundColor}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="50" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="50" />
+            <RowDefinition Height="70" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <!-- Header Grid (Non-Scrollable) -->
-        <Grid Background="{StaticResource AccentColor}"  Grid.Row="0" Margin="0,0,0,5">
+        <Grid Background="{StaticResource AccentColor}"  Grid.Row="0" Height="70">
             <TextBlock x:Name="headerTextBlock" Text="Create Campaign" 
                        HorizontalAlignment="Center" VerticalAlignment="Center" 
                        Foreground="White" FontSize="24" FontWeight="Bold"/>
         </Grid>
+
         <StackPanel Grid.Row="1">
-            <!-- Placeholder TextBox setup for campaign name -->
-            <Grid Margin="10" Width="300">
-                <TextBox x:Name="CampaignTextBox"/>
+            <!-- Campaign name text box -->
+            <Grid Margin="20" Width="400">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="CampaignTextBox" Style="{StaticResource TextBoxStyle}" Grid.Column="0"/>
                 <TextBlock Text="Enter campaign name..." 
-                           Foreground="Gray" 
-                           IsHitTestVisible="False" 
-                           VerticalAlignment="Center" 
-                           Margin="5,0,0,0">
+                   Foreground="Gray" 
+                   IsHitTestVisible="False" 
+                   VerticalAlignment="Center" 
+                   Margin="20,0,0,0">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -40,8 +45,8 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
+                <Button Style="{StaticResource ModernButtonStyle}" Content="Create" Click="CreateCampaign_Click" Width="100" Grid.Column="1" Margin="10,0,0,0"/>
             </Grid>
-            <Button Style="{StaticResource ModernButtonStyle}" Content="Create" Click="CreateCampaign_Click" Width="100"/>
             <ScrollViewer VerticalScrollBarVisibility="Auto" Height="Auto">
                 <!-- Using WrapPanel for wrapping pacifier components in multiple columns -->
                 <WrapPanel x:Name="PacifierStackPanel" ItemWidth="300" ItemHeight="200" />
@@ -49,16 +54,18 @@
         </StackPanel>
 
         <!-- Header Grid (Non-Scrollable) -->
-        <Grid Grid.Row="2" Margin="0,0,0,0">
+        <Grid Grid.Row="2" Margin="20">
             <TextBlock Text="Select at least 1 pacifier" 
                        HorizontalAlignment="Center" VerticalAlignment="Center" 
-                       Foreground="White" FontSize="20"/>
+                       Foreground="{StaticResource MainViewForegroundColor}" FontSize="20"/>
         </Grid>
 
-        <ScrollViewer x:Name="ConnectedPacifiersList" Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,0">
-            <WrapPanel x:Name="ConnectedPacifierPanel" ItemWidth="210" ItemHeight="110" HorizontalAlignment="Center">
-                <!-- Dynamic items will be added here -->
-            </WrapPanel>
+        <ScrollViewer x:Name="ConnectedPacifiersList" Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="20,0,20,20">
+            <Border Padding="0" CornerRadius="8" Background="{StaticResource MainViewSecondaryBackgroundColor}">
+                <WrapPanel x:Name="ConnectedPacifierPanel" ItemWidth="210" ItemHeight="110" HorizontalAlignment="Center">
+                    <!-- Dynamic items will be added here -->
+                </WrapPanel>
+            </Border>
         </ScrollViewer>
 
     </Grid>
