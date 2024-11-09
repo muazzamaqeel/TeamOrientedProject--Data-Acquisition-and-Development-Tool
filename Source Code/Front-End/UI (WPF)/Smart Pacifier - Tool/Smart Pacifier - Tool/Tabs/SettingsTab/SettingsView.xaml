@@ -58,7 +58,7 @@
                 </StackPanel>
 
                 <!-- PIN Entry Section -->
-                <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,300,0,0" Visibility="Collapsed">
+                <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,320,0,0" Visibility="Collapsed">
                     <TextBlock Text="Enter PIN:" HorizontalAlignment="Center" FontSize="16" Margin="0,10" Foreground="White"/>
                     <PasswordBox x:Name="PinInput" Width="200" HorizontalAlignment="Center" Margin="10"/>
                     <Button Content="Continue" Style="{StaticResource SmallModernButtonStyle}" Click="PinSubmit_Click" HorizontalAlignment="Center" Margin="10"/>
