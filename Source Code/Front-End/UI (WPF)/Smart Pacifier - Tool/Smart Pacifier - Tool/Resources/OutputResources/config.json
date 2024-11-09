@@ -1,12 +1,13 @@
 {
-  "LocalDatabaseConfiguration": {
-    "Host": "http://localhost:8086",
-    "ApiKey": "CIsB3q5uXSodgNr9n91ZU0CbsrIWHDErCZh0F074K-piBn5a244jhRDe-7D6cv9Tzg_2cco_-DknwhBX8hCtYw=="
-  },
-  "ServerDatabaseConfiguration": {
-    "Host": "18.194.233.197",
-    "Port": "8086",
-    "Username": "ubuntu",
-    "ApiKey": "CIsB3q5uXSodgNr9n91ZU0CbsrIWHDErCZh0F074K-piBn5a244jhRDe-7D6cv9Tzg_2cco_-DknwhBX8hCtYw=="
-  }
+	"UseLocal": false,
+	"Local": {
+		"Host": "http://localhost:8086",
+		"ApiKey": "PUrnVTrvTNoFAc6OGDUGbx4XvPD9v2pISxw3W-YLGbWU2IlrD39AlS3TxAiLyTuFgUtePKQ8dlQ85dY1ic6sew=="
+	},
+	"Server": {
+		"Host": "http://18.194.233.197",
+		"Port": "8086",
+		"Username": "ubuntu",
+		"ApiKey": "YourServerApiKey"
+	}
 }
