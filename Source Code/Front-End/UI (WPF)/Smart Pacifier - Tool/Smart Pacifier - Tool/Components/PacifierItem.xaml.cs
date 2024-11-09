@@ -31,20 +31,26 @@ namespace Smart_Pacifier___Tool.Components
         }
 
         public ItemType Type
-        { 
+        {
             get;
-            set; 
+            set;
         }
 
         // Only "Sensor" items have this graph
         public LineChartGraph LineChart
         {
-            get; 
+            get;
             set;
         }
 
         public string PacifierId
-        { 
+        {
+            get;
+            set;
+        }
+
+        public string ItemId
+        {
             get;
             set;
         }
@@ -74,29 +80,22 @@ namespace Smart_Pacifier___Tool.Components
             set { SetValue(GraphDataProperty, value); }
         }
 
-        private LineChartGraph? _graph;
+        // Observable collection for sensor data
+        public ObservableCollection<Sensor> Sensors { get; set; } = new ObservableCollection<Sensor>();
 
-        //public MonitoringSensorData SensorData { get; set; }
+        private LineChartGraph? _graph;
 
         public PacifierItem(ItemType type)
         {
             InitializeComponent();
+
             DataContext = this;
             Type = type;
-            if (Type == ItemType.Sensor)
-            {
-                LineChart = new LineChartGraph();
-            }
+            this.IsChecked = false;
 
+            Sensors = new ObservableCollection<Sensor>();
             PacifierId = "none";
-            GraphData = []; // Initialize the graph data collection
-
-            // Subscribe to GraphData changes
-            GraphData.CollectionChanged += OnGraphDataChanged;
-
-            // Initialize and bind the graph if toggle is on
-            ToggleChanged += (s, e) => InitializeGraphIfNeeded();
-
+            GraphData = new ObservableCollection<DataPoint>(); // Initialize the graph data collection
         }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
@@ -108,37 +107,105 @@ namespace Smart_Pacifier___Tool.Components
             }
         }
 
-        private void OnGraphDataChanged(object sender, NotifyCollectionChangedEventArgs e)
+        // DataPoint class to hold individual data points
+        public class DataPoint
         {
-            // Update the LineChartGraph with the new data points
-            if (LineChart != null)
+            public double X { get; set; }
+            public double Y { get; set; }
+        }
+
+        public class Sensor
+        {
+            public string SensorId { get; set; }
+            public SensorGroup SensorGroup { get; set; }
+            public MeasurementGroup MeasurementGroup { get; set; }
+
+            public Sensor(string sensorId)
             {
-                LineChart.UpdateDataPoints(GraphData);
+                SensorId = sensorId;
+                SensorGroup = new SensorGroup();
+                MeasurementGroup= new MeasurementGroup();
             }
         }
 
-        private void InitializeGraphIfNeeded()
+        public class SensorGroup
         {
-            if (_graph == null && IsChecked)
-            {
-                _graph = new LineChartGraph();
+            public List<string> Types { get; set; }
 
-                // Bind the graph’s series to GraphData
-                var series = new LineSeries();
-                foreach (var point in GraphData)
+            public SensorGroup()
+            {
+                Types = new List<string>();
+            }
+
+            public void Add(string type)
+            {
+                Types.Add(type);
+            }
+        }
+
+        public class MeasurementGroup
+        {
+            public string GroupName { get; set; }
+            public List<Measurement> Measurements { get; set; }
+
+            // Default constructor
+            public MeasurementGroup()
+            {
+                Measurements = new List<Measurement>();
+            }
+
+            // Constructor that accepts a group name
+            public MeasurementGroup(string groupName) : this()  // Calls the default constructor
+            {
+                GroupName = groupName; // Set the GroupName from the parameter
+            }
+
+            // Method to add a measurement to the list, checks if the measurement exists
+            public void AddMeasurement(string name, double value)
+            {
+                var existingMeasurement = Measurements.FirstOrDefault(m => m.Name == name);
+                if (existingMeasurement != null)
                 {
-                    series.Points.Add(new OxyPlot.DataPoint(point.X, point.Y));
+                    // Update the existing measurement
+                    existingMeasurement.Value = value;
                 }
+                else
+                {
+                    // Add new measurement if it doesn't exist
+                    Measurements.Add(new Measurement { Name = name, Value = value });
+                }
+            }
 
-                _graph.PlotModel.Series.Add(series);
+            // Optionally, you can add a method to retrieve a measurement by name if needed
+            public Measurement GetMeasurement(string name)
+            {
+                return Measurements.FirstOrDefault(m => m.Name == name);
+            }
+
+            // Method to update an existing measurement
+            public void UpdateMeasurement(string name, double newValue)
+            {
+                var existingMeasurement = Measurements.FirstOrDefault(m => m.Name == name);
+                if (existingMeasurement != null)
+                {
+                    existingMeasurement.Value = newValue; // Update the measurement value
+                }
+            }
+
+            // Method to check if a measurement exists
+            public bool ContainsMeasurement(string name)
+            {
+                return Measurements.Any(m => m.Name == name);
             }
         }
-    }
 
-    // DataPoint class to hold individual data points
-    public class DataPoint
-    {
-        public double X { get; set; }
-        public double Y { get; set; }
+
+        public class Measurement
+        {
+            public string Name { get; set; }
+            public double Value { get; set; }
+        }
+
+
     }
 }

@@ -57,13 +57,13 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             foreach (var pacifierId in pacifierIds)
             {
                 // Check if the pacifier is already in the list based on PacifierId
-                if (!connectedPacifiers.Any(pacifier => pacifier.PacifierId == pacifierId))
+                if (!connectedPacifiers.Any(pacifier => pacifier.ItemId == pacifierId))
                 {
                     var connectedPacifierItem = new PacifierItem(PacifierItem.ItemType.Pacifier)
                     {
                         ButtonText = $"Pacifier {pacifierId}",
                         IsChecked = false,
-                        PacifierId = pacifierId,
+                        ItemId = pacifierId,
                         CircleText = " "
                     };
 
