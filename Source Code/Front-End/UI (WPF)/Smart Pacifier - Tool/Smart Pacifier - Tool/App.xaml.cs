@@ -112,20 +112,21 @@ namespace Smart_Pacifier___Tool
 
 
             // Register InfluxDBClient with the URL and token from ILocalHost
+            // For the local InfluxDB client instance
             services.AddSingleton<InfluxDBClient>(sp =>
             {
                 var localHostService = sp.GetRequiredService<ILocalHost>();
-                string apiKey = localHostService.GetApiKey();
+                string apiKey = localHostService.GetApiKey(isLocal: true); // Pass true to get the local API key
 
                 return new InfluxDBClient("http://localhost:8086", apiKey);
             });
 
-            // Register InfluxDatabaseService as IDatabaseService
+            // For the database service, using the local API key
             services.AddSingleton<IDatabaseService>(sp =>
             {
                 var influxClient = sp.GetRequiredService<InfluxDBClient>();
                 var localHostService = sp.GetRequiredService<ILocalHost>();
-                string apiKey = localHostService.GetApiKey();
+                string apiKey = localHostService.GetApiKey(isLocal: true); // Pass true to get the local API key
 
                 return new InfluxDatabaseService(
                     influxClient,
@@ -134,6 +135,7 @@ namespace Smart_Pacifier___Tool
                     "thu-de" // org
                 );
             });
+
 
             // Register the Manager classes, injecting IDatabaseService where necessary
             services.AddSingleton<IManagerCampaign, ManagerCampaign>();

@@ -1,4 +1,6 @@
-﻿using SmartPacifier.Interface.Services;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using SmartPacifier.Interface.Services;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -12,6 +14,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
         private readonly string dockerComposeFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docker-compose.yml");
         private readonly string apiKeyFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apikey.txt");
         private readonly string mosquittoConfigFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mosquitto.conf");
+        private readonly string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
 
         public LocalHostSetup()
         {
@@ -253,12 +256,45 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                    message.Contains("Removed") || message.Contains("Network");
         }
 
-        public void SaveApiKey(string apiKey)
+        public void SaveApiKey(string apiKey, bool isLocal)
         {
+            // Determine the path to the project root by navigating up from the bin directory
+            string projectDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            for (int i = 0; i < 4; i++)  // Go up four levels
+            {
+                projectDirectory = Directory.GetParent(projectDirectory)?.FullName;
+            }
+
+            // Now, define the path to the original config.json in the project structure
+            string configFilePath = Path.Combine(projectDirectory, "Resources", "OutputResources", "config.json");
+
+            if (!File.Exists(configFilePath))
+            {
+                MessageBox.Show("Config file not found in the original Resources/OutputResources folder.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             try
             {
-                File.WriteAllText(apiKeyFilePath, apiKey);
-                MessageBox.Show("API Key saved successfully.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Load the JSON file
+                var json = File.ReadAllText(configFilePath);
+                dynamic config = JsonConvert.DeserializeObject(json);
+
+                // Update the correct API key based on the isLocal flag
+                if (isLocal)
+                {
+                    config.LocalDatabaseConfiguration.ApiKey = apiKey;
+                }
+                else
+                {
+                    config.ServerDatabaseConfiguration.ApiKey = apiKey;
+                }
+
+                // Save the updated JSON back to the original file
+                string output = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configFilePath, output);
+
+                MessageBox.Show($"API Key saved successfully to config.json in {configFilePath}.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -266,19 +302,33 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
             }
         }
 
-        public string GetApiKey()
+        public string GetApiKey(bool isLocal)
         {
+            // Determine the path to the project root by navigating up from the bin directory
+            string projectDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            for (int i = 0; i < 4; i++)  // Go up four levels to reach the project root
+            {
+                projectDirectory = Directory.GetParent(projectDirectory)?.FullName;
+            }
+
+            // Now, define the path to the original config.json in the project structure
+            string configFilePath = Path.Combine(projectDirectory, "Resources", "OutputResources", "config.json");
+
+            if (!File.Exists(configFilePath))
+            {
+                MessageBox.Show("Config file not found in the original Resources/OutputResources folder.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return string.Empty;
+            }
+
             try
             {
-                if (File.Exists(apiKeyFilePath))
-                {
-                    return File.ReadAllText(apiKeyFilePath);
-                }
-                else
-                {
-                    MessageBox.Show("API Key file not found.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return string.Empty;
-                }
+                // Load the config file as a JSON object
+                var json = File.ReadAllText(configFilePath);
+                var config = JObject.Parse(json);
+
+                // Retrieve the API Key from the appropriate section based on isLocal
+                string section = isLocal ? "LocalDatabaseConfiguration" : "ServerDatabaseConfiguration";
+                return config[section]?["ApiKey"]?.ToString() ?? string.Empty;
             }
             catch (Exception ex)
             {
@@ -286,5 +336,6 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Connection
                 return string.Empty;
             }
         }
+
     }
 }

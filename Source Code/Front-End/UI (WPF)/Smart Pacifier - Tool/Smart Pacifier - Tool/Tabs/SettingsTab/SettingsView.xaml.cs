@@ -160,22 +160,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 });
             });
         }
-
-        private void SubmitApiKey_Click(object sender, RoutedEventArgs e)
-        {
-            string apiKey = ApiKeyInput.Text;
-
-            if (!string.IsNullOrWhiteSpace(apiKey))
-            {
-                ((LocalHostSetup)localHostService).SaveApiKey(apiKey);
-                MessageBox.Show("API Key submitted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
         private void UserMode_Click(object sender, RoutedEventArgs e)
         {
             isUserMode = true;
@@ -289,9 +273,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
             OpenServerWebView(fullUrl);
         }
-
-
-
         private void TerminalOutput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Enter)
@@ -365,54 +346,38 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         }
 
 
-        private void ServerSubmitApiKey_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// API Keys Sumission For Local and Server Database
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void SubmitApiKey_Click(object sender, RoutedEventArgs e)
         {
-            // Check if the input has placeholder text
-            if (ServerApiKeyInput.Text == "Enter Server API Key")
-            {
-                ServerApiKeyInput.Text = string.Empty;
-                ServerApiKeyInput.Foreground = Brushes.Black;
-                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            string apiKey = ServerApiKeyInput.Text;
+            string apiKey = ApiKeyInput.Text;
 
             if (!string.IsNullOrWhiteSpace(apiKey))
             {
-                SaveApiKeyToConfig(apiKey);
-                MessageBox.Show("Server API Key submitted and saved successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                ((LocalHostSetup)localHostService).SaveApiKey(apiKey, isLocal: true); // Save for LocalDatabaseConfiguration
+                MessageBox.Show("API Key submitted for Local Database successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
                 MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
-
-        private void SaveApiKeyToConfig(string apiKey)
+        private void ServerSubmitApiKey_Click(object sender, RoutedEventArgs e)
         {
-            // Path to your config.json file
-            var configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "config.json");
+            string apiKey = ServerApiKeyInput.Text;
 
-            try
+            if (!string.IsNullOrWhiteSpace(apiKey))
             {
-                // Load the JSON file
-                var json = File.ReadAllText(configFilePath);
-                dynamic config = JsonConvert.DeserializeObject(json);
-
-                // Update the API Key in the ServerDatabaseConfiguration section
-                config.ServerDatabaseConfiguration.ApiKey = apiKey;
-
-                // Save the updated JSON back to the file
-                string output = JsonConvert.SerializeObject(config, Formatting.Indented);
-                File.WriteAllText(configFilePath, output);
+                ((LocalHostSetup)localHostService).SaveApiKey(apiKey, isLocal: false); // Save for ServerDatabaseConfiguration
+                MessageBox.Show("API Key submitted for Server Database successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"Failed to save API Key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
-
-
     }
 }
