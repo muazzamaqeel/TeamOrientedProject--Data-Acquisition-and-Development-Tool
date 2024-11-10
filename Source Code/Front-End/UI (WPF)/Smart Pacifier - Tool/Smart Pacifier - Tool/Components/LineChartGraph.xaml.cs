@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using static Smart_Pacifier___Tool.Components.PacifierItem;
 
 namespace Smart_Pacifier___Tool.Components
 {
@@ -18,10 +19,10 @@ namespace Smart_Pacifier___Tool.Components
         public string PlotId { get; set; }
 
         // The number of data points to display before removing the oldest
-        public int Interval { get; set; }
+        public double Interval { get; set; }
 
         // The label for the measurement group
-        public string GroupMeasurement { get; set; }
+        public string GroupName { get; set; }
 
         // Type of the sensor (e.g., temperature, humidity)
         public string SensorType { get; set; }
@@ -42,18 +43,18 @@ namespace Smart_Pacifier___Tool.Components
         }
 
         // Constructor to initialize the LineChartGraph
-        public LineChartGraph()
+        public LineChartGraph(Sensor sensor, SensorGroup sensorGroup, string plotId, double interval)
         {
             InitializeComponent();
 
             // Default values
-            SensorType = "sensor";
-            GroupMeasurement = "group";
-            PlotId = "none";
-            Interval = 10;
+            SensorType = sensor.SensorId;
+            GroupName = sensorGroup.GroupName;
+            PlotId = plotId;
+            Interval = interval;
 
             // Initialize the PlotModel and LineSeries
-            PlotModel = new PlotModel { Title = GroupMeasurement };
+            PlotModel = new PlotModel { Title = GroupName };
             _series = new LineSeries
             {
                 Title = SensorType,

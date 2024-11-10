@@ -153,71 +153,71 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                     // Use Dispatcher to safely update the ObservableCollection on the UI thread
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        // Find the PacifierItem corresponding to the PacifierId
-                        var pacifierItem = checkedPacifiers.FirstOrDefault(p => p.ItemId == e.PacifierId);
+                        // Find the PacifierItem in PacifierItems with a matching ItemId and also in checkedPacifiers
+                        var pacifierItem = PacifierItems.FirstOrDefault(p => p.ItemId == e.PacifierId &&
+                                                                             checkedPacifiers.Any(cp => cp.ItemId == p.ItemId));
 
                         if (pacifierItem != null)
                         {
-                            // Store the sensor type directly in the dictionary under a specific sensor ID or type
-                            if (!_sensorDataDictionary.ContainsKey(e.SensorType))
-                            {
-                                _sensorDataDictionary[e.SensorType] = new Sensor(e.SensorType); // Initialize Sensor object if not present
-                            }
-
-                            var sensor = _sensorDataDictionary[e.SensorType];
+                            // Debug the pacifier item and sensor type
+                            //Debug.WriteLine($"Processing Pacifier: {pacifierItem.PacifierId}, Sensor Type: {e.SensorType}");
 
                             // Process each parsed data point
                             foreach (var kvp in e.ParsedData)
                             {
                                 var sensorGroup = kvp.Key.Split('_')[0]; // Get the prefix before '_'
+                                //Debug.WriteLine($"Sensor Group: {sensorGroup}");
 
                                 // Check if the sensor group exists, if not, add it
-                                if (!sensor.SensorGroup.Types.Contains(sensorGroup))
+                                var sensor = pacifierItem.Sensors.FirstOrDefault(s => s.SensorId == e.SensorType);
+                                if (sensor == null)
                                 {
-                                    sensor.SensorGroup.Add(sensorGroup); // Add the sensor group to the SensorGroup's Types list
+                                    // Add the sensor to the collection if not already there
+                                    sensor = new Sensor(e.SensorType);
+                                    pacifierItem.Sensors.Add(sensor);
+                                    //Debug.WriteLine($"Added new sensor: {e.SensorType}");
+                                }
+
+                                // Check if the group exists for the sensor
+                                var sensorGroupObj = sensor.SensorGroups.FirstOrDefault(g => g.GroupName == sensorGroup);
+                                if (sensorGroupObj == null)
+                                {
+                                    // Add a new group if it doesn't exist
+                                    sensorGroupObj = new SensorGroup(sensorGroup);
+                                    sensor.SensorGroups.Add(sensorGroupObj);
+                                    //Debug.WriteLine($"Added new sensor group: {sensorGroup}");
                                 }
 
                                 // Ensure the MeasurementGroup for the sensor is properly initialized for this sensorGroup
-                                if (sensor.MeasurementGroup == null || sensor.MeasurementGroup.GroupName != sensorGroup)
+                                if (sensorGroupObj.MeasurementGroup == null)
                                 {
-                                    // Create a new MeasurementGroup for the specific sensorGroup if it doesn't exist
-                                    sensor.MeasurementGroup = new MeasurementGroup(sensorGroup); // Initialize MeasurementGroup with group name
-                                }
-
-                                // Ensure that the GroupName is properly set when the MeasurementGroup is initialized
-                                if (string.IsNullOrEmpty(sensor.MeasurementGroup.GroupName))
-                                {
-                                    sensor.MeasurementGroup.GroupName = sensorGroup; // Set the group name
+                                    // Create a new MeasurementGroup if it doesn't exist
+                                    sensorGroupObj.MeasurementGroup = new MeasurementGroup(sensorGroup);
+                                    //Debug.WriteLine($"Created new MeasurementGroup for {sensorGroup}");
                                 }
 
                                 // Check if the measurement already exists in the MeasurementGroup
-                                if (!sensor.MeasurementGroup.ContainsMeasurement(kvp.Key))
+                                if (!sensorGroupObj.MeasurementGroup.ContainsMeasurement(kvp.Key))
                                 {
-                                    // Add the measurement to the specific group (ensure group name is always set)
-                                    sensor.MeasurementGroup.AddMeasurement(kvp.Key, Convert.ToDouble(kvp.Value));
+                                    // Add the measurement if it doesn't exist
+                                    sensorGroupObj.MeasurementGroup.AddOrUpdateMeasurement(kvp.Key, Convert.ToDouble(kvp.Value));
+                                    //Debug.WriteLine($"Added measurement: {kvp.Key} with value {kvp.Value}");
                                 }
                                 else
                                 {
-                                    // Optionally update the existing measurement here if needed
-                                    sensor.MeasurementGroup.UpdateMeasurement(kvp.Key, Convert.ToDouble(kvp.Value));
+                                    // Update the existing measurement
+                                    sensorGroupObj.MeasurementGroup.AddOrUpdateMeasurement(kvp.Key, Convert.ToDouble(kvp.Value));
+                                    //Debug.WriteLine($"Updated measurement: {kvp.Key} with new value {kvp.Value}");
                                 }
 
-                                // Check if the sensor is already in the Sensors collection for the PacifierItem
-                                var existingSensor = pacifierItem.Sensors.FirstOrDefault(s => s.SensorId == sensor.SensorId);
-                                if (existingSensor == null)
-                                {
-                                    // Add the new sensor to the Sensors collection
-                                    pacifierItem.Sensors.Add(sensor);
-                                }
-                                else
-                                {
-                                    // Update existing sensor details as needed (you can update measurements here if necessary)
-                                    existingSensor.MeasurementGroup = sensor.MeasurementGroup;
-                                }
-
-                                // Display the updated sensor details
-                                DisplaySensorDetails(sensor);
+                                // Optionally: display updated sensor details
+                                //DisplaySensorDetails(pacifierItem);
                             }
+                            //DisplaySensorDetails(pacifierItem);
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found.");
                         }
                     });
                 }
@@ -228,46 +228,56 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             }
             else
             {
-                //Debug.WriteLine($"MonitoringVM: Message skipped - PacifierId: {e.PacifierId} not in checked list, or invalid data.");
+                // Debug log for skipped messages
+                //Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in checked list, or invalid data.");
             }
         }
 
-        private void DisplaySensorDetails(Sensor sensor)
+
+
+        private void DisplaySensorDetails(PacifierItem pacifierItem)
         {
-
-            var pacifierItem = checkedPacifiers.FirstOrDefault(p => p.ItemId == sensor.SensorId); // Example: matching PacifierId to SensorId
-
-            if (pacifierItem != null)
+            if (pacifierItem == null)
             {
-                // Display details about the associated pacifier
-                Debug.WriteLine($"PacifierId: {pacifierItem.PacifierId}");
-                Debug.WriteLine($"Button Text: {pacifierItem.ButtonText}");
-                Debug.WriteLine($"IsChecked: {pacifierItem.IsChecked}");
-            }
-            else
-            {
-                Debug.WriteLine("Pacifier not found for the sensor.");
+                Debug.WriteLine("Pacifier item not found.");
+                return;
             }
 
-            // Now display the sensor details
-            Debug.WriteLine($"SensorType: {sensor.SensorId}");
-            Debug.WriteLine($"Sensor Groups: {string.Join(", ", sensor.SensorGroup.Types)}");
+            // Display details about the pacifier
+            Debug.WriteLine($"PacifierId: {pacifierItem.ItemId}");
+            Debug.WriteLine($"Button Text: {pacifierItem.ButtonText}");
+            Debug.WriteLine($"IsChecked: {pacifierItem.IsChecked}");
 
-            if (sensor.MeasurementGroup != null)
+            // Iterate over each sensor associated with this pacifier and display their details
+            foreach (var sensor in pacifierItem.Sensors)
             {
-                // Display the GroupName, which should now be properly set
-                Debug.WriteLine($"Measurement Group Name: {sensor.MeasurementGroup.GroupName}");
+                Debug.WriteLine($"SensorId: {sensor.SensorId}");
 
-                foreach (var measurement in sensor.MeasurementGroup.Measurements)
+                // Iterate through sensor groups (if any) and display their details
+                foreach (var sensorGroup in sensor.SensorGroups)
                 {
-                    Debug.WriteLine($"Measurement Name: {measurement.Name}, Value: {measurement.Value:F2}");
+                    Debug.WriteLine($"Sensor Group: {sensorGroup.GroupName}");
+
+                    if (sensorGroup.MeasurementGroup != null)
+                    {
+                        // Display the GroupName of the MeasurementGroup
+                        Debug.WriteLine($"Measurement Group Name: {sensorGroup.MeasurementGroup.GroupName}");
+
+                        // Iterate over the measurements in the MeasurementGroup
+                        foreach (var measurement in sensorGroup.MeasurementGroup.Measurements)
+                        {
+                            // Display each measurement's name and value
+                            Debug.WriteLine($"Measurement Name: {measurement.Key}, Value: {measurement.Value:F2}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.WriteLine("No measurements available in this group.");
+                    }
                 }
             }
-            else
-            {
-                Debug.WriteLine("No measurements available.");
-            }
         }
+
 
 
 

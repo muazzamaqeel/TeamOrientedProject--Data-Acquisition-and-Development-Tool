@@ -81,7 +81,11 @@ namespace Smart_Pacifier___Tool.Components
         }
 
         // Observable collection for sensor data
-        public ObservableCollection<Sensor> Sensors { get; set; } = new ObservableCollection<Sensor>();
+        public ObservableCollection<Sensor> Sensors 
+        {
+            get; 
+            set; 
+        }
 
         private LineChartGraph? _graph;
 
@@ -117,95 +121,58 @@ namespace Smart_Pacifier___Tool.Components
         public class Sensor
         {
             public string SensorId { get; set; }
-            public SensorGroup SensorGroup { get; set; }
-            public MeasurementGroup MeasurementGroup { get; set; }
+            public ObservableCollection<SensorGroup> SensorGroups { get; set; }
 
             public Sensor(string sensorId)
             {
                 SensorId = sensorId;
-                SensorGroup = new SensorGroup();
-                MeasurementGroup= new MeasurementGroup();
+                SensorGroups = new ObservableCollection<SensorGroup>();
             }
         }
 
         public class SensorGroup
         {
-            public List<string> Types { get; set; }
+            public string GroupName { get; set; }
+            public MeasurementGroup MeasurementGroup { get; set; }
 
-            public SensorGroup()
+            public SensorGroup(string groupName)
             {
-                Types = new List<string>();
+                GroupName = groupName;
+                MeasurementGroup = new MeasurementGroup(groupName);
             }
 
             public void Add(string type)
             {
-                Types.Add(type);
+                // Implementation if needed in the future
             }
         }
 
         public class MeasurementGroup
         {
             public string GroupName { get; set; }
-            public List<Measurement> Measurements { get; set; }
+            public Dictionary<string, double> Measurements { get; set; }
 
-            // Default constructor
-            public MeasurementGroup()
+            public MeasurementGroup(string groupName)
             {
-                Measurements = new List<Measurement>();
+                GroupName = groupName;
+                Measurements = new Dictionary<string, double>();
             }
 
-            // Constructor that accepts a group name
-            public MeasurementGroup(string groupName) : this()  // Calls the default constructor
+            public void AddOrUpdateMeasurement(string name, double value)
             {
-                GroupName = groupName; // Set the GroupName from the parameter
+                Measurements[name] = value;
             }
 
-            // Method to add a measurement to the list, checks if the measurement exists
-            public void AddMeasurement(string name, double value)
-            {
-                var existingMeasurement = Measurements.FirstOrDefault(m => m.Name == name);
-                if (existingMeasurement != null)
-                {
-                    // Update the existing measurement
-                    existingMeasurement.Value = value;
-                }
-                else
-                {
-                    // Add new measurement if it doesn't exist
-                    Measurements.Add(new Measurement { Name = name, Value = value });
-                }
-            }
-
-            // Optionally, you can add a method to retrieve a measurement by name if needed
-            public Measurement GetMeasurement(string name)
-            {
-                return Measurements.FirstOrDefault(m => m.Name == name);
-            }
-
-            // Method to update an existing measurement
-            public void UpdateMeasurement(string name, double newValue)
-            {
-                var existingMeasurement = Measurements.FirstOrDefault(m => m.Name == name);
-                if (existingMeasurement != null)
-                {
-                    existingMeasurement.Value = newValue; // Update the measurement value
-                }
-            }
-
-            // Method to check if a measurement exists
             public bool ContainsMeasurement(string name)
             {
-                return Measurements.Any(m => m.Name == name);
+                return Measurements.ContainsKey(name);
+            }
+
+            public double? GetMeasurement(string name)
+            {
+                return Measurements.TryGetValue(name, out var value) ? value : (double?)null;
             }
         }
-
-
-        public class Measurement
-        {
-            public string Name { get; set; }
-            public double Value { get; set; }
-        }
-
 
     }
 }

@@ -51,10 +51,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             pacifierFilterPanel.ItemsSource = _viewModel.PacifierItems;
             sensorFilterPanel.ItemsSource = _viewModel.SensorItems;
 
-            // Update the UI when there are changes
-            _viewModel.SensorTypes.CollectionChanged += OnSensorTypesCollectionChanged;
-            //_viewModel.SensorMeasurements.CollectionChanged += OnSensorMeasurementsCollectionChanged;
-
+            foreach (var pacifier in _viewModel.PacifierItems) // Loop through each sensor
+            {
+                pacifier.Sensors.CollectionChanged += OnSensorTypesCollectionChanged;
+            }
 
         }
 
@@ -62,47 +62,19 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
         private void OnSensorTypesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            //Debug.WriteLine($"Monitoring: SensorTypes CollectionChanged Called");
-            // Only call AddSensorItems if there are new items added to the collection
+            // Debug.WriteLine($"Monitoring: SensorTypes CollectionChanged Called");
 
+            // Only call AddSensorItems if there are new items added to the collection
             if (e.Action == NotifyCollectionChangedAction.Add)
             {
-                // Pass the newly added sensor types to AddSensorItems
-                AddSensorItems(_viewModel.SensorTypes);
-                //Debug.WriteLine($"SensorType: {sensor.SensorId}");
+                // Convert e.NewItems (which is an IList) to an ObservableCollection<Sensor>
+                ObservableCollection<Sensor> newSensors = new ObservableCollection<Sensor>(e.NewItems.Cast<Sensor>());
 
-
+                // Now you can pass the ObservableCollection<Sensor> to AddSensorItems
+                AddSensorItems(newSensors);
             }
         }
 
-        //private void OnSensorMeasurementsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        //{
-        //    //Debug.WriteLine($"Monitoring: SensorTypes CollectionChanged Called");
-        //    // Only call AddSensorItems if there are new items added to the collection
-
-        //    if (e.Action == NotifyCollectionChangedAction.Add)
-        //    {
-        //        // Pass the newly added sensor types to AddSensorItems
-        //        _viewModel.GroupMeasurements(_viewModel.SensorMeasurements);
-        //        foreach (var sensorType in _viewModel.SensorMeasurements)
-        //        {
-        //            //Debug.WriteLine($"Monitoring: {sensorType} Was Added To Collection");
-        //        }
-
-        //    }
-
-
-        //    Debug.WriteLine($"Sensor Groups: {string.Join(", ", sensor.SensorGroup.Types)}");
-
-        //    if (sensor.MeasurementGroup != null)
-        //    {
-        //        Debug.WriteLine($"Measurement Group Name: {sensor.MeasurementGroup.GroupName}");
-        //        foreach (var measurement in sensor.MeasurementGroup.Measurements)
-        //        {
-        //            Debug.WriteLine($"Measurement Name: {measurement.Name}, Value: {measurement.Value:F2}");
-        //        }
-        //    }
-        //}
 
 
         // ================ Pacifier Items - DONE ===============
@@ -134,6 +106,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// <param name="item"></param>
         private void UpdateCircleText(PacifierItem pacifierItem)
         {
+
             if (pacifierItem.IsChecked)
             {
                 if (!_viewModel.checkedPacifiers.Contains(pacifierItem))
@@ -151,10 +124,9 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                         }
                     }
 
-
                     if (_viewModel.SensorTypes != null)
                     {
-                        AddSensorItems(_viewModel.SensorTypes);
+                        AddSensorItems(pacifierItem.Sensors);
                         //Debug.WriteLine("Monitoring: SensorTypes is used");
                     }
                     else
@@ -186,18 +158,18 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// 
         /// </summary>
         /// <param name="sensorTypes"></param>
-        private void AddSensorItems(ObservableCollection<string> sensorTypes)
+        private void AddSensorItems(ObservableCollection<Sensor> sensors)
         {
-            foreach (var sensorType in sensorTypes)
+            foreach (var sensor in sensors)
             {
                 // Check if an item with the same ButtonText already exists in SensorItems
-                if (!_viewModel.SensorItems.Any(sensorItem => sensorItem.ButtonText == $"{sensorType}"))
+                if (!_viewModel.SensorItems.Any(sensorItem => sensorItem.ButtonText == $"{sensor.SensorId}"))
                 {
                     var sensorItem = new PacifierItem(PacifierItem.ItemType.Sensor)
                     {
-                        ButtonText = $"{sensorType}",
+                        ButtonText = $"{sensor.SensorId}",
                         CircleText = " ",
-                        ItemId = sensorType
+                        ItemId = sensor.SensorId
                     };
 
                     // Bind the toggle change event
@@ -239,10 +211,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 _viewModel.checkedSensors[i].CircleText = (i + 1).ToString();
             }
 
-            // Update all active pacifier grids to reflect the global sensor state
+            //Update all active pacifier grids to reflect the global sensor state
             foreach (var pacifierItem in _viewModel.checkedPacifiers)
             {
-                var pacifierGrid = FindPacifierGridForSensor(pacifierItem);
+                var pacifierGrid = FindPacifierGridForSensor(sensorItem);
                 if (pacifierGrid != null)
                 {
                     if (sensorItem.IsChecked)
@@ -421,40 +393,42 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             pacifierGrid.Children.Add(scrollViewer);
 
 
-            // Iterate to create multiple graphs
-            foreach (var groupMeasurement in _viewModel.GroupedSensorMeasurements)
-            {
-                // Get the sensorMeasurement keys that start with the groupMeasurement prefix
-                var matchingKeys = _viewModel._sensorDataDictionary.Keys
-                    .Where(key => key.StartsWith(groupMeasurement))
-                    .ToList();
 
-                // Now, for each matching key, create a graph
-                foreach (var matchingKey in matchingKeys)
+            // Iterate to create multiple graphs
+            foreach (var sensor in sensorItem.Sensors)
+            {
+                foreach (var sensorGroup in sensor.SensorGroups)
                 {
-                    var sensorMeasurement = matchingKey.Split('_')[0];  // Prefix is the sensor measurement type
-                    CreateGraphs(graphPanel, sensorItem.ItemId, groupMeasurement, sensorMeasurement);
+                    CreateGraphs(graphPanel, sensor, sensorGroup);
                 }
+                //// Get the sensorMeasurement keys that start with the groupMeasurement prefix
+                //var matchingKeys = _viewModel._sensorDataDictionary.Keys
+                //    .Where(key => key.StartsWith(groupMeasurement))
+                //    .ToList();
+
+                //// Now, for each matching key, create a graph
+                //foreach (var matchingKey in matchingKeys)
+                //{
+                //    var sensorMeasurement = matchingKey.Split('_')[0];  // Prefix is the sensor measurement type
+                //    CreateGraphs(graphPanel, sensorItem.ItemId, groupMeasurement, sensorMeasurement);
+                //}
             }
         }
 
-        private void CreateGraphs(WrapPanel graphPanel, string ItemId, string GroupMeasurement, string sensorMeasurement)
+        private void CreateGraphs(WrapPanel graphPanel, Sensor sensorType, SensorGroup sensorGroup)
         {
             //Debug.WriteLine($"============== GRAPH ==============");
             //Debug.WriteLine($"Monitoring: Sensor Type: {ItemId}");
             //Debug.WriteLine($"Monitoring: Sensor Group: {GroupMeasurement}");
             //Debug.WriteLine($"Monitoring: Sensor Measurement: {sensorMeasurement}");
 
-            var graph = new LineChartGraph
+            var graph = new LineChartGraph (sensorType, sensorGroup, sensorGroup.GroupName, 15)
             {
                 Width = 300,
                 Height = 200,
-                Name = GroupMeasurement,
+                Name = sensorGroup.GroupName,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
-                Margin = new Thickness(5),
-                PlotId = ItemId, // or set based on data
-                GroupMeasurement = GroupMeasurement, // Add relevant GroupMeasurement
-                Interval = 15 // Set the interval (number of points to show)
+                Margin = new Thickness(5)
             };
 
             // Add the graph to the UI
