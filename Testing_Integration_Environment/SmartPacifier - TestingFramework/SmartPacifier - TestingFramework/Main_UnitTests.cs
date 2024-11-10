@@ -109,7 +109,6 @@ namespace SmartPacifier___TestingFramework
             _dockerInitializer.StopDockerContainer();
         }
 
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -196,51 +195,59 @@ namespace SmartPacifier___TestingFramework
             // Assert
             Assert.Empty(result);
         }
+        [Fact]
+        public async Task RunCampaignExistsTest()
+        {
+            // Instantiate UnitTestMAN to access the test
+            var unitTestMAN = new UnitTestMAN();
+
+            // Run the CampaignExists_ShouldReturnTrue_WhenCampaignExists test
+            await unitTestMAN.CampaignExists_ShouldReturnTrue_WhenCampaignExists();
+
+            Console.WriteLine("CampaignExists_ShouldReturnTrue_WhenCampaignExists passed.");
+        }
 
 
 
-        // ---------!!!!--------BELOW 4 [Fact] are related to : MQTT Broker DATA retrieval--trial Duygu Nov-4
-        // Add tests for MQTT Broker functionality
-        // Add a method to ensure the broker is connected before running tests
-        // ---------!!!!--------BELOW 4 [Fact] are related to : MQTT Broker DATA retrieval
+
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /// <summary>
+        /// Below are the Tests Related to MQTT Broker
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task TestMQTTConnectBroker()
         {
-            await EnsureBrokerConnected(); // Ensure broker is connected
-            // No exception expected if connected successfully
-        }
+            // Instantiate the MQTTBrokerTestCases to run the connection test
+            var mqttTestCases = new MQTTBrokerTestCases();
+            await mqttTestCases.InitializeAsync();
 
+            // Run the connection test and ensure no exceptions occur
+            await mqttTestCases.TestMQTTConnectBroker();
+        }
         [Fact]
         public async Task TestMQTTSubscribe()
         {
-            await EnsureBrokerConnected(); // Ensure broker is connected
-            string topic = "Pacifier/test";
+            // Instantiate the MQTTBrokerTestCases to run the subscription test
+            var mqttTestCases = new MQTTBrokerTestCases();
+            await mqttTestCases.InitializeAsync();
 
-            Exception exception = await Record.ExceptionAsync(async () => await _broker.Subscribe(topic));
-            Assert.Null(exception); // Verify that no exception was thrown during subscription
+            // Run the subscription test to verify no exceptions are thrown
+            await mqttTestCases.TestMQTTSubscribe();
         }
-
         [Fact]
         public async Task TestMQTTSendMessage()
         {
-            await EnsureBrokerConnected(); // Ensure broker is connected
-            string topic = "Pacifier/test";
-            string message = "Test Message";
+            // Instantiate the MQTTBrokerTestCases to run the send message test
+            var mqttTestCases = new MQTTBrokerTestCases();
+            await mqttTestCases.InitializeAsync();
 
-            Exception exception = await Record.ExceptionAsync(async () => await _broker.SendMessage(topic, message));
-            Assert.Null(exception); // Verify that no exception was thrown during message sending
+            // Run the send message test to ensure no exceptions are thrown
+            await mqttTestCases.TestMQTTSendMessage();
         }
-
-        [Fact]
-        public async Task RunMQTTBrokerTests()
-        {
-            var mqttBrokerTests = new UnitTests.UTBackEnd.UTCommunicationLayer.MQTT.MQTTBrokerTestCases();
-
-            await mqttBrokerTests.TestMQTTConnectBroker();
-            await mqttBrokerTests.TestMQTTSubscribe();
-            await mqttBrokerTests.TestMQTTSendMessage();
-        }
-
-
     }
+
 }

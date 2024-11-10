@@ -44,7 +44,5 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers
             // Assert
             Assert.True(result, "Expected the campaign to exist.");
         }
-
-        // Additional tests...
     }
 }
