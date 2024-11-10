@@ -15,8 +15,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\OutputResources\config.json" />
     <None Remove="Resources\OutputResources\TeamKey.pem" />
     <None Remove="Tabs\SettingsTab\.pem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\OutputResources\config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

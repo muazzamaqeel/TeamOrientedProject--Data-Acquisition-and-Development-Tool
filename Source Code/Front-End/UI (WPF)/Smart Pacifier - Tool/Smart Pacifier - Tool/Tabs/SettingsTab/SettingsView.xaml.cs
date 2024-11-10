@@ -13,6 +13,7 @@ using SmartPacifier.Interface.Services;
 using Microsoft.Extensions.Configuration.Json;
 using System.Windows.Media;
 using Newtonsoft.Json;
+
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
     public partial class SettingsView : UserControl
@@ -25,11 +26,11 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private bool isUserMode = true;
         private readonly ServerHandler serverHandler;
 
-        private readonly IConfiguration? configuration;
-        private readonly string? serverHost;
-        private readonly string? serverUsername;
-        private readonly string? serverApiKey;
-        private readonly string? serverPort;
+        private readonly IConfiguration configuration;
+        private readonly string serverHost;
+        private readonly string serverUsername;
+        private readonly string serverApiKey;
+        private readonly string serverPort;
 
         public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
         {
@@ -38,18 +39,36 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             serverHandler = new ServerHandler();
             serverHandler.TerminalOutputReceived += UpdateTerminalOutput;
 
-            // Load configuration
-            // Load configuration
+            // Load configuration file path
+            string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+
+            // Display the config file path in a message box
+            MessageBox.Show($"Config file path: {configFilePath}", "Configuration File Path", MessageBoxButton.OK, MessageBoxImage.Information);
+
             // Load configuration
             configuration = new ConfigurationBuilder()
-                .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json"), optional: true, reloadOnChange: true)
+                .AddJsonFile(configFilePath, optional: true, reloadOnChange: true)
                 .Build();
 
+            // Read JSON configuration and display contents for debugging
+            try
+            {
+                var jsonContent = File.ReadAllText(configFilePath);
+                MessageBox.Show($"Config file contents:\n{jsonContent}", "Configuration File Contents", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to read configuration file: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
             // Retrieve server configuration values
-            serverHost = configuration["ServerDatabaseConfiguration:Host"];
-            serverPort = configuration["ServerDatabaseConfiguration:Port"];
-            serverUsername = configuration["ServerDatabaseConfiguration:Username"];
-            serverApiKey = configuration["ServerDatabaseConfiguration:ApiKey"];
+            serverHost = configuration["Server:Host"];
+            serverPort = configuration["Server:Port"];
+            serverUsername = configuration["Server:Username"];
+            serverApiKey = configuration["Server:ApiKey"];
+
+            // Display loaded configuration values in a message box
+            MessageBox.Show($"Loaded Configuration:\nHost: {serverHost}\nPort: {serverPort}\nUsername: {serverUsername}", "Loaded Server Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
 
             // Set other properties and initialize UI
             if (Application.Current.Properties[UserModeKey] is bool userModeValue)
@@ -161,21 +180,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             });
         }
 
-        private void SubmitApiKey_Click(object sender, RoutedEventArgs e)
-        {
-            string apiKey = ApiKeyInput.Text;
-
-            if (!string.IsNullOrWhiteSpace(apiKey))
-            {
-                ((LocalHostSetup)localHostService).SaveApiKey(apiKey);
-                MessageBox.Show("API Key submitted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
         private void UserMode_Click(object sender, RoutedEventArgs e)
         {
             isUserMode = true;
@@ -229,7 +233,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
         }
 
-
         private void DarkTheme_Click(object sender, RoutedEventArgs e)
         {
             SetTheme("Resources/ColorsDark.xaml");
@@ -259,6 +262,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             LocalHostPanel.Visibility = Visibility.Visible;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
+            InfluxDbWebView.Visibility = Visibility.Hidden;
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -277,15 +281,12 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             TerminalPanel.Visibility = Visibility.Visible;
             string privateKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
 
-            // Initialize SSH connection with server details
-            serverHandler.InitializeSshConnection(serverHost, serverUsername, privateKeyPath);
+            // Initialize SSH connection with the complete server URL from configuration
+            string serverUrl = serverHost; // Use the host directly from configuration as a full URL
+            serverHandler.InitializeSshConnection(serverUrl, serverUsername, privateKeyPath);
 
-            // Construct the full URL using serverHost and serverPort
-            string fullUrl = serverHost.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                             ? $"{serverHost}:{serverPort}"
-                             : $"http://{serverHost}:{serverPort}";
-
-            OpenServerWebView(fullUrl);
+            // Display the URL directly if you still need to open a WebView
+            OpenServerWebView(serverUrl);
         }
 
 
@@ -302,6 +303,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 e.Handled = true;
             }
         }
+
         private void UpdateTerminalOutput(string output)
         {
             Dispatcher.Invoke(() =>
@@ -315,11 +317,11 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             serverHandler.DisconnectSsh();
         }
+
         private void CopyDockerFile_Click(object sender, RoutedEventArgs e)
         {
             serverHandler.Server_CopyDockerFiles();
         }
-
 
         private void Server_InitializeImageButton_Click(object sender, RoutedEventArgs e)
         {
@@ -342,6 +344,11 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             try
             {
+                // Ensure URL has a valid format, adding "http://" if needed
+                if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    url = $"http://{url}";
+                }
                 ServerInfluxDbWebView.Source = new Uri(url);
                 ServerWebViewBorder.Visibility = Visibility.Visible;
             }
@@ -350,36 +357,32 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 MessageBox.Show($"Invalid URL format: {url}. Error: {ex.Message}", "URL Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+
         private void CloseServerWebView_Click(object sender, RoutedEventArgs e)
         {
             ServerWebViewBorder.Visibility = Visibility.Collapsed;
             TerminalPanel.Visibility = Visibility.Visible; // Show the terminal panel again
         }
 
-
         private void Server_StopDockerButton_Click(object sender, RoutedEventArgs e)
         {
             serverHandler.Server_StopDocker();
         }
 
-
-        private void ServerSubmitApiKey_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// API Keys Submission For Local and Server Database
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void SubmitApiKey_Click(object sender, RoutedEventArgs e)
         {
-            // Check if the input has placeholder text
-            if (ServerApiKeyInput.Text == "Enter Server API Key")
-            {
-                ServerApiKeyInput.Text = string.Empty;
-                ServerApiKeyInput.Foreground = Brushes.Black;
-                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            string apiKey = ServerApiKeyInput.Text;
+            string apiKey = ApiKeyInput.Text;
 
             if (!string.IsNullOrWhiteSpace(apiKey))
             {
-                SaveApiKeyToConfig(apiKey);
-                MessageBox.Show("Server API Key submitted and saved successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                ((LocalHostSetup)localHostService).SaveApiKey(apiKey, isLocal: true); // Save for LocalDatabaseConfiguration
+                MessageBox.Show("API Key submitted for Local Database successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
@@ -387,30 +390,19 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             }
         }
 
-        private void SaveApiKeyToConfig(string apiKey)
+        private void ServerSubmitApiKey_Click(object sender, RoutedEventArgs e)
         {
-            // Path to your config.json file
-            var configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "config.json");
+            string apiKey = ServerApiKeyInput.Text;
 
-            try
+            if (!string.IsNullOrWhiteSpace(apiKey))
             {
-                // Load the JSON file
-                var json = File.ReadAllText(configFilePath);
-                dynamic config = JsonConvert.DeserializeObject(json);
-
-                // Update the API Key in the ServerDatabaseConfiguration section
-                config.ServerDatabaseConfiguration.ApiKey = apiKey;
-
-                // Save the updated JSON back to the file
-                string output = JsonConvert.SerializeObject(config, Formatting.Indented);
-                File.WriteAllText(configFilePath, output);
+                ((LocalHostSetup)localHostService).SaveApiKey(apiKey, isLocal: false); // Save for ServerDatabaseConfiguration
+                MessageBox.Show("API Key submitted for Server Database successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"Failed to save API Key: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
-
-
     }
 }

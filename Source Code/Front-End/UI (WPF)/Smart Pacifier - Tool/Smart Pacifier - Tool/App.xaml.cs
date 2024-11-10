@@ -17,6 +17,10 @@ using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using System.Configuration;
 using System.IO;
+using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
@@ -105,60 +109,120 @@ namespace Smart_Pacifier___Tool
         /// <param name="services">The service collection where services are registered.</param>
         private void ConfigureServices(IServiceCollection services)
         {
-            // Register ILocalHost with its implementation
-            services.AddSingleton<ILocalHost, LocalHostSetup>();
-            services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
-            services.AddTransient<PacifierSelectionView>(); // Register PacifierSelectionView for DI
+            // Load database configuration from config.json
+            var config = LoadDatabaseConfiguration();
 
+            // Determine which configuration to use
+            bool useLocal = config.UseLocal == true;
 
-            // Register InfluxDBClient with the URL and token from ILocalHost
-            services.AddSingleton<InfluxDBClient>(sp =>
+            // Set up the appropriate host and API key based on the configuration
+            string? host = useLocal ? config.Local?.Host : $"{config.Server?.Host}:{config.Server?.Port}";
+            string? apiKey = useLocal ? config.Local?.ApiKey : config.Server?.ApiKey;
+
+            // Check if Host or ApiKey is missing and throw an exception with a detailed message
+            if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(apiKey))
             {
-                var localHostService = sp.GetRequiredService<ILocalHost>();
-                string apiKey = localHostService.GetApiKey();
+                MessageBox.Show("Host or API key is missing or improperly configured. Please check your configuration file.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw new InvalidOperationException("Host or API key is missing or improperly configured.");
+            }
 
-                return new InfluxDBClient("http://localhost:8086", apiKey);
-            });
+            // Display which database is being used
+            string databaseType = useLocal ? "Local Database" : "Server Database";
+            MessageBox.Show($"Using {databaseType} at {host}", "Database Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // Ensure the host has the correct URI format
+            if (!host.StartsWith("http://") && !host.StartsWith("https://"))
+            {
+                host = "http://" + host;
+            }
+
+            // Register InfluxDBClient with the validated host and API key
+            services.AddSingleton<InfluxDBClient>(sp => new InfluxDBClient(host, apiKey));
 
             // Register InfluxDatabaseService as IDatabaseService
             services.AddSingleton<IDatabaseService>(sp =>
             {
                 var influxClient = sp.GetRequiredService<InfluxDBClient>();
-                var localHostService = sp.GetRequiredService<ILocalHost>();
-                string apiKey = localHostService.GetApiKey();
+                string org = "thu-de"; // Keep your org consistent
 
                 return new InfluxDatabaseService(
                     influxClient,
-                    apiKey, // API key retrieved through ILocalHost
-                    "http://localhost:8086", // baseUrl
-                    "thu-de" // org
+                    apiKey, // API key retrieved from the configuration
+                    host,   // baseUrl from configuration
+                    org     // organization name
                 );
             });
 
-            // Register the Manager classes, injecting IDatabaseService where necessary
-            services.AddSingleton<IManagerCampaign, ManagerCampaign>();
+            // Register other necessary services
+            services.AddSingleton<ILocalHost, LocalHostSetup>();
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
+            services.AddSingleton<IManagerCampaign, ManagerCampaign>();
             services.AddSingleton<IManagerSensors, ManagerSensors>();
-
-            // Register UI components
             services.AddSingleton<MainWindow>();
             services.AddSingleton<DeveloperView>();
+            services.AddSingleton<IBrokerMain, BrokerMain>();
+
+            // UI component registration
+            services.AddTransient<PacifierSelectionView>();
             services.AddTransient<Func<string, SettingsView>>(sp => (defaultView) =>
             {
                 var localHostService = sp.GetRequiredService<ILocalHost>();
                 return new SettingsView(localHostService, defaultView);
             });
             services.AddTransient<CampaignsView>();
-
-            // Register the BrokerMain class
-            services.AddSingleton<IBrokerMain, BrokerMain>();
         }
 
+
         /// <summary>
-        /// Applies the passed theme, clears all current resource dictionaries and adds them back
+        /// Loads the database configuration from the config.json file.
+        /// This method deserializes the JSON file to populate the AppConfiguration object.
         /// </summary>
-        /// <param name="themeUri">The URI of the theme that should be applied, either dark or light</param>
-        public void ApplyTheme(string themeUri)
+        /// <returns>Returns the AppConfiguration object with loaded settings.</returns>
+
+
+        private AppConfiguration LoadDatabaseConfiguration()
+            {
+                var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+
+                // Check if the configuration file exists
+                if (!File.Exists(configPath))
+                {
+                    MessageBox.Show("Configuration file not found.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    throw new FileNotFoundException("Configuration file not found.", configPath);
+                }
+
+                // Read and parse JSON file with Newtonsoft.Json
+                try
+                {
+                    var configJson = File.ReadAllText(configPath);
+                    var config = JsonConvert.DeserializeObject<AppConfiguration>(configJson);
+
+                    if (config == null)
+                    {
+                        MessageBox.Show("Failed to parse configuration file.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        throw new InvalidOperationException("Failed to parse configuration file.");
+                    }
+
+                    return config;
+                }
+                catch (Newtonsoft.Json.JsonException ex) // Fully qualified exception
+                {
+                    MessageBox.Show($"Error parsing configuration file: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    throw;
+                }
+            }
+
+
+    /// <summary>
+    /// Applies the passed theme, clears all current resource dictionaries and adds them back
+    /// </summary>
+    /// <param name="themeUri">The URI of the theme that should be applied, either dark or light</param>
+    public void ApplyTheme(string themeUri)
         {
             // Save the selected theme URI to settings
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);

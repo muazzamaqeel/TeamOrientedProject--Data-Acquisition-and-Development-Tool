@@ -42,7 +42,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Mode Selection Panel -->
-                <StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Visibility="Collapsed">
+                <StackPanel x:Name="ModeButtonsPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Margin="0,200,0,0" Visibility="Collapsed">
                     <Button x:Name="UserModeButton" Width="180" Height="75" FontSize="16" Margin="20" Style="{StaticResource ModernButtonStyle}" Click="UserMode_Click">
                         <StackPanel>
                             <TextBlock x:Name="UserModeText" Text="User Mode" FontSize="16" HorizontalAlignment="Center" FontWeight="Bold"/>
@@ -58,7 +58,7 @@
                 </StackPanel>
 
                 <!-- PIN Entry Section -->
-                <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,300,0,0" Visibility="Collapsed">
+                <StackPanel x:Name="PinEntryPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,320,0,0" Visibility="Collapsed">
                     <TextBlock Text="Enter PIN:" HorizontalAlignment="Center" FontSize="16" Margin="0,10" Foreground="White"/>
                     <PasswordBox x:Name="PinInput" Width="200" HorizontalAlignment="Center" Margin="10"/>
                     <Button Content="Continue" Style="{StaticResource SmallModernButtonStyle}" Click="PinSubmit_Click" HorizontalAlignment="Center" Margin="10"/>

@@ -13,7 +13,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
     {
         private readonly string dockerComposeFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docker-compose.yml");
         private readonly string mosquitoFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mosquitto.conf");
-        private string remoteDirectory;
+        private string? remoteDirectory;
 
         private SshClient? sshClient;
         private ShellStream? shellStream;
@@ -23,6 +23,12 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         {
             try
             {
+                if (string.IsNullOrEmpty(host))
+                {
+                    TerminalOutputReceived?.Invoke("Host is empty. Please check your configuration.\n");
+                    return;
+                }
+
                 var keyFile = new PrivateKeyFile(privateKeyPath);
                 var keyFiles = new[] { keyFile };
                 var connectionInfo = new ConnectionInfo(host, username, new PrivateKeyAuthenticationMethod(username, keyFiles));
@@ -56,6 +62,8 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 TerminalOutputReceived?.Invoke($"Error: {ex.Message}\n");
             }
         }
+
+
 
         private async Task ReadFromShellStream()
         {
@@ -152,7 +160,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 TerminalOutputReceived?.Invoke($"Error in Server_CopyDockerFiles: {ex.Message}\n");
             }
         }
-
 
         // Helper method to upload a file via SFTP
         private bool UploadFile(SftpClient sftp, string localPath, string remotePath, string fileName)

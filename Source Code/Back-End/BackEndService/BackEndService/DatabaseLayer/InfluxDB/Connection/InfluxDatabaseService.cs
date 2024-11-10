@@ -9,6 +9,7 @@ using Protos;
 using SmartPacifier.Interface.Services;
 using System.Data;
 using System.Globalization;
+using InfluxDB.Client.Core.Exceptions;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 {
@@ -62,9 +63,15 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
                 var writeApi = _client.GetWriteApiAsync();
                 await writeApi.WritePointAsync(point, _bucket, _org);
             }
+            catch (UnauthorizedException)
+            {
+                MessageBox.Show("Unauthorized access to InfluxDB. Please check the API key and permissions.", "Authorization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error writing data: {ex.Message}");
+                MessageBox.Show($"Error writing data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
             }
         }
 
