@@ -11,6 +11,9 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
 
         public void StartDockerContainer()
         {
+            // Stop and remove any existing container with the same name
+            RunDockerCommand($"rm -f {ContainerName}");
+
             // Check if the container is already running
             if (!IsContainerRunning())
             {
@@ -31,14 +34,33 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
                 FileName = "docker",
                 Arguments = arguments,
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            var process = Process.Start(startInfo);
-            process?.WaitForExit();
+            using var process = Process.Start(startInfo);
+            if (process != null)
+            {
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (!string.IsNullOrEmpty(output))
+                {
+                    Console.WriteLine($"Docker output: {output}");
+                }
+                if (!string.IsNullOrEmpty(error))
+                {
+                    Console.WriteLine($"Docker error: {error}");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Failed to start Docker process.");
+            }
         }
 
-        private bool IsContainerRunning()
+        public bool IsContainerRunning()
         {
             var startInfo = new ProcessStartInfo
             {
@@ -48,7 +70,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            var process = Process.Start(startInfo);
+            using var process = Process.Start(startInfo);
             var output = process?.StandardOutput.ReadToEnd();
             process?.WaitForExit();
             return !string.IsNullOrEmpty(output);
@@ -56,9 +78,27 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
 
         private void WaitForContainerInitialization()
         {
-            // Wait for a few seconds to let the container fully initialize
-            Thread.Sleep(5000); // 5 seconds
-            Console.WriteLine("InfluxDB container started and ready.");
+            Console.WriteLine("Waiting for InfluxDB container to initialize...");
+
+            const int maxRetries = 10; // Maximum number of retries
+            const int delayBetweenRetries = 3000; // Delay in milliseconds (3 seconds) between each retry
+
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                if (IsContainerRunning())
+                {
+                    Console.WriteLine("InfluxDB container is now running and ready.");
+                    return;
+                }
+
+                Thread.Sleep(delayBetweenRetries); // Wait before checking again
+            }
+
+            // Log Docker container logs if initialization fails
+            Console.WriteLine("InfluxDB container failed to start within the expected time. Retrieving logs...");
+            GetDockerLogs();
+
+            throw new InvalidOperationException("InfluxDB container failed to start within the expected time.");
         }
 
         public void StopDockerContainer()
@@ -68,11 +108,18 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
                 Console.WriteLine("Stopping InfluxDB container...");
                 RunDockerCommand($"stop {ContainerName}");
                 RunDockerCommand($"rm {ContainerName}");
+                Console.WriteLine("InfluxDB container stopped and removed.");
             }
             else
             {
                 Console.WriteLine("InfluxDB container is not running.");
             }
+        }
+
+        private void GetDockerLogs()
+        {
+            Console.WriteLine("Retrieving Docker logs...");
+            RunDockerCommand($"logs {ContainerName}");
         }
     }
 }
