@@ -24,6 +24,7 @@ namespace SmartPacifier___TestingFramework
         private bool _isBrokerConnected;  //------------ Flag to check if broker is connected DUDU NOv4
         private readonly UTInitializeDockerImage _dockerInitializer;
 
+
         public Main_UnitTests()
         {
             // Instantiate UnitTestDB for connection testing
@@ -42,6 +43,7 @@ namespace SmartPacifier___TestingFramework
             // Initialize Docker container for InfluxDB
             _dockerInitializer = new UTInitializeDockerImage();
             _dockerInitializer.StartDockerContainer();
+
         }
 
 
@@ -52,31 +54,6 @@ namespace SmartPacifier___TestingFramework
                 await _broker.ConnectBroker(); // Connect the broker
                 _isBrokerConnected = true; // Mark as connected
             }
-        }
-
-        // Docker Initialization Test ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        //------------------- ADDED DUDU Nov8
-
-        [Fact]
-        public void TestInfluxDBConnection()
-        {
-            // Example test case: check if the container is up and running
-            Assert.True(IsInfluxDBContainerRunning(), "InfluxDB container is not running!");
-
-            // Here you would add further code to interact with InfluxDB
-            // For example, querying InfluxDB, inserting data, etc.
-        }
-
-        [Fact]
-        public void TestDatabaseOperations()
-        {
-            // Example test case: check some database operation in InfluxDB
-            // This could involve inserting data and checking if it persists.
-
-            // Example of interacting with InfluxDB, but actual code to interact with InfluxDB will depend
-            // on how your system is designed to communicate with the database
-            bool isDataInserted = InsertTestDataIntoInfluxDB();
-            Assert.True(isDataInserted, "Test data insertion into InfluxDB failed!");
         }
 
         private bool IsInfluxDBContainerRunning()
@@ -248,6 +225,95 @@ namespace SmartPacifier___TestingFramework
             // Run the send message test to ensure no exceptions are thrown
             await mqttTestCases.TestMQTTSendMessage();
         }
-    }
 
+        [Fact]
+        public void RunInfluxDBContainerTests()
+        {
+            try
+            {
+                _dockerInitializer.StartDockerContainer();
+                Console.WriteLine("InfluxDB container started successfully.");
+
+                bool isContainerRunning = _dockerInitializer.IsContainerRunning();
+                Assert.True(isContainerRunning, "Expected the InfluxDB container to be running.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Test failed with exception: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                _dockerInitializer.StopDockerContainer();
+                Console.WriteLine("InfluxDB container stopped and removed.");
+            }
+        }
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+
+
+    // Docker Initialization Test ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //------------------- ADDED DUDU Nov8
+
+    [Fact]
+        public void TestInfluxDBConnection()
+        {
+            // Example test case: check if the container is up and running
+            Assert.True(IsInfluxDBContainerRunning(), "InfluxDB container is not running!");
+
+            // Here you would add further code to interact with InfluxDB
+            // For example, querying InfluxDB, inserting data, etc.
+        }
+
+        [Fact]
+        public void TestDatabaseOperations()
+        {
+            // Example test case: check some database operation in InfluxDB
+            // This could involve inserting data and checking if it persists.
+
+            // Example of interacting with InfluxDB, but actual code to interact with InfluxDB will depend
+            // on how your system is designed to communicate with the database
+            bool isDataInserted = InsertTestDataIntoInfluxDB();
+            Assert.True(isDataInserted, "Test data insertion into InfluxDB failed!");
+        }
+
+
+
+
+    */
+
+
+
