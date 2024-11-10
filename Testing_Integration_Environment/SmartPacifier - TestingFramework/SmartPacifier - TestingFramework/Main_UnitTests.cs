@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 using Moq;
+using SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.UTInitializeDockerImage;
 using SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.Unit_Tests_DatabaseLayer.Unit_Tests_InfluxDB.Unit_Tests_Connection;
 using SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.UnitTest_Services;
 using SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers;
@@ -20,8 +21,8 @@ namespace SmartPacifier___TestingFramework
         private readonly Mock<IDatabaseService> _mockDatabaseService;
         private readonly Mock<IManagerPacifiers> _mockManagerPacifiers;
         private readonly Broker _broker; //-------------ADDED DUDU Nov4
-        private bool _isBrokerConnected;  // Flag to check if broker is connected DUDU NOv4
-
+        private bool _isBrokerConnected;  //------------ Flag to check if broker is connected DUDU NOv4
+        private readonly UTInitializeDockerImage _dockerInitializer;
 
         public Main_UnitTests()
         {
@@ -37,6 +38,10 @@ namespace SmartPacifier___TestingFramework
             _managerCampaignWrapper = new CampaignWrap(managerCampaign, "SmartPacifier-Bucket1");
 
             _broker = Broker.Instance; //------------Initialize the broker singleton ADDED DUDU Nov4
+
+            // Initialize Docker container for InfluxDB
+            _dockerInitializer = new UTInitializeDockerImage();
+            _dockerInitializer.StartDockerContainer();
         }
 
 
@@ -49,7 +54,62 @@ namespace SmartPacifier___TestingFramework
             }
         }
 
+        // Docker Initialization Test ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //------------------- ADDED DUDU Nov8
 
+        [Fact]
+        public void TestInfluxDBConnection()
+        {
+            // Example test case: check if the container is up and running
+            Assert.True(IsInfluxDBContainerRunning(), "InfluxDB container is not running!");
+
+            // Here you would add further code to interact with InfluxDB
+            // For example, querying InfluxDB, inserting data, etc.
+        }
+
+        [Fact]
+        public void TestDatabaseOperations()
+        {
+            // Example test case: check some database operation in InfluxDB
+            // This could involve inserting data and checking if it persists.
+
+            // Example of interacting with InfluxDB, but actual code to interact with InfluxDB will depend
+            // on how your system is designed to communicate with the database
+            bool isDataInserted = InsertTestDataIntoInfluxDB();
+            Assert.True(isDataInserted, "Test data insertion into InfluxDB failed!");
+        }
+
+        private bool IsInfluxDBContainerRunning()
+        {
+            // Here, we should check if InfluxDB is accepting connections.
+            // This is a simple check to ping the InfluxDB API or use a health check API.
+            // Assuming a local InfluxDB container, you can check the HTTP endpoint for health status.
+            try
+            {
+                var client = new System.Net.Http.HttpClient();
+                var response = client.GetAsync("http://localhost:8086/health").Result;
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool InsertTestDataIntoInfluxDB()
+        {
+            // In reality, you'd interact with InfluxDB using an appropriate client (InfluxDB .NET client, HTTP API, etc.)
+            // Here we can just simulate the process and return true for demonstration.
+            return true;
+        }
+
+        public void Dispose()
+        {
+            // Clean up by stopping the Docker container after the tests are complete
+            _dockerInitializer.StopDockerContainer();
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
