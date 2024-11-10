@@ -13,6 +13,7 @@ using SmartPacifier.Interface.Services;
 using Microsoft.Extensions.Configuration.Json;
 using System.Windows.Media;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
@@ -31,6 +32,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private readonly string serverUsername;
         private readonly string serverApiKey;
         private readonly string serverPort;
+
 
         public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
         {
@@ -260,11 +262,12 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void LocalButton_Click(object sender, RoutedEventArgs e)
         {
+            UpdateUseLocalConfig(true); // Set UseLocal to true for local database
+            ReloadDatabaseConfiguration();
             LocalHostPanel.Visibility = Visibility.Visible;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
             InfluxDbWebView.Visibility = Visibility.Hidden;
         }
-
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
             InfluxDbWebView.Reload();
@@ -278,6 +281,8 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void ServerButton_Click(object sender, RoutedEventArgs e)
         {
+            UpdateUseLocalConfig(false); // Set UseLocal to false for server database
+            ReloadDatabaseConfiguration();
             TerminalPanel.Visibility = Visibility.Visible;
             string privateKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TeamKey.pem");
 
@@ -287,6 +292,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
             // Display the URL directly if you still need to open a WebView
             OpenServerWebView(serverUrl);
+;
         }
 
 
@@ -404,5 +410,66 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 MessageBox.Show("Please enter a valid API Key.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
+
+
+
+
+
+        // Add this inside SettingsView.xaml.cs, within the SettingsView class
+        public void UpdateUseLocalConfig(bool useLocal)
+        {
+            // Navigate up from the bin directory to the project's root
+            string projectDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            for (int i = 0; i < 4; i++)  // Adjust if needed to reach the project root
+            {
+                projectDirectory = Directory.GetParent(projectDirectory)?.FullName;
+            }
+
+            // Define the path to the original config.json file
+            string configFilePath = Path.Combine(projectDirectory, "Resources", "OutputResources", "config.json");
+
+            if (!File.Exists(configFilePath))
+            {
+                MessageBox.Show($"Configuration file not found at: {configFilePath}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                var configJson = JObject.Parse(File.ReadAllText(configFilePath));
+                configJson["UseLocal"] = useLocal;
+
+                // Write the updated JSON back to the original config file
+                File.WriteAllText(configFilePath, configJson.ToString(Formatting.Indented));
+
+                MessageBox.Show($"Database configuration updated to {(useLocal ? "Local" : "Server")} in: {configFilePath}", "Configuration Updated", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to update configuration: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            var app = (App)Application.Current;
+            app.ReloadServices();
+
+        }
+
+
+
+
+
+        private void ReloadDatabaseConfiguration()
+        {
+            var app = (App)Application.Current;
+            var config = app.LoadDatabaseConfiguration();
+
+            // Reconfigure services with the new configuration
+            app.ConfigureServices(new ServiceCollection());
+
+            MessageBox.Show("Database configuration reloaded.", "Reloaded", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+
+
     }
 }
