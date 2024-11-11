@@ -42,15 +42,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
                 }
             }
         }
-
-        [Fact]
         public async Task TestMQTTConnectBroker()
         {
             await EnsureBrokerConnected(); // Ensure the broker is connected before asserting
             Assert.True(_isBrokerConnected); // Check if connected
         }
-
-        [Fact]
         public async Task TestMQTTSubscribe()
         {
             await EnsureBrokerConnected(); // Ensure connection before subscription
@@ -58,8 +54,6 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Exception exception = await Record.ExceptionAsync(async () => await _broker.Subscribe(topic));
             Assert.Null(exception); // Verify that no exception was thrown during subscription
         }
-
-        [Fact]
         public async Task TestMQTTSendMessage()
         {
             await EnsureBrokerConnected(); // Ensure connection before sending

@@ -29,8 +29,6 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers
             // Wrap ManagerCampaign in the ManagerCampaignWrapper
             _managerCampaignWrapper = new CampaignWrap(managerCampaign, "SmartPacifier-Bucket1");
         }
-
-        [Fact]
         public async Task CampaignExists_ShouldReturnTrue_WhenCampaignExists()
         {
             // Arrange
@@ -44,7 +42,5 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers
             // Assert
             Assert.True(result, "Expected the campaign to exist.");
         }
-
-        // Additional tests...
     }
 }

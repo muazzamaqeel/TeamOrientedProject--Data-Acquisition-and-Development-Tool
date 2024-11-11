@@ -19,6 +19,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="Docker.DotNet" Version="3.125.15" />
 		<PackageReference Include="FlaUI.Core" Version="4.0.0" />
 		<PackageReference Include="FlaUI.UIA3" Version="4.0.0" />
 		<PackageReference Include="InfluxDB.Client" Version="4.18.0" />

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 using Moq;
+using SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.UTInitializeDockerImage;
 using SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.Unit_Tests_DatabaseLayer.Unit_Tests_InfluxDB.Unit_Tests_Connection;
 using SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.UnitTest_Services;
 using SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers;
@@ -20,7 +21,8 @@ namespace SmartPacifier___TestingFramework
         private readonly Mock<IDatabaseService> _mockDatabaseService;
         private readonly Mock<IManagerPacifiers> _mockManagerPacifiers;
         private readonly Broker _broker; //-------------ADDED DUDU Nov4
-        private bool _isBrokerConnected;  // Flag to check if broker is connected DUDU NOv4
+        private bool _isBrokerConnected;  //------------ Flag to check if broker is connected DUDU NOv4
+        private readonly UTDockerImage _dockerInitializer;
 
 
         public Main_UnitTests()
@@ -37,6 +39,11 @@ namespace SmartPacifier___TestingFramework
             _managerCampaignWrapper = new CampaignWrap(managerCampaign, "SmartPacifier-Bucket1");
 
             _broker = Broker.Instance; //------------Initialize the broker singleton ADDED DUDU Nov4
+
+            // Initialize Docker container for InfluxDB
+            _dockerInitializer = new UTDockerImage();
+            _dockerInitializer.StartDockerContainer();
+
         }
 
 
@@ -49,6 +56,35 @@ namespace SmartPacifier___TestingFramework
             }
         }
 
+        private bool IsInfluxDBContainerRunning()
+        {
+            // Here, we should check if InfluxDB is accepting connections.
+            // This is a simple check to ping the InfluxDB API or use a health check API.
+            // Assuming a local InfluxDB container, you can check the HTTP endpoint for health status.
+            try
+            {
+                var client = new System.Net.Http.HttpClient();
+                var response = client.GetAsync("http://localhost:8086/health").Result;
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool InsertTestDataIntoInfluxDB()
+        {
+            // In reality, you'd interact with InfluxDB using an appropriate client (InfluxDB .NET client, HTTP API, etc.)
+            // Here we can just simulate the process and return true for demonstration.
+            return true;
+        }
+
+        public void Dispose()
+        {
+            // Clean up by stopping the Docker container after the tests are complete
+            _dockerInitializer.StopDockerContainer();
+        }
 
 
 
@@ -136,51 +172,148 @@ namespace SmartPacifier___TestingFramework
             // Assert
             Assert.Empty(result);
         }
+        [Fact]
+        public async Task RunCampaignExistsTest()
+        {
+            // Instantiate UnitTestMAN to access the test
+            var unitTestMAN = new UnitTestMAN();
+
+            // Run the CampaignExists_ShouldReturnTrue_WhenCampaignExists test
+            await unitTestMAN.CampaignExists_ShouldReturnTrue_WhenCampaignExists();
+
+            Console.WriteLine("CampaignExists_ShouldReturnTrue_WhenCampaignExists passed.");
+        }
 
 
 
-        // ---------!!!!--------BELOW 4 [Fact] are related to : MQTT Broker DATA retrieval--trial Duygu Nov-4
-        // Add tests for MQTT Broker functionality
-        // Add a method to ensure the broker is connected before running tests
-        // ---------!!!!--------BELOW 4 [Fact] are related to : MQTT Broker DATA retrieval
+
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /// <summary>
+        /// Below are the Tests Related to MQTT Broker
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task TestMQTTConnectBroker()
         {
-            await EnsureBrokerConnected(); // Ensure broker is connected
-            // No exception expected if connected successfully
-        }
+            // Instantiate the MQTTBrokerTestCases to run the connection test
+            var mqttTestCases = new MQTTBrokerTestCases();
+            await mqttTestCases.InitializeAsync();
 
+            // Run the connection test and ensure no exceptions occur
+            await mqttTestCases.TestMQTTConnectBroker();
+        }
         [Fact]
         public async Task TestMQTTSubscribe()
         {
-            await EnsureBrokerConnected(); // Ensure broker is connected
-            string topic = "Pacifier/test";
+            // Instantiate the MQTTBrokerTestCases to run the subscription test
+            var mqttTestCases = new MQTTBrokerTestCases();
+            await mqttTestCases.InitializeAsync();
 
-            Exception exception = await Record.ExceptionAsync(async () => await _broker.Subscribe(topic));
-            Assert.Null(exception); // Verify that no exception was thrown during subscription
+            // Run the subscription test to verify no exceptions are thrown
+            await mqttTestCases.TestMQTTSubscribe();
         }
-
         [Fact]
         public async Task TestMQTTSendMessage()
         {
-            await EnsureBrokerConnected(); // Ensure broker is connected
-            string topic = "Pacifier/test";
-            string message = "Test Message";
+            // Instantiate the MQTTBrokerTestCases to run the send message test
+            var mqttTestCases = new MQTTBrokerTestCases();
+            await mqttTestCases.InitializeAsync();
 
-            Exception exception = await Record.ExceptionAsync(async () => await _broker.SendMessage(topic, message));
-            Assert.Null(exception); // Verify that no exception was thrown during message sending
+            // Run the send message test to ensure no exceptions are thrown
+            await mqttTestCases.TestMQTTSendMessage();
         }
 
         [Fact]
-        public async Task RunMQTTBrokerTests()
+        public void RunInfluxDBContainerTests()
         {
-            var mqttBrokerTests = new UnitTests.UTBackEnd.UTCommunicationLayer.MQTT.MQTTBrokerTestCases();
+            try
+            {
+                _dockerInitializer.StartDockerContainer();
+                Console.WriteLine("InfluxDB container started successfully.");
 
-            await mqttBrokerTests.TestMQTTConnectBroker();
-            await mqttBrokerTests.TestMQTTSubscribe();
-            await mqttBrokerTests.TestMQTTSendMessage();
+                bool isContainerRunning = _dockerInitializer.IsContainerRunning();
+                Assert.True(isContainerRunning, "Expected the InfluxDB container to be running.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Test failed with exception: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                _dockerInitializer.StopDockerContainer();
+                Console.WriteLine("InfluxDB container stopped and removed.");
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+
+
+    // Docker Initialization Test ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //------------------- ADDED DUDU Nov8
+
+    [Fact]
+        public void TestInfluxDBConnection()
+        {
+            // Example test case: check if the container is up and running
+            Assert.True(IsInfluxDBContainerRunning(), "InfluxDB container is not running!");
+
+            // Here you would add further code to interact with InfluxDB
+            // For example, querying InfluxDB, inserting data, etc.
+        }
+
+        [Fact]
+        public void TestDatabaseOperations()
+        {
+            // Example test case: check some database operation in InfluxDB
+            // This could involve inserting data and checking if it persists.
+
+            // Example of interacting with InfluxDB, but actual code to interact with InfluxDB will depend
+            // on how your system is designed to communicate with the database
+            bool isDataInserted = InsertTestDataIntoInfluxDB();
+            Assert.True(isDataInserted, "Test data insertion into InfluxDB failed!");
         }
 
 
-    }
-}
+
+
+    */
+
+
+

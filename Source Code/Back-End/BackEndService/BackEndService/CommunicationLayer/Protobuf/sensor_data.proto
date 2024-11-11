@@ -5,24 +5,46 @@ package Protos;
 message SensorData {
     string pacifier_id = 1;
     string sensor_type = 2;
-    map<string, bytes> data_map = 3; // Dynamic key-value pairs for sensor data
+    string sensor_group = 3;
+    map<string, bytes> data_map = 4;
 }
 
 message IMUData {
-    float gyro_x = 1;
-    float gyro_y = 2;
-    float gyro_z = 3;
-    float mag_x = 4;
-    float mag_y = 5;
-    float mag_z = 6;
-    float acc_x = 7;
-    float acc_y = 8;
-    float acc_z = 9;
+    message gyro {
+        float gyro_x = 1;
+        float gyro_y = 2;
+        float gyro_z = 3;
+    }
+    repeated gyro gyros = 1;
+
+    message mag {
+        float mag_x = 1;
+        float mag_y = 2;
+        float mag_z = 3;
+    }
+    repeated mag mags = 2;
+
+    message acc {
+        float acc_x = 1;
+        float acc_y = 2;
+        float acc_z = 3;
+    }
+    repeated acc accs = 3;
 }
 
 message PPGData {
+    message led {
     int32 led_1 = 1;
     int32 led_2 = 2;
     int32 led_3 = 3;
-    float temperature = 4;
+    }
+    repeated led leds = 1;
+
+    message temperature {
+        float value = 1;
+    }
+    repeated temperature temperatures = 2;
+
 }
+
+

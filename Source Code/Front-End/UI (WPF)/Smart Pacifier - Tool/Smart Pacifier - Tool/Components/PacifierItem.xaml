@@ -27,9 +27,9 @@
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <Grid Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Ellipse Fill="#FF383838" Width="20" Height="20"/>
+                                    <Ellipse Fill="{StaticResource MainViewSecondaryBackgroundColor}" Width="20" Height="20"/>
                                     <TextBlock Text="{Binding CircleText}" 
-                                               Foreground="White" 
+                                               Foreground="{StaticResource MainViewForegroundColor}" 
                                                FontSize="10"
                                                HorizontalAlignment="Center" 
                                                VerticalAlignment="Center"/>
@@ -43,11 +43,11 @@
             <Style.Triggers>
                 <Trigger Property="IsChecked" Value="True">
                     <Setter Property="Background" Value="{StaticResource AccentColor}"/>
-                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="Foreground" Value="{StaticResource MainViewForegroundColor}"/>
                 </Trigger>
                 <Trigger Property="IsChecked" Value="False">
-                    <Setter Property="Background" Value="#1f1f1f"/>
-                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="Background" Value="{StaticResource MainViewBackgroundColor}"/>
+                    <Setter Property="Foreground" Value="{StaticResource MainViewForegroundColor}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>

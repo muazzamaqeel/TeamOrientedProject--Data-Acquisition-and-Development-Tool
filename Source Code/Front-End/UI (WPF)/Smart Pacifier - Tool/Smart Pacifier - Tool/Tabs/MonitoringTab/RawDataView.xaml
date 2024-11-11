@@ -20,8 +20,8 @@
                         Visibility="{Binding ActiveMonitoring, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </StackPanel>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Text="Raw Data" Foreground="{StaticResource MainViewForegroundColor}" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
-                <TextBlock Text="{Binding PacifierName}" Foreground="{StaticResource MainViewForegroundColor}" FontSize="14" HorizontalAlignment="Center"/>
+                <TextBlock Text="Raw Data" Foreground="White" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock Text="{Binding PacifierName}" Foreground="White" FontSize="14" HorizontalAlignment="Center"/>
             </StackPanel>
         </Grid>
         <!-- Content Section -->

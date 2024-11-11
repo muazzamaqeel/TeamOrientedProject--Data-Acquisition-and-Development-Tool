@@ -20,7 +20,7 @@
 			</StackPanel>
 			<StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
 				<TextBlock Text="Select a Campaign"
-                           Foreground="{StaticResource MainViewForegroundColor}" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
+                           Foreground="White" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
 			</StackPanel>
 		</Grid>
 
