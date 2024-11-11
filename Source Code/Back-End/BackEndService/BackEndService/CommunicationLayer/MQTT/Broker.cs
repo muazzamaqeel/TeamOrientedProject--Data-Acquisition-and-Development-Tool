@@ -179,22 +179,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                     string pacifierId = topicParts[1];
 
                     var (passedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, rawPayload);
-                    if (passedPacifierId != null)
-                    {
-                        //Console.WriteLine($"Pacifier ID: {passedPacifierId}");
-                        //Console.WriteLine($"Sensor Type: {sensorType}");
-
-                        // KeyValuePair kvp, SensorType: Value
-                        foreach (var kvp in parsedData)
-                        {
-                            Console.WriteLine($"{kvp.Key}: {kvp.Value}");
-                        }
-                    }
-                    else
-                    {
-                        //Console.WriteLine("Failed to parse sensor data.");
-                    }
-
 
                     //// Allow the Front End to get updates in real-time
                     MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, pacifierId, sensorType, parsedData));
