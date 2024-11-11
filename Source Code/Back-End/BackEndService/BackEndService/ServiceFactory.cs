@@ -6,11 +6,6 @@ namespace SmartPacifier.BackEnd
 {
     public class ServiceFactory : IServiceFactory
     {
-        public IAlgorithmLayer CreateAlgorithmService()
-        {
-            return AlgorithmLayer.PythonScriptEngine.GetInstance();
-        }
-
         public IDatabaseService CreateDatabaseService(string url, string token, string bucket, string org)
         {
             // Create the InfluxDBClient using the provided URL and token
