@@ -104,8 +104,6 @@ namespace Smart_Pacifier___Tool
             //ExecutePythonScript();
             var config = LoadDatabaseConfiguration();
             string scriptName = config.PythonScript?.FileName ?? "python1.py"; // Default to "python1.py" if not specified
-
-            // Run the Python script
             var pythonScriptEngine = _serviceProvider.GetRequiredService<IAlgorithmLayer>();
             try
             {
@@ -116,8 +114,6 @@ namespace Smart_Pacifier___Tool
             {
                 MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-
         }
 
         /// <summary>
@@ -199,8 +195,6 @@ namespace Smart_Pacifier___Tool
         /// This method deserializes the JSON file to populate the AppConfiguration object.
         /// </summary>
         /// <returns>Returns the AppConfiguration object with loaded settings.</returns>
-
-
         public AppConfiguration LoadDatabaseConfiguration()
         {
             // Navigate up from the bin directory to the project root

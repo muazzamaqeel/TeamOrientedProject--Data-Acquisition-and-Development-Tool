@@ -41,7 +41,6 @@ public class PythonScriptEngine : IAlgorithmLayer
             }
             else
             {
-                // Assume it's a file name, construct the full path based on the configuration
                 var scriptRelativePath = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript", scriptNameOrCode);
                 scriptPath = Path.GetFullPath(scriptRelativePath);
 
