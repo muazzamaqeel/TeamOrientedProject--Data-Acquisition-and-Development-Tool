@@ -98,8 +98,22 @@ namespace Smart_Pacifier___Tool
             var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
             await brokerMain.StartAsync(Array.Empty<string>()); // Await the task directly
 
-            // Start the main window to keep the application running
 
+
+
+            //ExecutePythonScript();
+            var config = LoadDatabaseConfiguration();
+            string scriptName = config.PythonScript?.FileName ?? "python1.py"; // Default to "python1.py" if not specified
+            var pythonScriptEngine = _serviceProvider.GetRequiredService<IAlgorithmLayer>();
+            try
+            {
+                string result = pythonScriptEngine.ExecuteScript(scriptName);
+                MessageBox.Show($"Python script '{scriptName}' executed successfully.", "Execution Success", MessageBoxButton.OK);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         /// <summary>
@@ -153,6 +167,9 @@ namespace Smart_Pacifier___Tool
                 );
             });
 
+            //Register PythonScriptEngine as IAlgorithmLayer
+            services.AddSingleton<IAlgorithmLayer>(sp => PythonScriptEngine.GetInstance());
+
             // Register other necessary services
             services.AddSingleton<ILocalHost, LocalHostSetup>();
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
@@ -178,12 +195,10 @@ namespace Smart_Pacifier___Tool
         /// This method deserializes the JSON file to populate the AppConfiguration object.
         /// </summary>
         /// <returns>Returns the AppConfiguration object with loaded settings.</returns>
-
-
         public AppConfiguration LoadDatabaseConfiguration()
         {
             // Navigate up from the bin directory to the project root
-            string projectDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string ?projectDirectory = AppDomain.CurrentDomain.BaseDirectory;
             for (int i = 0; i < 4; i++)  // Adjust as needed to reach the project root
             {
                 projectDirectory = Directory.GetParent(projectDirectory)?.FullName;

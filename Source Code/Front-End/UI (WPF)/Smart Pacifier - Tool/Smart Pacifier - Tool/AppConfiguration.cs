@@ -17,6 +17,8 @@ namespace Smart_Pacifier___Tool
         public bool? UseLocal { get; set; }
         public LocalConfig? Local { get; set; }
         public ServerConfig? Server { get; set; }
+        public PythonScriptConfig? PythonScript { get; set; } // Add this property
+
 
         public AppConfiguration LoadDatabaseConfiguration()
         {
@@ -41,19 +43,24 @@ namespace Smart_Pacifier___Tool
 
                 return config;
             }
-            catch (Newtonsoft.Json.JsonException ex)
+            catch (System.Text.Json.JsonException ex)
             {
                 MessageBox.Show($"Error parsing configuration file: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
         }
-
-        
-
-
-
-
     }
+
+
+
+
+
+}
 
     public class LocalConfig
     {
@@ -69,4 +76,8 @@ namespace Smart_Pacifier___Tool
         public string? ApiKey { get; set; }
     }
 
-}
+    public class PythonScriptConfig
+    {
+        public string? FileName { get; set; } // This will hold the name of the Python script
+    }
+
