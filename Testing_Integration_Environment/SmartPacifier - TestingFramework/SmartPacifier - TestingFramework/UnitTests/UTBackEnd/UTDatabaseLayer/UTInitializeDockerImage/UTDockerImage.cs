@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.UTInitializeDockerImage
 {
-    public class UTInitializeDockerImage
+    public class UTDockerImage
     {
         private const string DockerImage = "influxdb:2.7";
         private const string ContainerName = "influxdb-container";

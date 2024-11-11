@@ -22,7 +22,7 @@ namespace SmartPacifier___TestingFramework
         private readonly Mock<IManagerPacifiers> _mockManagerPacifiers;
         private readonly Broker _broker; //-------------ADDED DUDU Nov4
         private bool _isBrokerConnected;  //------------ Flag to check if broker is connected DUDU NOv4
-        private readonly UTInitializeDockerImage _dockerInitializer;
+        private readonly UTDockerImage _dockerInitializer;
 
 
         public Main_UnitTests()
@@ -41,7 +41,7 @@ namespace SmartPacifier___TestingFramework
             _broker = Broker.Instance; //------------Initialize the broker singleton ADDED DUDU Nov4
 
             // Initialize Docker container for InfluxDB
-            _dockerInitializer = new UTInitializeDockerImage();
+            _dockerInitializer = new UTDockerImage();
             _dockerInitializer.StartDockerContainer();
 
         }
