@@ -163,7 +163,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                     InfluxDbWebView.Source = new Uri("http://localhost:8086");
                     InfluxDbWebView.Visibility = Visibility.Visible;
                     ApiKeyInput.Visibility = Visibility.Visible;
-                    SubmitApiButton.Visibility = Visibility.Visible;
                 });
             });
         }
@@ -177,7 +176,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 {
                     InfluxDbWebView.Visibility = Visibility.Collapsed;
                     ApiKeyInput.Visibility = Visibility.Collapsed;
-                    SubmitApiButton.Visibility = Visibility.Collapsed;
                 });
             });
         }
@@ -266,7 +264,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             ReloadDatabaseConfiguration();
             LocalHostPanel.Visibility = Visibility.Visible;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
-            InfluxDbWebView.Visibility = Visibility.Hidden;
+            InfluxDbWebView.Visibility = Visibility.Visible;
         }
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
@@ -289,8 +287,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             // Initialize SSH connection with the complete server URL from configuration
             string serverUrl = serverHost; // Use the host directly from configuration as a full URL
             serverHandler.InitializeSshConnection(serverUrl, serverUsername, privateKeyPath);
-
-            // Display the URL directly if you still need to open a WebView
             OpenServerWebView(serverUrl);
 ;
         }
@@ -356,7 +352,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                     url = $"http://{url}";
                 }
                 ServerInfluxDbWebView.Source = new Uri(url);
-                ServerWebViewBorder.Visibility = Visibility.Visible;
+                ServerInfluxDbWebView.Visibility = Visibility.Visible;
             }
             catch (UriFormatException ex)
             {
@@ -367,7 +363,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private void CloseServerWebView_Click(object sender, RoutedEventArgs e)
         {
-            ServerWebViewBorder.Visibility = Visibility.Collapsed;
+            ServerInfluxDbWebView.Visibility = Visibility.Collapsed;
             TerminalPanel.Visibility = Visibility.Visible; // Show the terminal panel again
         }
 
