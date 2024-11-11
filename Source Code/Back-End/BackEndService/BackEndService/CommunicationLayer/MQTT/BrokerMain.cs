@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SmartPacifier.Interface.Services;
 using Protos;
+using SmartPacifier.BackEnd.CommunicationLayer.Protobuf;
 
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
@@ -65,10 +66,28 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
         private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
-            // This method will now receive messages without verbose logs
-            // You can process the message here as needed
-            // For now, we log the received message
-            Console.WriteLine($"Received message on topic '{e.Topic}': {e.Payload}");
+            try
+            {
+                var topicParts = e.Topic.Split('/');
+                string pacifierId = topicParts.Length > 1 ? topicParts[1] : "Unknown";
+
+                var parsedResult = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, e.Payload);
+
+                if (parsedResult.parsedData != null)
+                {
+                    Console.WriteLine($"Parsed data for Pacifier {pacifierId} on sensor type '{parsedResult.sensorType}':");
+                    foreach (var dataEntry in parsedResult.parsedData)
+                    {
+                        Console.WriteLine($"{dataEntry.Key}: {dataEntry.Value}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing message on topic '{e.Topic}': {ex.Message}");
+            }
         }
+
+
     }
 }
