@@ -12,13 +12,10 @@ using SmartPacifier.BackEnd.CommunicationLayer.Protobuf;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
-    /// <summary>
-    /// Broker Class using Singleton Pattern. Connects to the Docker Mosquitto broker.
-    /// </summary>
     public class Broker : IDisposable
     {
-        private readonly string BROKER_ADDRESS = "localhost";  // Docker Mosquitto broker address
-        private readonly int BROKER_PORT = 1883;               // Default MQTT port
+        private readonly string BROKER_ADDRESS = "localhost";
+        private readonly int BROKER_PORT = 1883;
 
         private static Broker? _brokerInstance;
         private static readonly object _lock = new object();
@@ -26,24 +23,18 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         private IMqttClient _mqttClient;
         private bool disposed = false;
 
-        // Event handler for received messages
         public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
 
-        // Constructor for the Broker class
         private Broker()
         {
             var factory = new MqttFactory();
             _mqttClient = factory.CreateMqttClient();
 
-            // Set up event handlers
             _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceivedAsync;
             _mqttClient.ConnectedAsync += OnConnectedAsync;
             _mqttClient.DisconnectedAsync += OnDisconnectedAsync;
         }
 
-        /// <summary>
-        /// Dispose Method to cleanup resources.
-        /// </summary>
         public void Dispose()
         {
             if (!disposed)
@@ -59,11 +50,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             Dispose();
         }
 
-        /// <summary>
-        /// Getting an Instance of the Broker. If there is no instance
-        /// yet, it will create one. This is thread-safe for
-        /// multithreading.
-        /// </summary>
         public static Broker Instance
         {
             get
@@ -79,7 +65,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-        // Connect to the MQTT broker
         public async Task ConnectBroker()
         {
             var options = new MqttClientOptionsBuilder()
@@ -100,12 +85,11 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-        // Subscribe to a specific topic
         public async Task Subscribe(string topic)
         {
             var topicFilter = new MqttTopicFilterBuilder()
                 .WithTopic(topic)
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce) // QoS 0
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce)
                 .Build();
 
             var subscribeResult = await _mqttClient.SubscribeAsync(topicFilter);
@@ -117,13 +101,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-        // Send a message to a specific topic
         public async Task SendMessage(string topic, string message)
         {
             var mqttMessage = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(message)
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce) // QoS 0
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce)
                 .Build();
 
             try
@@ -137,33 +120,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-        // Event handler for received messages
-        // Raw Data
-        /*
-        private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
-        {
-            try
-            {
-                // Convert the payload to a JSON string (or raw string if needed)
-                var rawPayload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-
-                // Extract the topic and log the raw message
-                string topic = e.ApplicationMessage.Topic;
-                Console.WriteLine($"Received raw data on topic '{topic}': {rawPayload}");
-
-                // Optionally, raise an event with the raw payload if needed by other parts of the application
-                MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload));
-
-                await Task.CompletedTask;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to process message: {ex.Message}");
-            }
-        }
-        */
-
-        // Event handler for received messages
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
@@ -172,15 +128,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 string topic = e.ApplicationMessage.Topic;
                 Console.WriteLine($"Received raw data on topic '{topic}'");
 
-                // Extract pacifier ID from the topic
                 string[] topicParts = topic.Split('/');
                 if (topicParts.Length >= 3 && topicParts[0] == "Pacifier")
                 {
                     string pacifierId = topicParts[1];
-
                     var (passedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, rawPayload);
 
-                    //// Allow the Front End to get updates in real-time
                     MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, pacifierId, sensorType, parsedData));
                 }
                 else
@@ -196,22 +149,16 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-
-
-
-        // Event handler for successful connection
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)
         {
             Console.WriteLine("Connected successfully with MQTT Broker.");
             await Task.CompletedTask;
         }
 
-        // Event handler for disconnection
         private async Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs e)
         {
             Console.WriteLine("Disconnected from MQTT Broker.");
 
-            // Optionally, attempt to reconnect
             await Task.Delay(TimeSpan.FromSeconds(5));
             try
             {
@@ -223,13 +170,10 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-        // Event arguments for received messages
         public class MessageReceivedEventArgs : EventArgs
         {
             public string Topic { get; set; }
             public byte[] Payload { get; set; }
-
-            // New properties
             public string PacifierId { get; set; }
             public string SensorType { get; set; }
             public Dictionary<string, object> ParsedData { get; set; }
@@ -243,6 +187,5 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 ParsedData = parsedData;
             }
         }
-
     }
 }

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
 using Google.Protobuf;
-using Google.Protobuf.Reflection;
 using Protos;
+using System.Text.Json;
+using Google.Protobuf.Collections;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 {
@@ -33,135 +33,157 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             }
         }
 
-        /// <summary>
-        /// Parses sensor data dynamically without hardcoding any message type names.
-        /// </summary>
         public (string pacifierId, string sensorType, Dictionary<string, object> parsedData) ParseSensorData(string pacifierId, byte[] data)
         {
+            var parsedData = new Dictionary<string, object>();
             try
             {
+                //Console.WriteLine($"Received raw data length: {data.Length} for Pacifier ID: {pacifierId}");
+                //Console.WriteLine($"Raw Data (Hex): {BitConverter.ToString(data)}");
+
+                // Attempt to parse data as JSON first
                 string jsonString = Encoding.UTF8.GetString(data);
-                JsonDocument jsonDoc = JsonDocument.Parse(jsonString);
-
-                var sensorData = new SensorData
+                if (jsonString.Trim().StartsWith("{"))
                 {
-                    PacifierId = pacifierId
-                };
-
-                var parsedMessage = ParseDynamicMessage(jsonDoc);
-                if (parsedMessage != null)
-                {
-                    string sensorType = parsedMessage.Descriptor.Name.ToUpper();
-                    sensorData.DataMap.Add(sensorType, parsedMessage.ToByteString());
-
-                    lock (_dataLock)
-                    {
-                        _sensorDataList.Add(sensorData);
-                    }
-
-                    SensorDataUpdated?.Invoke(this, EventArgs.Empty);
-
-                    Console.WriteLine($"Parsed {sensorType} data for Pacifier {pacifierId}:");
-                    DisplayProtobufFields(parsedMessage);
-
-                    // Extract all the fields into a dictionary
-                    var sensorFields = GetSensorData(parsedMessage);
-
-                    // Return the result as a Tuple (pacifierId, sensorType, sensorFields)
-                    return (pacifierId, sensorType, sensorFields);
-
+                    Console.WriteLine("Detected JSON format data. Parsing as JSON.");
+                    using JsonDocument jsonDoc = JsonDocument.Parse(jsonString);
+                    parsedData = ParseJsonToDictionary(jsonDoc.RootElement);
                 }
+                else
+                {
+                    // Otherwise, attempt to parse as Protobuf
+                    Console.WriteLine("Attempting to parse as Protobuf binary format.");
+                    var sensorData = SensorData.Parser.ParseFrom(data);
+
+                    // If parsed as Protobuf, populate parsedData from sensorData
+                    parsedData = ExtractAllFields(sensorData);
+                }
+
+                return (pacifierId, "DetectedFormat", parsedData);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to parse sensor data for Pacifier '{pacifierId}': {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
             }
 
             return (null, null, null);
         }
 
-        /// <summary>
-        /// Uses Protobuf reflection to parse JSON data into a dynamically created Protobuf message.
-        /// </summary>
-        private IMessage? ParseDynamicMessage(JsonDocument jsonDoc)
-        {
-            IMessage? parsedMessage = null;
 
+        // Helper function to parse JSON into a dictionary
+        // Helper function to parse JSON into a dictionary, taking JsonElement as input
+        private Dictionary<string, object> ParseJsonToDictionary(JsonElement element)
+        {
+            var result = new Dictionary<string, object>();
+
+            foreach (var property in element.EnumerateObject())
+            {
+                result[property.Name] = property.Value.ValueKind switch
+                {
+                    JsonValueKind.String => property.Value.GetString(),
+                    JsonValueKind.Number => property.Value.GetDouble(),
+                    JsonValueKind.Object => ParseJsonToDictionary(property.Value), // Recursive parsing for nested JSON objects
+                    JsonValueKind.Array => property.Value.EnumerateArray().Select(v => v.ToString()).ToList(),
+                    _ => property.Value.ToString()
+                };
+            }
+
+            return result;
+        }
+
+
+
+        private IMessage DynamicParseMessage(ByteString byteString)
+        {
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes()
-                     .Where(t => typeof(IMessage).IsAssignableFrom(t) && t != typeof(SensorData)))
+                .Where(t => typeof(IMessage).IsAssignableFrom(t) && t != typeof(SensorData)))
             {
-                if (Activator.CreateInstance(type) is IMessage instance)
+                var parserProperty = type.GetProperty("Parser", BindingFlags.Public | BindingFlags.Static);
+                if (parserProperty != null)
                 {
-                    if (TryPopulateMessageFieldsUsingReflection(instance, jsonDoc))
+                    var parser = parserProperty.GetValue(null) as MessageParser;
+                    try
                     {
-                        parsedMessage = instance;
-                        break;
+                        return parser.ParseFrom(byteString);
+                    }
+                    catch
+                    {
+                        // Continue to the next type if parsing fails
                     }
                 }
             }
 
-            return parsedMessage;
+            throw new InvalidOperationException("Unable to parse message, no matching type found.");
         }
 
         /// <summary>
-        /// Dynamically populates fields in a Protobuf message using Protobuf reflection.
+        /// Recursively extracts all fields from a Protobuf message, including nested and repeated fields.
         /// </summary>
-        private bool TryPopulateMessageFieldsUsingReflection(IMessage message, JsonDocument jsonDoc)
+        private Dictionary<string, object> ExtractAllFields(IMessage message)
         {
-            bool hasPopulated = false;
+            var result = new Dictionary<string, object>();
 
-            foreach (var property in jsonDoc.RootElement.EnumerateObject())
+            foreach (var field in message.Descriptor.Fields.InFieldNumberOrder())
             {
-                var field = message.Descriptor.FindFieldByName(property.Name);
-                if (field != null)
-                {
-                    hasPopulated = true;
-                    object value = field.FieldType switch
-                    {
-                        FieldType.Float => property.Value.GetSingle(),
-                        FieldType.Int32 => property.Value.GetInt32(),
-                        FieldType.String => property.Value.GetString(),
-                        _ => null
-                    };
+                var fieldValue = field.Accessor.GetValue(message);
 
-                    if (value != null)
-                    {
-                        field.Accessor.SetValue(message, value);
-                    }
-                    else if (field.FieldType == FieldType.Message)
-                    {
-                        var nestedMessage = (IMessage)field.Accessor.GetValue(message);
-                        var nestedJson = JsonDocument.Parse(property.Value.GetRawText());
-                        TryPopulateMessageFieldsUsingReflection(nestedMessage, nestedJson);
-                    }
+                if (fieldValue is IMessage nestedMessage)
+                {
+                    result[field.Name] = ExtractAllFields(nestedMessage);
                 }
-            }
-
-            return hasPopulated;
-        }
-
-        public void DisplayProtobufFields(IMessage message, int indentLevel = 0)
-        {
-            foreach (var field in message.Descriptor.Fields.InDeclarationOrder())
-            {
-                var value = field.Accessor.GetValue(message);
-                string indent = new string(' ', indentLevel * 2);
-
-                if (value is IMessage nestedMessage)
+                else if (fieldValue is RepeatedField<IMessage> repeatedMessage)
                 {
-                    Console.WriteLine($"{indent}{field.Name} (Message):");
-                    DisplayProtobufFields(nestedMessage, indentLevel + 1);
+                    var repeatedFields = new List<Dictionary<string, object>>();
+                    foreach (var item in repeatedMessage)
+                    {
+                        repeatedFields.Add(ExtractAllFields(item));
+                    }
+                    result[field.Name] = repeatedFields;
+                }
+                else if (fieldValue is RepeatedField<float> repeatedFloat)
+                {
+                    result[field.Name] = repeatedFloat.ToList();
+                }
+                else if (fieldValue is RepeatedField<int> repeatedInt)
+                {
+                    result[field.Name] = repeatedInt.ToList();
                 }
                 else
                 {
-                    Console.WriteLine($"{indent}{field.Name}: {value}");
+                    result[field.Name] = fieldValue;
+                }
+            }
+
+            return result;
+        }
+
+        public void DisplayParsedFields(Dictionary<string, object> parsedData, int indentLevel = 0)
+        {
+            string indent = new string(' ', indentLevel * 2);
+
+            foreach (var kvp in parsedData)
+            {
+                if (kvp.Value is Dictionary<string, object> nestedDict)
+                {
+                    Console.WriteLine($"{indent}{kvp.Key}:");
+                    DisplayParsedFields(nestedDict, indentLevel + 1);
+                }
+                else if (kvp.Value is List<Dictionary<string, object>> repeatedFields)
+                {
+                    Console.WriteLine($"{indent}{kvp.Key} (Repeated Message):");
+                    foreach (var item in repeatedFields)
+                    {
+                        DisplayParsedFields(item, indentLevel + 1);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"{indent}{kvp.Key}: {kvp.Value}");
                 }
             }
         }
 
-        /// <summary>
-        /// Retrieves a list of unique pacifier IDs from the stored sensor data.
-        /// </summary>
         public List<string> GetPacifierIds()
         {
             lock (_dataLock)
@@ -170,9 +192,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             }
         }
 
-        /// <summary>
-        /// Retrieves all sensor data entries as a list.
-        /// </summary>
         public List<SensorData> GetAllSensorData()
         {
             lock (_dataLock)
@@ -181,9 +200,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             }
         }
 
-        /// <summary>
-        /// Retrieves and displays unique pacifier names, showing a message if the list is empty.
-        /// </summary>
         public List<string> GetPacifierNames()
         {
             lock (_dataLock)
@@ -211,29 +227,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 
                 return pacifierIds;
             }
-        }
-
-        /// <summary>
-        /// Extracts sensor data dynamically as a dictionary (field name and value).
-        /// </summary>
-        private Dictionary<string, object> GetSensorData(IMessage parsedMessage)
-        {
-            var sensorData = new Dictionary<string, object>();
-
-            // Iterate over all fields in the parsedMessage
-            foreach (var field in parsedMessage.Descriptor.Fields.InFieldNumberOrder())
-            {
-                // Dynamically retrieve the field value
-                var fieldValue = field.Accessor.GetValue(parsedMessage);
-
-                if (fieldValue != null)
-                {
-                    // Store field name (sensor type) and value in the dictionary
-                    sensorData[field.Name] = fieldValue;
-                }
-            }
-
-            return sensorData;
         }
     }
 }
