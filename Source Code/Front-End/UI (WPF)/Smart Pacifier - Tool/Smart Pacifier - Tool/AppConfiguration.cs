@@ -18,7 +18,7 @@ namespace Smart_Pacifier___Tool
         public LocalConfig? Local { get; set; }
         public ServerConfig? Server { get; set; }
 
-        private AppConfiguration LoadDatabaseConfiguration()
+        public AppConfiguration LoadDatabaseConfiguration()
         {
             string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "config.json");
 
