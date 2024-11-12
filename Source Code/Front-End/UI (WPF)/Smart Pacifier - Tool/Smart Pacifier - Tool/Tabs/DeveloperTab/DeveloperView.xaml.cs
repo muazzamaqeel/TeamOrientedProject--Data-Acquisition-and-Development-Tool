@@ -166,47 +166,61 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
+        private void RowCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.DataContext is DataRowView dataRow)
+            {
+                DataListView.SelectedItem = dataRow;
+            }
+        }
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            // Ensure there are selected rows in the DataListView
-            var selectedRows = DataListView.SelectedItems.OfType<DataRowView>().ToList();
-
-            if (selectedRows.Count == 0)
-            {
-                MessageBox.Show("Please select a row to delete.");
-                return;
-            }
-
             try
             {
-                foreach (var row in selectedRows)
+                if (DataListView.SelectedItem is DataRowView selectedRow)
                 {
-                    // Retrieve the unique Entry ID for the selected row
-                    if (row["Entry ID"] is int entryId)
+                    // Check for the exact name of the column
+                    if (selectedRow.Row.Table.Columns.Contains("entry_id")) // Ensure exact match with column name
                     {
-                        // Remove the entry from the real database based on the Entry ID
-                        await DeleteEntryFromDatabaseAsync(entryId);
+                        // Debug output to verify column names
+                        foreach (DataColumn column in selectedRow.Row.Table.Columns)
+                        {
+                            Console.WriteLine(column.ColumnName);
+                        }
 
-                        // Remove the entry from the DataTable (UI data)
-                        allData.Rows.Remove(row.Row);
+                        try
+                        {
+                            int entryId = Convert.ToInt32(selectedRow["entry_id"]); // Match column name here as well
+                            await _databaseService.DeleteEntryFromDatabaseAsync(entryId);
+                            MessageBox.Show("Selected entry deleted successfully.");
+
+                            // Reload data to reflect changes
+                            await LoadDataAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Error converting 'entry_id' to integer: {ex.Message}", "Conversion Error");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Error: 'entry_id' column not found.");
                     }
                 }
-
-                // Refresh the DataListView after deletion
-                DataListView.ItemsSource = allData.DefaultView;
-                MessageBox.Show("Selected entries deleted successfully.");
+                else
+                {
+                    MessageBox.Show("Please select an entry to delete.");
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting entries: {ex.Message}");
+                MessageBox.Show($"Error deleting entry: {ex.Message}");
             }
         }
 
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Delete functionality not implemented for direct database rows.");
-        }
+
+
 
         private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
         {

@@ -10,6 +10,10 @@ using SmartPacifier.Interface.Services;
 using System.Data;
 using System.Globalization;
 using InfluxDB.Client.Core.Exceptions;
+using InfluxDB.Client.Configurations;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 {
@@ -195,11 +199,56 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             return dataTable;
         }
 
+        // Corrected deletion function in C#
+        public async Task DeleteEntryFromDatabaseAsync(int entryId)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    // Set up the headers
+                    client.DefaultRequestHeaders.Add("Authorization", $"Token {_token}");
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
 
+                    // Define the start and stop times for deletion
+                    string start = "1970-01-01T00:00:00Z";
+                    string stop = DateTime.UtcNow.ToString("o");
 
+                    // Create the JSON payload for the delete request
+                    var deleteRequest = new
+                    {
+                        start = start,
+                        stop = stop,
+                        predicate = $"_measurement=\"campaign_metadata\" AND entry_id=\"{entryId}\""
+                    };
+
+                    var jsonContent = JsonConvert.SerializeObject(deleteRequest);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    // Send the DELETE request to the InfluxDB API
+                    var response = await client.PostAsync($"{_baseUrl}/api/v2/delete?org={_org}&bucket={_bucket}", content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show("Entry deleted successfully from the database.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        string errorContent = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error deleting entry: {response.ReasonPhrase} - {errorContent}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error deleting entry from database: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
 
 
 
     }
 }
+
+
