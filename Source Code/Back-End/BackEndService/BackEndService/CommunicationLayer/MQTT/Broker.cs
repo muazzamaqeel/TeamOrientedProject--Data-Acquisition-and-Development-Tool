@@ -101,24 +101,35 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-        public async Task SendMessage(string topic, string message)
+        public async Task SendMessage(string topic, SensorData message, bool useJsonFormat = false)
         {
-            var mqttMessage = new MqttApplicationMessageBuilder()
-                .WithTopic(topic)
-                .WithPayload(message)
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce)
-                .Build();
+            var mqttMessageBuilder = new MqttApplicationMessageBuilder().WithTopic(topic);
+
+            if (useJsonFormat)
+            {
+                // Serialize message as JSON
+                string jsonString = JsonFormatter.Default.Format(message);
+                mqttMessageBuilder.WithPayload(jsonString);
+            }
+            else
+            {
+                // Serialize message as Protobuf binary
+                mqttMessageBuilder.WithPayload(message.ToByteArray());
+            }
+
+            var mqttMessage = mqttMessageBuilder.WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce).Build();
 
             try
             {
                 await _mqttClient.PublishAsync(mqttMessage);
-                Console.WriteLine($"Message sent to topic: {topic}");
+                Console.WriteLine($"Message sent to topic: {topic} in {(useJsonFormat ? "JSON" : "Binary")} format.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to send message to topic: {topic} - {ex.Message}");
             }
         }
+
 
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
@@ -127,6 +138,13 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 var rawPayload = e.ApplicationMessage.PayloadSegment.ToArray();
                 string topic = e.ApplicationMessage.Topic;
                 Console.WriteLine($"Received raw data on topic '{topic}'");
+
+                if (rawPayload != null)
+                {
+                    Console.WriteLine($"rawPayloadrawPayload '{rawPayload}'");
+
+
+                }
 
                 string[] topicParts = topic.Split('/');
                 if (topicParts.Length >= 3 && topicParts[0] == "Pacifier")
