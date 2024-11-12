@@ -135,28 +135,25 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         {
             try
             {
-                var rawPayload = e.ApplicationMessage.PayloadSegment.ToArray();
+                byte[] rawPayload = e.ApplicationMessage.PayloadSegment.ToArray();
                 string topic = e.ApplicationMessage.Topic;
+
                 Console.WriteLine($"Received raw data on topic '{topic}'");
 
-                if (rawPayload != null)
+                if (rawPayload.Length > 0)
                 {
-                    Console.WriteLine($"rawPayloadrawPayload '{rawPayload}'");
+                    string[] topicParts = topic.Split('/');
+                    if (topicParts.Length >= 2 && topicParts[0] == "Pacifier")
+                    {
+                        string pacifierId = topicParts[1];
+                        var (parsedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, topic, rawPayload);
 
-
-                }
-
-                string[] topicParts = topic.Split('/');
-                if (topicParts.Length >= 3 && topicParts[0] == "Pacifier")
-                {
-                    string pacifierId = topicParts[1];
-                    var (passedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, rawPayload);
-
-                    MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, pacifierId, sensorType, parsedData));
-                }
-                else
-                {
-                    Console.WriteLine($"Invalid topic format: {topic}");
+                        MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, parsedPacifierId, sensorType, parsedData));
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Invalid topic format: {topic}");
+                    }
                 }
 
                 await Task.CompletedTask;

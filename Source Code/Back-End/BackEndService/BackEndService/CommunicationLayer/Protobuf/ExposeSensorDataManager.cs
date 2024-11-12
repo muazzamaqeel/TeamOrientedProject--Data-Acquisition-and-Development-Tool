@@ -33,51 +33,35 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             }
         }
 
-        public (string pacifierId, string sensorType, Dictionary<string, object> parsedData) ParseSensorData(string pacifierId, byte[] data)
+        public (string pacifierId, string sensorType, Dictionary<string, object> parsedData) ParseSensorData(string pacifierId, string topic, byte[] data)
         {
             var parsedData = new Dictionary<string, object>();
+            string detectedSensorType = topic.Split('/').Last(); // Assuming the last part of the topic specifies sensor type
+
             try
             {
-                // Attempt to parse data as JSON
                 string jsonString = Encoding.UTF8.GetString(data);
                 if (jsonString.Trim().StartsWith("{"))
                 {
                     Console.WriteLine("Detected JSON format data. Parsing as JSON.");
 
-                    // Use JsonDocument to parse JSON and dynamically populate SensorData using reflection
                     using JsonDocument jsonDoc = JsonDocument.Parse(jsonString);
-                    var sensorData = new SensorData();
+                    var sensorData = new SensorData { PacifierId = pacifierId, SensorType = detectedSensorType };
+
                     PopulateSensorDataFromJson(sensorData, jsonDoc.RootElement);
-
-                    // Debugging to inspect each field after setting values using reflection
-                    Console.WriteLine($"pacifier_id: {sensorData.PacifierId}");
-                    Console.WriteLine($"sensor_type: {sensorData.SensorType}");
-                    Console.WriteLine($"sensor_group: {sensorData.SensorGroup}");
-
-                    if (sensorData.DataMap != null && sensorData.DataMap.Count > 0)
-                    {
-                        foreach (var kvp in sensorData.DataMap)
-                        {
-                            Console.WriteLine($"DataMap Key: {kvp.Key}, Value: {Encoding.UTF8.GetString(kvp.Value.ToByteArray())}");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("DataMap is empty or null.");
-                    }
 
                     parsedData = ExtractAllFields(sensorData);
                 }
                 else
                 {
-                    // If not JSON, parse as Protobuf binary
                     Console.WriteLine("Attempting to parse as Protobuf binary format.");
                     var sensorData = SensorData.Parser.ParseFrom(data);
+                    sensorData.SensorType = detectedSensorType;
 
                     parsedData = ExtractAllFields(sensorData);
                 }
 
-                return (pacifierId, "DetectedFormat", parsedData);
+                return (pacifierId, detectedSensorType, parsedData);
             }
             catch (Exception ex)
             {
@@ -90,108 +74,123 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 
         private void PopulateSensorDataFromJson(SensorData sensorData, JsonElement jsonElement)
         {
+            var dataMap = new MapField<string, ByteString>();
+
             foreach (var property in jsonElement.EnumerateObject())
             {
-                var fieldDescriptor = SensorData.Descriptor.FindFieldByName(property.Name);
-
-                if (fieldDescriptor != null)
+                if (property.Name == "sensor_group" && property.Value.ValueKind == JsonValueKind.String)
                 {
-                    switch (fieldDescriptor.FieldType)
-                    {
-                        case Google.Protobuf.Reflection.FieldType.String:
-                            fieldDescriptor.Accessor.SetValue(sensorData, property.Value.GetString());
-                            break;
-                        case Google.Protobuf.Reflection.FieldType.Message:
-                            if (property.Name == "data_map" && property.Value.ValueKind == JsonValueKind.Object)
-                            {
-                                ParseNestedDataIntoDataMap(sensorData, property.Value);
-                            }
-                            break;
-                        default:
-                            Console.WriteLine($"Field type '{fieldDescriptor.FieldType}' for '{property.Name}' not handled.");
-                            break;
-                    }
+                    // Explicitly capture sensor_group if it exists in JSON
+                    sensorData.SensorGroup = property.Value.GetString();
                 }
                 else
                 {
-                    Console.WriteLine($"Field '{property.Name}' not found in SensorData.");
+                    var fieldDescriptor = SensorData.Descriptor.FindFieldByName(property.Name);
+
+                    if (fieldDescriptor != null)
+                    {
+                        // Handle known fields directly in the SensorData object
+                        switch (fieldDescriptor.FieldType)
+                        {
+                            case Google.Protobuf.Reflection.FieldType.String:
+                                fieldDescriptor.Accessor.SetValue(sensorData, property.Value.GetString());
+                                break;
+                            case Google.Protobuf.Reflection.FieldType.Int32:
+                                fieldDescriptor.Accessor.SetValue(sensorData, property.Value.GetInt32());
+                                break;
+                            case Google.Protobuf.Reflection.FieldType.Float:
+                                fieldDescriptor.Accessor.SetValue(sensorData, (float)property.Value.GetDouble());
+                                break;
+                            case Google.Protobuf.Reflection.FieldType.Bool:
+                                fieldDescriptor.Accessor.SetValue(sensorData, property.Value.GetBoolean());
+                                break;
+                            default:
+                                Console.WriteLine($"Unhandled field type '{fieldDescriptor.FieldType}' for '{property.Name}'");
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        // If it’s nested data or scalar data not part of known fields, add to DataMap
+                        if (property.Value.ValueKind == JsonValueKind.Object)
+                        {
+                            Console.WriteLine($"Adding nested data for '{property.Name}' to DataMap.");
+                            dataMap[property.Name] = ParseNestedMessage(property.Value);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Adding scalar data for '{property.Name}' to DataMap.");
+                            dataMap[property.Name] = ByteString.CopyFromUtf8(property.Value.ToString());
+                        }
+                    }
                 }
             }
-        }
 
-        private void ParseNestedDataIntoDataMap(SensorData sensorData, JsonElement dataMapElement)
-        {
-            var dataMap = new MapField<string, ByteString>();
-
-            foreach (var kvp in dataMapElement.EnumerateObject())
-            {
-                if (kvp.Name.StartsWith("imu"))
-                {
-                    var imuData = new IMUData();
-                    PopulateIMUData(imuData, kvp.Value);
-                    dataMap[kvp.Name] = imuData.ToByteString();
-                }
-                else if (kvp.Name.StartsWith("ppg"))
-                {
-                    var ppgData = new PPGData();
-                    PopulatePPGData(ppgData, kvp.Value);
-                    dataMap[kvp.Name] = ppgData.ToByteString();
-                }
-            }
-
+            // Add the populated dataMap to the SensorData instance
             sensorData.DataMap.Add(dataMap);
         }
 
-        private void PopulateIMUData(IMUData imuData, JsonElement imuElement)
+
+
+
+        private ByteString ParseNestedMessage(JsonElement element)
         {
-            foreach (var property in imuElement.EnumerateObject())
+            var nestedData = new Dictionary<string, object>();
+
+            foreach (var property in element.EnumerateObject())
             {
-                foreach (var field in IMUData.Descriptor.Fields.InFieldNumberOrder())
+                nestedData[property.Name] = property.Value.ValueKind switch
                 {
-                    if (field.Name == property.Name)
-                    {
-                        switch (field.FieldType)
-                        {
-                            case Google.Protobuf.Reflection.FieldType.Float:
-                                imuData.GetType().GetProperty(field.Name)?.SetValue(imuData, (float)property.Value.GetDouble());
-                                break;
-                            default:
-                                Console.WriteLine($"IMU field type '{field.FieldType}' for '{property.Name}' not handled.");
-                                break;
-                        }
-                    }
-                }
+                    JsonValueKind.String => property.Value.GetString(),
+                    JsonValueKind.Number => property.Value.GetDouble(),
+                    JsonValueKind.Object => ParseNestedMessage(property.Value),  // Recursion for nested objects
+                    _ => property.Value.ToString()
+                };
             }
+
+            var nestedMessage = DynamicProtobufMessage(nestedData);
+            return nestedMessage?.ToByteString() ?? ByteString.Empty;
         }
 
-        private void PopulatePPGData(PPGData ppgData, JsonElement ppgElement)
+        private IMessage DynamicProtobufMessage(Dictionary<string, object> data)
         {
-            foreach (var property in ppgElement.EnumerateObject())
-            {
-                foreach (var field in PPGData.Descriptor.Fields.InFieldNumberOrder())
-                {
-                    if (field.Name == property.Name)
-                    {
-                        switch (field.FieldType)
-                        {
-                            case Google.Protobuf.Reflection.FieldType.Int32:
-                                ppgData.GetType().GetProperty(field.Name)?.SetValue(ppgData, property.Value.GetInt32());
-                                break;
-                            case Google.Protobuf.Reflection.FieldType.Float:
-                                ppgData.GetType().GetProperty(field.Name)?.SetValue(ppgData, (float)property.Value.GetDouble());
-                                break;
-                            default:
-                                Console.WriteLine($"PPG field type '{field.FieldType}' for '{property.Name}' not handled.");
-                                break;
-                        }
-                    }
-                }
-            }
+            // Placeholder: This method should dynamically create a Protobuf message from `data`
+            // using reflection or dynamic mapping based on field names/types
+            throw new NotImplementedException("Implement dynamic Protobuf message creation.");
         }
 
+        private ByteString ParseNestedJsonToProtobuf(JsonElement nestedJson)
+        {
+            var nestedDataDict = new Dictionary<string, object>();
 
+            foreach (var property in nestedJson.EnumerateObject())
+            {
+                switch (property.Value.ValueKind)
+                {
+                    case JsonValueKind.String:
+                        nestedDataDict[property.Name] = property.Value.GetString();
+                        break;
+                    case JsonValueKind.Number:
+                        nestedDataDict[property.Name] = property.Value.GetDouble();
+                        break;
+                    case JsonValueKind.Object:
+                        nestedDataDict[property.Name] = ParseNestedJsonToProtobuf(property.Value);
+                        break;
+                    default:
+                        nestedDataDict[property.Name] = property.Value.ToString();
+                        break;
+                }
+            }
 
-
+            var nestedMessage = DynamicCreateProtobufMessage(nestedDataDict);
+            return nestedMessage?.ToByteString() ?? ByteString.Empty;
+        }
+        private IMessage DynamicCreateProtobufMessage(Dictionary<string, object> data)
+        {
+            // This method dynamically creates a Protobuf message based on the dictionary structure
+            // Placeholder implementation - you need to implement dynamic creation of nested messages
+            throw new NotImplementedException("Implement dynamic creation of nested Protobuf messages");
+        }
         // Helper function to parse JSON into a dictionary
         // Helper function to parse JSON into a dictionary, taking JsonElement as input
         private Dictionary<string, object> ParseJsonToDictionary(JsonElement element)
@@ -279,6 +278,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             return result;
         }
 
+
         public void DisplayParsedFields(Dictionary<string, object> parsedData, int indentLevel = 0)
         {
             string indent = new string(' ', indentLevel * 2);
@@ -300,9 +300,25 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 }
                 else
                 {
-                    Console.WriteLine($"{indent}{kvp.Key}: {kvp.Value}");
+                    // Decode Base64 values for easier readability
+                    if (kvp.Value is string base64String && IsBase64String(base64String))
+                    {
+                        var decodedValue = Encoding.UTF8.GetString(Convert.FromBase64String(base64String));
+                        Console.WriteLine($"{indent}{kvp.Key}: {decodedValue}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{indent}{kvp.Key}: {kvp.Value}");
+                    }
                 }
             }
+        }
+
+        // Helper function to check if a string is Base64 encoded
+        private bool IsBase64String(string value)
+        {
+            Span<byte> buffer = new Span<byte>(new byte[value.Length]);
+            return Convert.TryFromBase64String(value, buffer, out _);
         }
 
         public List<string> GetPacifierIds()
