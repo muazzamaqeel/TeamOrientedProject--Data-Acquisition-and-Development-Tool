@@ -131,6 +131,12 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
+
+                        <!-- Additional columns with entry_id and entry_time -->
+                        <GridViewColumn Header="Entry ID" DisplayMemberBinding="{Binding Path=[entry_id]}" Width="Auto" />
+                        <GridViewColumn Header="Entry Time" DisplayMemberBinding="{Binding Path=[entry_time]}" Width="Auto" />
+
+
                         <!-- Columns without extra spaces -->
                         <GridViewColumn Header="Measurement" DisplayMemberBinding="{Binding Path=[Measurement]}" Width="Auto" />
                         <GridViewColumn Header="Campaign Name" DisplayMemberBinding="{Binding Path=[Campaign Name]}" Width="Auto" />

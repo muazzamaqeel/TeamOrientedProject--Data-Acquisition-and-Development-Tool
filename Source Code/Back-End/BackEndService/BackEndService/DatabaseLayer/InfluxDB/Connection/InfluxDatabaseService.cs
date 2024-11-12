@@ -133,18 +133,18 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         public async Task<DataTable> GetSensorDataAsync()
         {
             string fluxQuery = @"
-                    from(bucket: ""SmartPacifier-Bucket1"")
-                    |> range(start: 0)
-                    |> filter(fn: (r) => r._measurement == ""campaigns"")
-                    |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
-                    ";
+        from(bucket: ""SmartPacifier-Bucket1"")
+        |> range(start: 0)
+        |> filter(fn: (r) => r._measurement == ""campaigns"" or r._measurement == ""campaign_metadata"")
+        |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
+    ";
 
             DataTable dataTable = new DataTable();
 
-            // Define all columns explicitly to match XAML
+            // Define all columns, including entry_id and entry_time
             string[] columnNames = { "Measurement", "Campaign Name", "Pacifier Name", "Sensor Type", "Status", "LED1", "LED2", "LED3",
                              "Temperature", "Acc X", "Acc Y", "Acc Z", "Gyro X", "Gyro Y", "Gyro Z", "Mag X", "Mag Y", "Mag Z",
-                             "Creation", "Start Time", "End Time", "Timestamp" };
+                             "Creation", "Start Time", "End Time", "entry_id", "entry_time" };
 
             foreach (string colName in columnNames)
             {
@@ -163,7 +163,8 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
                 {
                     DataRow row = dataTable.NewRow();
 
-                    row["Timestamp"] = record.GetTime()?.ToDateTimeUtc().ToString("o");
+                    // Populate columns with data
+                    row["entry_time"] = record.GetTime()?.ToDateTimeUtc().ToString("yyyy-MM-dd HH:mm:ss");
                     row["Measurement"] = record.GetValueByKey("_measurement")?.ToString();
                     row["Campaign Name"] = record.GetValueByKey("campaign_name")?.ToString();
                     row["Pacifier Name"] = record.GetValueByKey("pacifier_name")?.ToString();
@@ -185,6 +186,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
                     row["Creation"] = record.GetValueByKey("creation")?.ToString();
                     row["Start Time"] = record.GetValueByKey("start_time")?.ToString();
                     row["End Time"] = record.GetValueByKey("end_time")?.ToString();
+                    row["entry_id"] = record.GetValueByKey("entry_id") ?? DBNull.Value;
 
                     dataTable.Rows.Add(row);
                 }
@@ -192,6 +194,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 
             return dataTable;
         }
+
 
 
 

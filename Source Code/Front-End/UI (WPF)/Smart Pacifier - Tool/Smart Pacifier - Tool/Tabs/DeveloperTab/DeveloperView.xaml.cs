@@ -166,13 +166,42 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-        private void RowCheckBox_Checked(object sender, RoutedEventArgs e)
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.DataContext is DataRowView dataRow)
+            // Ensure there are selected rows in the DataListView
+            var selectedRows = DataListView.SelectedItems.OfType<DataRowView>().ToList();
+
+            if (selectedRows.Count == 0)
             {
-                DataListView.SelectedItem = dataRow;
+                MessageBox.Show("Please select a row to delete.");
+                return;
+            }
+
+            try
+            {
+                foreach (var row in selectedRows)
+                {
+                    // Retrieve the unique Entry ID for the selected row
+                    if (row["Entry ID"] is int entryId)
+                    {
+                        // Remove the entry from the real database based on the Entry ID
+                        await DeleteEntryFromDatabaseAsync(entryId);
+
+                        // Remove the entry from the DataTable (UI data)
+                        allData.Rows.Remove(row.Row);
+                    }
+                }
+
+                // Refresh the DataListView after deletion
+                DataListView.ItemsSource = allData.DefaultView;
+                MessageBox.Show("Selected entries deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error deleting entries: {ex.Message}");
             }
         }
+
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
