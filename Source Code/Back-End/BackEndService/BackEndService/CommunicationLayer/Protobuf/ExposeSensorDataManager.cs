@@ -163,7 +163,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 }
             }
         }
-
         private Dictionary<string, object> ExtractAllFields(IMessage message, Dictionary<string, FieldDescriptor> fieldDescriptorMap = null)
         {
             var result = new Dictionary<string, object>();
@@ -190,16 +189,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                     var decodedDataMap = new Dictionary<string, object>();
                     foreach (var kvp in dataMap)
                     {
-                        FieldDescriptor dataFieldDescriptor = null;
-                        if (fieldDescriptorMap != null && fieldDescriptorMap.TryGetValue(kvp.Key, out dataFieldDescriptor))
-                        {
-                            decodedDataMap[kvp.Key] = DecodeByteStringDynamic(kvp.Value, dataFieldDescriptor);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Field descriptor not found for key '{kvp.Key}'. Defaulting to Base64.");
-                            decodedDataMap[kvp.Key] = Convert.ToBase64String(kvp.Value.ToByteArray());
-                        }
+                        // Decode the ByteString without field descriptors
+                        var decodedValue = DecodeByteStringDynamic(kvp.Value, kvp.Key);
+                        decodedDataMap[kvp.Key] = decodedValue;
                     }
                     result[field.Name] = decodedDataMap;
                 }
@@ -212,62 +204,42 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             return result;
         }
 
-        private object DecodeByteStringDynamic(ByteString byteString, FieldDescriptor fieldDescriptor)
+        private object DecodeByteStringDynamic(ByteString byteString, string key)
         {
             byte[] bytes = byteString.ToByteArray();
 
-            // Attempt to decode based on the FieldType dynamically
+            // Attempt to decode based on the length
             try
             {
-                switch (fieldDescriptor.FieldType)
+                if (bytes.Length == sizeof(float))
                 {
-                    case FieldType.Float:
-                        if (bytes.Length == sizeof(float)) return BitConverter.ToSingle(bytes, 0);
-                        break;
-                    case FieldType.Double:
-                        if (bytes.Length == sizeof(double)) return BitConverter.ToDouble(bytes, 0);
-                        break;
-                    case FieldType.Int32:
-                        if (bytes.Length == sizeof(int)) return BitConverter.ToInt32(bytes, 0);
-                        break;
-                    case FieldType.Int64:
-                        if (bytes.Length == sizeof(long)) return BitConverter.ToInt64(bytes, 0);
-                        break;
-                    case FieldType.UInt32:
-                        if (bytes.Length == sizeof(uint)) return BitConverter.ToUInt32(bytes, 0);
-                        break;
-                    case FieldType.UInt64:
-                        if (bytes.Length == sizeof(ulong)) return BitConverter.ToUInt64(bytes, 0);
-                        break;
-                    case FieldType.String:
-                        return System.Text.Encoding.UTF8.GetString(bytes);
-                    case FieldType.Message:
-                        // For nested messages, use reflection to parse the message type
-                        var parserProperty = fieldDescriptor.MessageType.ClrType.GetProperty("Parser", BindingFlags.Public | BindingFlags.Static);
-                        if (parserProperty != null)
-                        {
-                            var parser = parserProperty.GetValue(null) as MessageParser;
-                            if (parser != null)
-                            {
-                                var nestedMessage = parser.ParseFrom(bytes);
-                                return ExtractAllFields(nestedMessage);
-                            }
-                        }
-                        break;
-                    default:
-                        Console.WriteLine($"Unhandled field type: {fieldDescriptor.FieldType} for field '{fieldDescriptor.Name}'");
-                        break;
+                    return BitConverter.ToSingle(bytes, 0);
+                }
+                else if (bytes.Length == sizeof(int))
+                {
+                    return BitConverter.ToInt32(bytes, 0);
+                }
+                else if (bytes.Length == sizeof(double))
+                {
+                    return BitConverter.ToDouble(bytes, 0);
+                }
+                else if (bytes.Length == sizeof(long))
+                {
+                    return BitConverter.ToInt64(bytes, 0);
+                }
+                else
+                {
+                    // Fallback to Base64
+                    return Convert.ToBase64String(bytes);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error decoding '{fieldDescriptor.Name}' as {fieldDescriptor.FieldType}: {ex.Message}");
+                Console.WriteLine($"Error decoding '{key}': {ex.Message}");
+                return Convert.ToBase64String(bytes);
             }
-
-            // Fallback: return Base64 if unable to decode as recognized type
-            Console.WriteLine($"Unable to decode '{fieldDescriptor.Name}' as a recognized type. Returning as Base64.");
-            return Convert.ToBase64String(bytes);
         }
+
 
         public void DisplayParsedFields(Dictionary<string, object> parsedData, int indentLevel = 0)
         {
