@@ -37,15 +37,16 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         {
             try
             {
-                // Load campaigns
-                var campaigns = await _databaseService.GetCampaignsAsync();
-                Campaign.ItemsSource = campaigns;
-
-                // Load all sensor data from the database
+                // Load all sensor data from the database (without filtering by campaign)
                 allData.Clear();
                 allData = await _databaseService.GetSensorDataAsync();
 
-                // Extract unique values for Pacifier and Sensor Type
+                // Extract unique values for Campaign, Pacifier, and Sensor Type for combo boxes
+                var uniqueCampaigns = allData.AsEnumerable()
+                    .Select(row => row["Campaign Name"].ToString())
+                    .Distinct()
+                    .ToList();
+
                 var uniquePacifiers = allData.AsEnumerable()
                     .Select(row => row["Pacifier Name"].ToString())
                     .Distinct()
@@ -56,9 +57,12 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                     .Distinct()
                     .ToList();
 
+                // Populate the combo boxes with unique values
+                Campaign.ItemsSource = uniqueCampaigns;
                 Pacifier.ItemsSource = uniquePacifiers;
                 Sensor.ItemsSource = uniqueSensors;
 
+                // Display all data initially
                 DisplayData();
             }
             catch (Exception ex)
@@ -66,6 +70,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 MessageBox.Show($"Error loading data: {ex.Message}");
             }
         }
+
 
         private void DisplayData()
         {
@@ -75,16 +80,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 return;
             }
 
-            DataTable paginatedData = allData.Clone();
-            int startIndex = (currentPage - 1) * pageSize;
-            int endIndex = Math.Min(startIndex + pageSize, allData.Rows.Count);
-
-            for (int i = startIndex; i < endIndex; i++)
-            {
-                paginatedData.ImportRow(allData.Rows[i]);
-            }
-
-            DataListView.ItemsSource = paginatedData.DefaultView;
+            // Display all data in the DataListView without pagination
+            DataListView.ItemsSource = allData.DefaultView;
         }
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
@@ -109,6 +106,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 MessageBox.Show("No data matches the selected filters.");
             }
         }
+
 
 
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
@@ -136,6 +134,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 ApplyButton_Click(sender, e);
             }
         }
+
 
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
