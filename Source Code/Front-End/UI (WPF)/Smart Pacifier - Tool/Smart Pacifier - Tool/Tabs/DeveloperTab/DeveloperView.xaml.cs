@@ -41,16 +41,23 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 var campaigns = await _databaseService.GetCampaignsAsync();
                 Campaign.ItemsSource = campaigns;
 
-                // Load pacifiers for the first selected campaign if any
-                if (campaigns.Any())
-                {
-                    var pacifiers = await _managerPacifiers.GetPacifiersAsync(campaigns.First());
-                    Pacifier.ItemsSource = pacifiers;
-                }
-
                 // Load all sensor data from the database
                 allData.Clear();
-                allData = await _databaseService.GetSensorDataAsync(); // Ensure that this returns data correctly
+                allData = await _databaseService.GetSensorDataAsync();
+
+                // Extract unique values for Pacifier and Sensor Type
+                var uniquePacifiers = allData.AsEnumerable()
+                    .Select(row => row["Pacifier Name"].ToString())
+                    .Distinct()
+                    .ToList();
+
+                var uniqueSensors = allData.AsEnumerable()
+                    .Select(row => row["Sensor Type"].ToString())
+                    .Distinct()
+                    .ToList();
+
+                Pacifier.ItemsSource = uniquePacifiers;
+                Sensor.ItemsSource = uniqueSensors;
 
                 DisplayData();
             }
@@ -103,6 +110,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
+
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentPage > 1)
@@ -123,29 +131,12 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
         private async void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender == Campaign)
+            if (sender == Campaign || sender == Pacifier || sender == Sensor)
             {
-                var selectedCampaign = Campaign.SelectedItem?.ToString();
-                if (!string.IsNullOrEmpty(selectedCampaign))
-                {
-                    var pacifiers = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
-                    Pacifier.ItemsSource = pacifiers;
-
-                    // Filter and display data for the selected campaign
-                    var filteredData = allData.AsEnumerable().Where(row =>
-                        row["Campaign Name"].ToString() == selectedCampaign);
-                    if (filteredData.Any())
-                    {
-                        DataListView.ItemsSource = filteredData.CopyToDataTable().DefaultView;
-                    }
-                    else
-                    {
-                        DataListView.ItemsSource = null;
-                        MessageBox.Show("No data for the selected campaign.");
-                    }
-                }
+                ApplyButton_Click(sender, e);
             }
         }
+
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
