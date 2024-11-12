@@ -467,7 +467,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             // Reconfigure services with the new configuration
             app.ConfigureServices(new ServiceCollection());
 
-            
+        
             //MessageBox.Show("Database configuration reloaded.", "Reloaded", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 

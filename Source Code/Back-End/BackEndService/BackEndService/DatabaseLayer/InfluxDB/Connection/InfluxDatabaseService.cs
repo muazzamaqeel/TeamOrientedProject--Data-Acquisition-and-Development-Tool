@@ -133,11 +133,11 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         public async Task<DataTable> GetSensorDataAsync()
         {
             string fluxQuery = @"
-    from(bucket: ""SmartPacifier-Bucket1"")
-    |> range(start: 0)
-    |> filter(fn: (r) => r._measurement == ""campaigns"")
-    |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
-    ";
+            from(bucket: ""SmartPacifier-Bucket1"")
+            |> range(start: 0)
+            |> filter(fn: (r) => r._measurement == ""campaigns"")
+            |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
+            ";
 
             DataTable dataTable = new DataTable();
 
