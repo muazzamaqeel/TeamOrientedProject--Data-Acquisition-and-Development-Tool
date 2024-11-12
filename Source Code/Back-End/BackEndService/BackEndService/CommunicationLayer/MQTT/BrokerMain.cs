@@ -71,12 +71,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 var topicParts = e.Topic.Split('/');
                 string pacifierId = topicParts.Length > 1 ? topicParts[1] : "Unknown";
 
-                var parsedResult = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, e.Payload);
+                var (parsedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, e.Topic, e.Payload);
 
-                if (parsedResult.parsedData != null)
+                if (parsedData != null)
                 {
-                    Console.WriteLine($"Parsed data for Pacifier {pacifierId} on sensor type '{parsedResult.sensorType}':");
-                    foreach (var dataEntry in parsedResult.parsedData)
+                    Console.WriteLine($"Parsed data for Pacifier {parsedPacifierId} on sensor type '{sensorType}':");
+                    foreach (var dataEntry in parsedData)
                     {
                         Console.WriteLine($"{dataEntry.Key}: {dataEntry.Value}");
                     }

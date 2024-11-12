@@ -101,18 +101,28 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-        public async Task SendMessage(string topic, string message)
+        public async Task SendMessage(string topic, SensorData message, bool useJsonFormat = false)
         {
-            var mqttMessage = new MqttApplicationMessageBuilder()
-                .WithTopic(topic)
-                .WithPayload(message)
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce)
-                .Build();
+            var mqttMessageBuilder = new MqttApplicationMessageBuilder().WithTopic(topic);
+
+            if (useJsonFormat)
+            {
+                // Serialize message as JSON
+                string jsonString = JsonFormatter.Default.Format(message);
+                mqttMessageBuilder.WithPayload(jsonString);
+            }
+            else
+            {
+                // Serialize message as Protobuf binary
+                mqttMessageBuilder.WithPayload(message.ToByteArray());
+            }
+
+            var mqttMessage = mqttMessageBuilder.WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce).Build();
 
             try
             {
                 await _mqttClient.PublishAsync(mqttMessage);
-                Console.WriteLine($"Message sent to topic: {topic}");
+                Console.WriteLine($"Message sent to topic: {topic} in {(useJsonFormat ? "JSON" : "Binary")} format.");
             }
             catch (Exception ex)
             {
@@ -120,25 +130,30 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
+
         private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
             {
-                var rawPayload = e.ApplicationMessage.PayloadSegment.ToArray();
+                byte[] rawPayload = e.ApplicationMessage.PayloadSegment.ToArray();
                 string topic = e.ApplicationMessage.Topic;
+
                 Console.WriteLine($"Received raw data on topic '{topic}'");
 
-                string[] topicParts = topic.Split('/');
-                if (topicParts.Length >= 3 && topicParts[0] == "Pacifier")
+                if (rawPayload.Length > 0)
                 {
-                    string pacifierId = topicParts[1];
-                    var (passedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, rawPayload);
+                    string[] topicParts = topic.Split('/');
+                    if (topicParts.Length >= 2 && topicParts[0] == "Pacifier")
+                    {
+                        string pacifierId = topicParts[1];
+                        var (parsedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, topic, rawPayload);
 
-                    MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, pacifierId, sensorType, parsedData));
-                }
-                else
-                {
-                    Console.WriteLine($"Invalid topic format: {topic}");
+                        MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, parsedPacifierId, sensorType, parsedData));
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Invalid topic format: {topic}");
+                    }
                 }
 
                 await Task.CompletedTask;
@@ -148,6 +163,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 Console.WriteLine($"Failed to process message: {ex.Message}");
             }
         }
+
 
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)
         {
