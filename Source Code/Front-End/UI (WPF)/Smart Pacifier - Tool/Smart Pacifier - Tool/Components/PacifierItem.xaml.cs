@@ -12,39 +12,29 @@ namespace Smart_Pacifier___Tool.Components
         public event EventHandler? ToggleChanged;
 
         public static readonly DependencyProperty ButtonTextProperty =
-            DependencyProperty.Register("ButtonText", typeof(string), typeof(PacifierItem), new PropertyMetadata("Pacifier"));
+            DependencyProperty.Register("ButtonText", typeof(string), typeof(PacifierItem), new PropertyMetadata("basePacifier"));
 
         public static readonly DependencyProperty CircleTextProperty =
-            DependencyProperty.Register("CircleText", typeof(string), typeof(PacifierItem), new PropertyMetadata("1"));
+            DependencyProperty.Register("CircleText", typeof(string), typeof(PacifierItem), new PropertyMetadata("N/A"));
 
         public static readonly DependencyProperty IsCheckedProperty =
             DependencyProperty.Register("IsChecked", typeof(bool), typeof(PacifierItem), new PropertyMetadata(false));
 
-        // New DependencyProperty for graph data
-        public static readonly DependencyProperty GraphDataProperty =
-            DependencyProperty.Register("GraphData", typeof(ObservableCollection<DataPoint>), typeof(PacifierItem), new PropertyMetadata(new ObservableCollection<DataPoint>()));
-
-        public enum ItemType
-        {
-            Pacifier,
-            Sensor
-        }
-
-        public ItemType Type
-        { 
-            get;
-            set; 
-        }
-
         // Only "Sensor" items have this graph
-        public LineChartGraph LineChart
+        public LineChartGraph? LineChart
         {
-            get; 
+            get;
             set;
         }
 
         public string PacifierId
-        { 
+        {
+            get;
+            set;
+        }
+
+        public bool HasRow
+        {
             get;
             set;
         }
@@ -67,36 +57,35 @@ namespace Smart_Pacifier___Tool.Components
             set { SetValue(IsCheckedProperty, value); }
         }
 
-        // Property to hold graph data
-        public ObservableCollection<DataPoint> GraphData
+        // Observable collection for sensor data
+        public ObservableCollection<SensorItem> Sensors 
         {
-            get { return (ObservableCollection<DataPoint>)GetValue(GraphDataProperty); }
-            set { SetValue(GraphDataProperty, value); }
+            get; 
+            set; 
         }
 
-        private LineChartGraph? _graph;
-
-        //public MonitoringSensorData SensorData { get; set; }
-
-        public PacifierItem(ItemType type)
+        public PacifierItem(string pacifierId)
         {
             InitializeComponent();
+
+            IsChecked = false;
+            PacifierId = pacifierId;
+            ButtonText = "basePacifier";
+            HasRow = false;
+
+            Sensors = new ObservableCollection<SensorItem>();
+
             DataContext = this;
-            Type = type;
-            if (Type == ItemType.Sensor)
-            {
-                LineChart = new LineChartGraph();
-            }
+        }
 
-            PacifierId = "none";
-            GraphData = []; // Initialize the graph data collection
+        public PacifierItem GetPacifierItem()
+        {
+            return this;
+        }
 
-            // Subscribe to GraphData changes
-            GraphData.CollectionChanged += OnGraphDataChanged;
-
-            // Initialize and bind the graph if toggle is on
-            ToggleChanged += (s, e) => InitializeGraphIfNeeded();
-
+        public bool HasSensor(SensorItem sensorItem)
+        {
+            return Sensors.Contains(sensorItem); // Where Sensors is a collection in PacifierItem
         }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
@@ -108,37 +97,12 @@ namespace Smart_Pacifier___Tool.Components
             }
         }
 
-        private void OnGraphDataChanged(object sender, NotifyCollectionChangedEventArgs e)
+        // DataPoint class to hold individual data points
+        public class DataPoint
         {
-            // Update the LineChartGraph with the new data points
-            if (LineChart != null)
-            {
-                LineChart.UpdateDataPoints(GraphData);
-            }
+            public double X { get; set; }
+            public double Y { get; set; }
         }
 
-        private void InitializeGraphIfNeeded()
-        {
-            if (_graph == null && IsChecked)
-            {
-                _graph = new LineChartGraph();
-
-                // Bind the graph’s series to GraphData
-                var series = new LineSeries();
-                foreach (var point in GraphData)
-                {
-                    series.Points.Add(new OxyPlot.DataPoint(point.X, point.Y));
-                }
-
-                _graph.PlotModel.Series.Add(series);
-            }
-        }
-    }
-
-    // DataPoint class to hold individual data points
-    public class DataPoint
-    {
-        public double X { get; set; }
-        public double Y { get; set; }
     }
 }
