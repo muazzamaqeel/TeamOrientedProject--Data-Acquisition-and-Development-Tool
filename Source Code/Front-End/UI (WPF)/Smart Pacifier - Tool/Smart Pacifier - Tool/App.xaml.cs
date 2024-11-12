@@ -142,7 +142,7 @@ namespace Smart_Pacifier___Tool
 
             // Display which database is being used
             string databaseType = useLocal ? "Local Database" : "Server Database";
-            MessageBox.Show($"Using {databaseType} at {host}", "Database Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
+            //MessageBox.Show($"Using {databaseType} at {host}", "Database Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
 
             // Ensure the host has the correct URI format
             if (!host.StartsWith("http://") && !host.StartsWith("https://"))
