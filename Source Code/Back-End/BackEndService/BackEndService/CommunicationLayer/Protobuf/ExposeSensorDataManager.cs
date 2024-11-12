@@ -40,27 +40,16 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 
             try
             {
-                string jsonString = Encoding.UTF8.GetString(data);
-                if (jsonString.Trim().StartsWith("{"))
-                {
-                    Console.WriteLine("Detected JSON format data. Parsing as JSON.");
+                // Directly parse the data as Protobuf binary
+                Console.WriteLine("Attempting to parse as Protobuf binary format.");
+                var sensorData = SensorData.Parser.ParseFrom(data);
+                sensorData.SensorType = detectedSensorType;
 
-                    using JsonDocument jsonDoc = JsonDocument.Parse(jsonString);
-                    var sensorData = new SensorData { PacifierId = pacifierId, SensorType = detectedSensorType };
+                Console.WriteLine($"SENSORRRRRR DATA:::: : {sensorData}");
 
-                    PopulateSensorDataFromJson(sensorData, jsonDoc.RootElement);
+                parsedData = ExtractAllFields(sensorData);
 
-                    parsedData = ExtractAllFields(sensorData);
-                }
-                else
-                {
-                    Console.WriteLine("Attempting to parse as Protobuf binary format.");
-                    var sensorData = SensorData.Parser.ParseFrom(data);
-                    sensorData.SensorType = detectedSensorType;
-
-                    parsedData = ExtractAllFields(sensorData);
-                }
-
+                Console.WriteLine($"sensor_group: {sensorData.SensorGroup ?? "None"}");
                 return (pacifierId, detectedSensorType, parsedData);
             }
             catch (Exception ex)
@@ -68,69 +57,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 Console.WriteLine($"Failed to parse sensor data for Pacifier '{pacifierId}': {ex.Message}");
             }
 
-            return (pacifierId, null, parsedData);
+            return (pacifierId, detectedSensorType, parsedData);
         }
-
-
-        private void PopulateSensorDataFromJson(SensorData sensorData, JsonElement jsonElement)
-        {
-            var dataMap = new MapField<string, ByteString>();
-
-            foreach (var property in jsonElement.EnumerateObject())
-            {
-                if (property.Name == "sensor_group" && property.Value.ValueKind == JsonValueKind.String)
-                {
-                    // Explicitly capture sensor_group if it exists in JSON
-                    sensorData.SensorGroup = property.Value.GetString();
-                }
-                else
-                {
-                    var fieldDescriptor = SensorData.Descriptor.FindFieldByName(property.Name);
-
-                    if (fieldDescriptor != null)
-                    {
-                        // Handle known fields directly in the SensorData object
-                        switch (fieldDescriptor.FieldType)
-                        {
-                            case Google.Protobuf.Reflection.FieldType.String:
-                                fieldDescriptor.Accessor.SetValue(sensorData, property.Value.GetString());
-                                break;
-                            case Google.Protobuf.Reflection.FieldType.Int32:
-                                fieldDescriptor.Accessor.SetValue(sensorData, property.Value.GetInt32());
-                                break;
-                            case Google.Protobuf.Reflection.FieldType.Float:
-                                fieldDescriptor.Accessor.SetValue(sensorData, (float)property.Value.GetDouble());
-                                break;
-                            case Google.Protobuf.Reflection.FieldType.Bool:
-                                fieldDescriptor.Accessor.SetValue(sensorData, property.Value.GetBoolean());
-                                break;
-                            default:
-                                Console.WriteLine($"Unhandled field type '{fieldDescriptor.FieldType}' for '{property.Name}'");
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        // If it’s nested data or scalar data not part of known fields, add to DataMap
-                        if (property.Value.ValueKind == JsonValueKind.Object)
-                        {
-                            Console.WriteLine($"Adding nested data for '{property.Name}' to DataMap.");
-                            dataMap[property.Name] = ParseNestedMessage(property.Value);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Adding scalar data for '{property.Name}' to DataMap.");
-                            dataMap[property.Name] = ByteString.CopyFromUtf8(property.Value.ToString());
-                        }
-                    }
-                }
-            }
-
-            // Add the populated dataMap to the SensorData instance
-            sensorData.DataMap.Add(dataMap);
-        }
-
-
 
 
         private ByteString ParseNestedMessage(JsonElement element)
@@ -300,11 +228,22 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 }
                 else
                 {
-                    // Decode Base64 values for easier readability
-                    if (kvp.Value is string base64String && IsBase64String(base64String))
+                    // Decode Base64 values for data_map entries
+                    if (kvp.Key == "data_map" && kvp.Value is Dictionary<string, ByteString> dataMap)
                     {
-                        var decodedValue = Encoding.UTF8.GetString(Convert.FromBase64String(base64String));
-                        Console.WriteLine($"{indent}{kvp.Key}: {decodedValue}");
+                        Console.WriteLine($"{indent}{kvp.Key}:");
+                        foreach (var dataEntry in dataMap)
+                        {
+                            if (IsBase64String(dataEntry.Value.ToStringUtf8()))
+                            {
+                                var decodedValue = Encoding.UTF8.GetString(Convert.FromBase64String(dataEntry.Value.ToStringUtf8()));
+                                Console.WriteLine($"{indent}  {dataEntry.Key}: {decodedValue}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"{indent}  {dataEntry.Key}: {dataEntry.Value.ToStringUtf8()}");
+                            }
+                        }
                     }
                     else
                     {
@@ -314,12 +253,14 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             }
         }
 
-        // Helper function to check if a string is Base64 encoded
+        // Helper function to verify Base64 encoding
         private bool IsBase64String(string value)
         {
             Span<byte> buffer = new Span<byte>(new byte[value.Length]);
             return Convert.TryFromBase64String(value, buffer, out _);
         }
+
+
 
         public List<string> GetPacifierIds()
         {

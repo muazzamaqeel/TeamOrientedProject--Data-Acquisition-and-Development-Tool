@@ -164,6 +164,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
+
         private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)
         {
             Console.WriteLine("Connected successfully with MQTT Broker.");
