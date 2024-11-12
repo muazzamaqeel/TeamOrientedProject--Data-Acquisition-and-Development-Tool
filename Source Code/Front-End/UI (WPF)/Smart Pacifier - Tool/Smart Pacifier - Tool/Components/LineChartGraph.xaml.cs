@@ -25,7 +25,7 @@ namespace Smart_Pacifier___Tool.Components
         public string GroupName { get; set; }
 
         // Type of the sensor (e.g., temperature, humidity)
-        public string SensorType { get; set; }
+        public string? SensorId { get; set; }
 
         // DependencyProperty to bind an ObservableCollection of DataPoints
         public static readonly DependencyProperty DataPointsProperty =
@@ -43,12 +43,11 @@ namespace Smart_Pacifier___Tool.Components
         }
 
         // Constructor to initialize the LineChartGraph
-        public LineChartGraph(Sensor sensor, SensorGroup sensorGroup, string plotId, double interval)
+        public LineChartGraph(SensorGroup sensorGroup, string plotId, double interval)
         {
             InitializeComponent();
 
             // Default values
-            SensorType = sensor.SensorId;
             GroupName = sensorGroup.GroupName;
             PlotId = plotId;
             Interval = interval;
@@ -57,7 +56,7 @@ namespace Smart_Pacifier___Tool.Components
             PlotModel = new PlotModel { Title = GroupName };
             _series = new LineSeries
             {
-                Title = SensorType,
+                Title = SensorId,
                 MarkerType = MarkerType.Circle
             };
 

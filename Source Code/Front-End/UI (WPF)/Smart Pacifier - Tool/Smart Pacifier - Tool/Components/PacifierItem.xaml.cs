@@ -12,32 +12,16 @@ namespace Smart_Pacifier___Tool.Components
         public event EventHandler? ToggleChanged;
 
         public static readonly DependencyProperty ButtonTextProperty =
-            DependencyProperty.Register("ButtonText", typeof(string), typeof(PacifierItem), new PropertyMetadata("Pacifier"));
+            DependencyProperty.Register("ButtonText", typeof(string), typeof(PacifierItem), new PropertyMetadata("basePacifier"));
 
         public static readonly DependencyProperty CircleTextProperty =
-            DependencyProperty.Register("CircleText", typeof(string), typeof(PacifierItem), new PropertyMetadata("1"));
+            DependencyProperty.Register("CircleText", typeof(string), typeof(PacifierItem), new PropertyMetadata("N/A"));
 
         public static readonly DependencyProperty IsCheckedProperty =
             DependencyProperty.Register("IsChecked", typeof(bool), typeof(PacifierItem), new PropertyMetadata(false));
 
-        // New DependencyProperty for graph data
-        public static readonly DependencyProperty GraphDataProperty =
-            DependencyProperty.Register("GraphData", typeof(ObservableCollection<DataPoint>), typeof(PacifierItem), new PropertyMetadata(new ObservableCollection<DataPoint>()));
-
-        public enum ItemType
-        {
-            Pacifier,
-            Sensor
-        }
-
-        public ItemType Type
-        {
-            get;
-            set;
-        }
-
         // Only "Sensor" items have this graph
-        public LineChartGraph LineChart
+        public LineChartGraph? LineChart
         {
             get;
             set;
@@ -49,7 +33,7 @@ namespace Smart_Pacifier___Tool.Components
             set;
         }
 
-        public string ItemId
+        public bool HasRow
         {
             get;
             set;
@@ -73,33 +57,35 @@ namespace Smart_Pacifier___Tool.Components
             set { SetValue(IsCheckedProperty, value); }
         }
 
-        // Property to hold graph data
-        public ObservableCollection<DataPoint> GraphData
-        {
-            get { return (ObservableCollection<DataPoint>)GetValue(GraphDataProperty); }
-            set { SetValue(GraphDataProperty, value); }
-        }
-
         // Observable collection for sensor data
-        public ObservableCollection<Sensor> Sensors 
+        public ObservableCollection<SensorItem> Sensors 
         {
             get; 
             set; 
         }
 
-        private LineChartGraph? _graph;
-
-        public PacifierItem(ItemType type)
+        public PacifierItem(string pacifierId)
         {
             InitializeComponent();
 
-            DataContext = this;
-            Type = type;
-            this.IsChecked = false;
+            IsChecked = false;
+            PacifierId = pacifierId;
+            ButtonText = "basePacifier";
+            HasRow = false;
 
-            Sensors = new ObservableCollection<Sensor>();
-            PacifierId = "none";
-            GraphData = new ObservableCollection<DataPoint>(); // Initialize the graph data collection
+            Sensors = new ObservableCollection<SensorItem>();
+
+            DataContext = this;
+        }
+
+        public PacifierItem GetPacifierItem()
+        {
+            return this;
+        }
+
+        public bool HasSensor(SensorItem sensorItem)
+        {
+            return Sensors.Contains(sensorItem); // Where Sensors is a collection in PacifierItem
         }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
@@ -116,62 +102,6 @@ namespace Smart_Pacifier___Tool.Components
         {
             public double X { get; set; }
             public double Y { get; set; }
-        }
-
-        public class Sensor
-        {
-            public string SensorId { get; set; }
-            public ObservableCollection<SensorGroup> SensorGroups { get; set; }
-
-            public Sensor(string sensorId)
-            {
-                SensorId = sensorId;
-                SensorGroups = new ObservableCollection<SensorGroup>();
-            }
-        }
-
-        public class SensorGroup
-        {
-            public string GroupName { get; set; }
-            public MeasurementGroup MeasurementGroup { get; set; }
-
-            public SensorGroup(string groupName)
-            {
-                GroupName = groupName;
-                MeasurementGroup = new MeasurementGroup(groupName);
-            }
-
-            public void Add(string type)
-            {
-                // Implementation if needed in the future
-            }
-        }
-
-        public class MeasurementGroup
-        {
-            public string GroupName { get; set; }
-            public Dictionary<string, double> Measurements { get; set; }
-
-            public MeasurementGroup(string groupName)
-            {
-                GroupName = groupName;
-                Measurements = new Dictionary<string, double>();
-            }
-
-            public void AddOrUpdateMeasurement(string name, double value)
-            {
-                Measurements[name] = value;
-            }
-
-            public bool ContainsMeasurement(string name)
-            {
-                return Measurements.ContainsKey(name);
-            }
-
-            public double? GetMeasurement(string name)
-            {
-                return Measurements.TryGetValue(name, out var value) ? value : (double?)null;
-            }
         }
 
     }
