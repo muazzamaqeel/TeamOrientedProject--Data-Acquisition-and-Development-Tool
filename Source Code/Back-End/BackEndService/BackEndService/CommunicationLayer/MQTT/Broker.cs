@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using MQTTnet;
@@ -98,35 +97,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             foreach (var result in subscribeResult.Items)
             {
                 Console.WriteLine($"Subscription result for topic '{result.TopicFilter.Topic}': {result.ResultCode}");
-            }
-        }
-
-        public async Task SendMessage(string topic, SensorData message, bool useJsonFormat = false)
-        {
-            var mqttMessageBuilder = new MqttApplicationMessageBuilder().WithTopic(topic);
-
-            if (useJsonFormat)
-            {
-                // Serialize message as JSON
-                string jsonString = JsonFormatter.Default.Format(message);
-                mqttMessageBuilder.WithPayload(jsonString);
-            }
-            else
-            {
-                // Serialize message as Protobuf binary
-                mqttMessageBuilder.WithPayload(message.ToByteArray());
-            }
-
-            var mqttMessage = mqttMessageBuilder.WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce).Build();
-
-            try
-            {
-                await _mqttClient.PublishAsync(mqttMessage);
-                Console.WriteLine($"Message sent to topic: {topic} in {(useJsonFormat ? "JSON" : "Binary")} format.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to send message to topic: {topic} - {ex.Message}");
             }
         }
 
