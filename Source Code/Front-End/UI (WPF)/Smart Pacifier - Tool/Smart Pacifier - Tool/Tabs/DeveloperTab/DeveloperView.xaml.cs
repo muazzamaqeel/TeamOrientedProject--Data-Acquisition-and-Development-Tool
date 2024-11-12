@@ -180,9 +180,9 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 if (DataListView.SelectedItem is DataRowView selectedRow)
                 {
                     // Check for the exact name of the column
-                    if (selectedRow.Row.Table.Columns.Contains("entry_id")) // Ensure exact match with column name
+                    if (selectedRow.Row.Table.Columns.Contains("entry_id") && selectedRow.Row.Table.Columns.Contains("Measurement"))
                     {
-                        // Debug output to verify column names
+                        // Verify column names (optional debug)
                         foreach (DataColumn column in selectedRow.Row.Table.Columns)
                         {
                             Console.WriteLine(column.ColumnName);
@@ -190,8 +190,12 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
                         try
                         {
-                            int entryId = Convert.ToInt32(selectedRow["entry_id"]); // Match column name here as well
-                            await _databaseService.DeleteEntryFromDatabaseAsync(entryId);
+                            // Retrieve the entry ID and measurement type from the selected row
+                            int entryId = Convert.ToInt32(selectedRow["entry_id"]);
+                            string measurement = selectedRow["Measurement"].ToString();
+
+                            // Call the delete method with both entryId and measurement
+                            await _databaseService.DeleteEntryFromDatabaseAsync(entryId, measurement);
                             MessageBox.Show("Selected entry deleted successfully.");
 
                             // Reload data to reflect changes
@@ -204,7 +208,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                     }
                     else
                     {
-                        MessageBox.Show("Error: 'entry_id' column not found.");
+                        MessageBox.Show("Error: 'entry_id' or 'Measurement' column not found.");
                     }
                 }
                 else

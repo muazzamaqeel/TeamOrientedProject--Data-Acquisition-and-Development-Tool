@@ -16,7 +16,7 @@ namespace SmartPacifier.Interface.Services
         string Token { get; }
         string BaseUrl { get; }
         Task<DataTable> GetSensorDataAsync();
-        Task DeleteEntryFromDatabaseAsync(int entryId);
+        Task DeleteEntryFromDatabaseAsync(int entryId, string measurement);
 
     }
 

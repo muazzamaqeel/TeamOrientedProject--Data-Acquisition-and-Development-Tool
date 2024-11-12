@@ -200,7 +200,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         }
 
         // Corrected deletion function in C#
-        public async Task DeleteEntryFromDatabaseAsync(int entryId)
+        public async Task DeleteEntryFromDatabaseAsync(int entryId, string measurement)
         {
             try
             {
@@ -214,12 +214,30 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
                     string start = "1970-01-01T00:00:00Z";
                     string stop = DateTime.UtcNow.ToString("o");
 
+                    // Create a dynamic predicate based on measurement type
+                    string predicate;
+                    if (measurement == "campaign_metadata")
+                    {
+                        // Only use entry_id for campaign_metadata
+                        predicate = $"_measurement=\"campaign_metadata\" AND entry_id=\"{entryId}\"";
+                    }
+                    else if (measurement == "campaigns")
+                    {
+                        // Use both measurement and entry_id for campaigns
+                        predicate = $"_measurement=\"campaigns\" AND entry_id=\"{entryId}\"";
+                    }
+                    else
+                    {
+                        MessageBox.Show("Unknown measurement type specified.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
                     // Create the JSON payload for the delete request
                     var deleteRequest = new
                     {
                         start = start,
                         stop = stop,
-                        predicate = $"_measurement=\"campaign_metadata\" AND entry_id=\"{entryId}\""
+                        predicate = predicate
                     };
 
                     var jsonContent = JsonConvert.SerializeObject(deleteRequest);
