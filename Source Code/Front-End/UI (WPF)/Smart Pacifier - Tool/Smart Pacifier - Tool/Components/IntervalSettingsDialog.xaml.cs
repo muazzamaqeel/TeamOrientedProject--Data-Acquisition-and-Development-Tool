@@ -21,14 +21,25 @@ namespace Smart_Pacifier___Tool.Components
     /// </summary>
     public partial class IntervalSettingsDialog : Window
     {
+        /// <summary>
+        /// Gets the sensor intervals.
+        /// </summary>
         public Dictionary<string, List<int>> SensorIntervals { get; private set; } = new Dictionary<string, List<int>>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IntervalSettingsDialog"/> class.
+        /// </summary>
+        /// <param name="sensors">The list of sensors.</param>
         public IntervalSettingsDialog(List<SensorItem> sensors)
         {
             InitializeComponent();
             PopulateSensorSettings(sensors);
         }
 
+        /// <summary>
+        /// Populates the sensor settings.
+        /// </summary>
+        /// <param name="sensors">The list of sensors.</param>
         private void PopulateSensorSettings(List<SensorItem> sensors)
         {
             foreach (var sensor in sensors)
@@ -66,7 +77,9 @@ namespace Smart_Pacifier___Tool.Components
             }
         }
 
-        // Retrieve and save the values from the numeric up/down controls
+        /// <summary>
+        /// Handles the Save button click event.
+        /// </summary>
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             //foreach (var panel in SensorSettingsPanel.Children)
@@ -92,6 +105,3 @@ namespace Smart_Pacifier___Tool.Components
         }
     }
 }
-
-
-
