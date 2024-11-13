@@ -5,7 +5,7 @@
            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
            xmlns:local="clr-namespace:Smart_Pacifier___Tool"
            mc:Ignorable="d"
-           Title="MainWindow" Height="720" Width="1280"
+           Title="Smart Pacifier Tool" Height="720" Width="1280"
            Background="{StaticResource PrimaryBackgroundColor}">
        <Grid Background="{StaticResource PrimaryBackgroundColor}"> 
            <Grid.ColumnDefinitions>
