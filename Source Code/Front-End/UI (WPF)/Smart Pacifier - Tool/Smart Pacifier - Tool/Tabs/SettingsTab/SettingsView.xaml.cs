@@ -45,7 +45,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
 
             // Display the config file path in a message box
-            MessageBox.Show($"Config file path: {configFilePath}", "Configuration File Path", MessageBoxButton.OK, MessageBoxImage.Information);
+            //MessageBox.Show($"Config file path: {configFilePath}", "Configuration File Path", MessageBoxButton.OK, MessageBoxImage.Information);
 
             // Load configuration
             configuration = new ConfigurationBuilder()
@@ -56,7 +56,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             try
             {
                 var jsonContent = File.ReadAllText(configFilePath);
-                MessageBox.Show($"Config file contents:\n{jsonContent}", "Configuration File Contents", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show($"Config file contents:\n{jsonContent}", "Configuration File Contents", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -70,7 +70,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             serverApiKey = configuration["Server:ApiKey"];
 
             // Display loaded configuration values in a message box
-            MessageBox.Show($"Loaded Configuration:\nHost: {serverHost}\nPort: {serverPort}\nUsername: {serverUsername}", "Loaded Server Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
+            //MessageBox.Show($"Loaded Configuration:\nHost: {serverHost}\nPort: {serverPort}\nUsername: {serverUsername}", "Loaded Server Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
 
             // Set other properties and initialize UI
             if (Application.Current.Properties[UserModeKey] is bool userModeValue)
@@ -239,11 +239,13 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private void DarkTheme_Click(object sender, RoutedEventArgs e)
         {
             SetTheme("Resources/ColorsDark.xaml");
+            ReloadDatabaseConfiguration();
         }
 
         private void LightTheme_Click(object sender, RoutedEventArgs e)
         {
             SetTheme("Resources/ColorsLight.xaml");
+            ReloadDatabaseConfiguration();
         }
 
         private void SetTheme(string themeUri)
@@ -429,7 +431,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
             if (!File.Exists(configFilePath))
             {
-                MessageBox.Show($"Configuration file not found at: {configFilePath}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                //MessageBox.Show($"Configuration file not found at: {configFilePath}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -441,7 +443,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 // Write the updated JSON back to the original config file
                 File.WriteAllText(configFilePath, configJson.ToString(Formatting.Indented));
 
-                MessageBox.Show($"Database configuration updated to {(useLocal ? "Local" : "Server")} in: {configFilePath}", "Configuration Updated", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show($"Database configuration updated to {(useLocal ? "Local" : "Server")} in: {configFilePath}", "Configuration Updated", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -465,7 +467,8 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             // Reconfigure services with the new configuration
             app.ConfigureServices(new ServiceCollection());
 
-            MessageBox.Show("Database configuration reloaded.", "Reloaded", MessageBoxButton.OK, MessageBoxImage.Information);
+        
+            //MessageBox.Show("Database configuration reloaded.", "Reloaded", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
 
