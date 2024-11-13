@@ -116,9 +116,18 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                     if (topicParts.Length >= 2 && topicParts[0] == "Pacifier")
                     {
                         string pacifierId = topicParts[1];
-                        var (parsedPacifierId, sensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(pacifierId, topic, rawPayload);
+                        var (parsedPacifierId, parsedSensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(rawPayload);
 
-                        MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, parsedPacifierId, sensorType, parsedData));
+                        foreach (var sensorGroup in parsedData)
+                        {
+                            Console.WriteLine($"Pacifier: {parsedPacifierId} - Sensor: {parsedSensorType}");
+                            foreach (var kvp in sensorGroup)
+                            {
+                                Console.WriteLine($"     {kvp.Key}: {kvp.Value}");
+                            }
+                        }
+
+                        MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, parsedPacifierId, parsedSensorType, parsedData));
                     }
                     else
                     {
@@ -162,9 +171,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             public byte[] Payload { get; set; }
             public string PacifierId { get; set; }
             public string SensorType { get; set; }
-            public Dictionary<string, object> ParsedData { get; set; }
+            public List<Dictionary<string, object>> ParsedData { get; set; }
 
-            public MessageReceivedEventArgs(string topic, byte[] payload, string pacifierId, string sensorType, Dictionary<string, object> parsedData)
+            public MessageReceivedEventArgs(string topic, byte[] payload, string pacifierId, string sensorType, List<Dictionary<string, object>> parsedData)
             {
                 Topic = topic;
                 Payload = payload;

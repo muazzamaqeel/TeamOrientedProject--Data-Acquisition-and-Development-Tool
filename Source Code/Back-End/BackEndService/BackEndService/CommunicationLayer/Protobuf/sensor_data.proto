@@ -41,7 +41,7 @@ message PPGData {
     repeated LedData leds = 1;
 
     message TemperatureData {
-        float temperature_1 = 1;
+        float temperature = 1;
     }
     repeated TemperatureData temperatures = 2;
 }
