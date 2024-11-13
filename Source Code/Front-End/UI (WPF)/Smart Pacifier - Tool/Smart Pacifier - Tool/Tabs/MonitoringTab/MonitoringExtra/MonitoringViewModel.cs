@@ -176,112 +176,112 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         /// </summary>
         private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
-            // Only proceed if the pacifier ID is in the checkedPacifiers list and data is valid
-            if (PacifierItems.Any(p => p.PacifierId == e.PacifierId) && e.SensorType != null && e.ParsedData != null)
-            {
-                try
-                {
-                    // Use Dispatcher to safely update the ObservableCollection on the UI thread
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
+            //// Only proceed if the pacifier ID is in the checkedPacifiers list and data is valid
+            //if (PacifierItems.Any(p => p.PacifierId == e.PacifierId) && e.SensorType != null && e.ParsedData != null)
+            //{
+            //    try
+            //    {
+            //        // Use Dispatcher to safely update the ObservableCollection on the UI thread
+            //        Application.Current.Dispatcher.Invoke(() =>
+            //        {
                         
-                        // Find the PacifierItem in PacifierItems with a matching ItemId and also in checkedPacifiers
-                        var pacifierItem = PacifierItems.FirstOrDefault(p => p.PacifierId == e.PacifierId);
+            //            // Find the PacifierItem in PacifierItems with a matching ItemId and also in checkedPacifiers
+            //            var pacifierItem = PacifierItems.FirstOrDefault(p => p.PacifierId == e.PacifierId);
 
-                        if (pacifierItem != null && pacifierItem.IsChecked)
-                        {
-                            Debug.WriteLine($"Selected Pacifier_{pacifierItem.PacifierId}");
-                            // Find or create the SensorItem for the given sensor type
-                            var sensorItem = pacifierItem.Sensors.FirstOrDefault(s => s.SensorId == e.SensorType);
+            //            if (pacifierItem != null && pacifierItem.IsChecked)
+            //            {
+            //                Debug.WriteLine($"Selected Pacifier_{pacifierItem.PacifierId}");
+            //                // Find or create the SensorItem for the given sensor type
+            //                var sensorItem = pacifierItem.Sensors.FirstOrDefault(s => s.SensorId == e.SensorType);
 
-                            if (sensorItem == null)
-                            {
-                                Debug.WriteLine($"Add Sensor_{e.SensorType}");
-                                // Add a new sensor item if it doesn't exist
-                                sensorItem = new SensorItem(e.SensorType, pacifierItem);
-                                pacifierItem.Sensors.Add(sensorItem);
-                            }
-                            else
-                            {
-                                Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
+            //                if (sensorItem == null)
+            //                {
+            //                    Debug.WriteLine($"Add Sensor_{e.SensorType}");
+            //                    // Add a new sensor item if it doesn't exist
+            //                    sensorItem = new SensorItem(e.SensorType, pacifierItem);
+            //                    pacifierItem.Sensors.Add(sensorItem);
+            //                }
+            //                else
+            //                {
+            //                    Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
 
-                                if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))
-                                {
-                                    sensorItem.LinkedPacifiers.Add(pacifierItem);
-                                }
+            //                    if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))
+            //                    {
+            //                        sensorItem.LinkedPacifiers.Add(pacifierItem);
+            //                    }
                                 
 
-                                // Process each parsed data point
-                                foreach (var kvp in e.ParsedData)
-                                {
+            //                    // Process each parsed data point
+            //                    foreach (var kvp in e.ParsedData)
+            //                    {
 
-                                    if (sensorItem.SensorIsChecked)
-                                    {
-                                        Debug.WriteLine($"Selected Sensor_{e.SensorType}");
+            //                        if (sensorItem.SensorIsChecked)
+            //                        {
+            //                            Debug.WriteLine($"Selected Sensor_{e.SensorType}");
 
-                                        var sensorGroupName = kvp.Key.Split('_')[0]; // Get the prefix before '_'
+            //                            var sensorGroupName = kvp.Key.Split('_')[0]; // Get the prefix before '_'
 
-                                        // Find or create the SensorGroup for the sensor
-                                        var sensorGroup = sensorItem.SensorGroups.FirstOrDefault(g => g.GroupName == sensorGroupName);
-                                        if (sensorGroup == null)
-                                        {
-                                            Debug.WriteLine($"Add SensorGroup_{sensorGroupName}");
-                                            // Add a new sensor group if it doesn't exist
-                                            sensorGroup = new SensorGroup(sensorGroupName, sensorItem);
-                                            sensorItem.SensorGroups.Add(sensorGroup);
-                                        }
-                                        else
-                                        {
-                                            Debug.WriteLine($"Exists SensorGroup_{sensorGroupName}");
-                                            // Ensure the MeasurementGroup for the sensor group is initialized
-                                            if (sensorGroup.MeasurementGroup == null)
-                                            {
-                                                Debug.WriteLine($"Add MeasurementGroup_{kvp.Key} Value_{kvp.Value}");
-                                                // Create a new MeasurementGroup if it doesn't exist
-                                                sensorGroup.MeasurementGroup = new MeasurementGroup(sensorGroup.GroupName, sensorGroup);
+            //                            // Find or create the SensorGroup for the sensor
+            //                            var sensorGroup = sensorItem.SensorGroups.FirstOrDefault(g => g.GroupName == sensorGroupName);
+            //                            if (sensorGroup == null)
+            //                            {
+            //                                Debug.WriteLine($"Add SensorGroup_{sensorGroupName}");
+            //                                // Add a new sensor group if it doesn't exist
+            //                                sensorGroup = new SensorGroup(sensorGroupName, sensorItem);
+            //                                sensorItem.SensorGroups.Add(sensorGroup);
+            //                            }
+            //                            else
+            //                            {
+            //                                Debug.WriteLine($"Exists SensorGroup_{sensorGroupName}");
+            //                                // Ensure the MeasurementGroup for the sensor group is initialized
+            //                                if (sensorGroup.MeasurementGroup == null)
+            //                                {
+            //                                    Debug.WriteLine($"Add MeasurementGroup_{kvp.Key} Value_{kvp.Value}");
+            //                                    // Create a new MeasurementGroup if it doesn't exist
+            //                                    sensorGroup.MeasurementGroup = new MeasurementGroup(sensorGroup.GroupName, sensorGroup);
 
 
-                                            }
+            //                                }
 
-                                            Debug.WriteLine($"AddOrUpdate MeasurementGroup_{kvp.Key} Value_{kvp.Value}");
-                                            // Update or add the measurement to the MeasurementGroup
-                                            sensorGroup.MeasurementGroup.AddOrUpdateMeasurement(kvp.Key, Convert.ToDouble(kvp.Value));
+            //                                Debug.WriteLine($"AddOrUpdate MeasurementGroup_{kvp.Key} Value_{kvp.Value}");
+            //                                // Update or add the measurement to the MeasurementGroup
+            //                                sensorGroup.MeasurementGroup.AddOrUpdateMeasurement(kvp.Key, Convert.ToDouble(kvp.Value));
 
-                                        }
+            //                            }
 
-                                    }
-                                }
+            //                        }
+            //                    }
                                 
-                                //AddPacifierSensorPair();
+            //                    //AddPacifierSensorPair();
 
 
 
 
-                                // Optionally, you could add debugging output here to log measurements, etc.
-                                // Debug.WriteLine($"Updated measurement: {kvp.Key} with value {kvp.Value}");
-                            }
-                        }
-                        else
-                        {
-                            // Optionally log if the pacifier item was not found or is not checked
-                            // Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found or not checked.");
-                        }
+            //                    // Optionally, you could add debugging output here to log measurements, etc.
+            //                    // Debug.WriteLine($"Updated measurement: {kvp.Key} with value {kvp.Value}");
+            //                }
+            //            }
+            //            else
+            //            {
+            //                // Optionally log if the pacifier item was not found or is not checked
+            //                // Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found or not checked.");
+            //            }
 
 
 
-                    });
-                }
-                catch (Exception ex)
-                {
-                    // Log any errors that occur during processing
-                    Debug.WriteLine($"Error processing message: {ex.Message}");
-                }
-            }
-            else
-            {
-                // Debug log for skipped messages
-                // Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in selected list or invalid data.");
-            }
+            //        });
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        // Log any errors that occur during processing
+            //        Debug.WriteLine($"Error processing message: {ex.Message}");
+            //    }
+            //}
+            //else
+            //{
+            //    // Debug log for skipped messages
+            //    // Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in selected list or invalid data.");
+            //}
         }
 
 
