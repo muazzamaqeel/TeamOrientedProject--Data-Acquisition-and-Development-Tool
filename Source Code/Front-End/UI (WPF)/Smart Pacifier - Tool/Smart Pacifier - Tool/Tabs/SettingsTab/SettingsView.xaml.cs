@@ -110,6 +110,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 case "InfluxDbModePanel":
                     InfluxDbModePanel.Visibility = Visibility.Visible;
                     break;
+                default:
+                    ModeButtonsPanel.Visibility = Visibility.Visible;
+                    break;
             }
         }
 

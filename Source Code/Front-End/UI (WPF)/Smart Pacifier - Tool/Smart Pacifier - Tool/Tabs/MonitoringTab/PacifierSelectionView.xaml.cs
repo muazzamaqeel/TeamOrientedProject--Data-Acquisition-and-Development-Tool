@@ -6,6 +6,8 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Linq;
 using System;
+using System.Diagnostics;
+using System.Collections.ObjectModel;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -14,8 +16,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
     /// </summary>
     public partial class PacifierSelectionView : UserControl
     {
-        private List<PacifierItem> connectedPacifiers = [];
-        private List<PacifierItem> selectedPacifiers = [];
+        private ObservableCollection<PacifierItem> connectedPacifiers = [];
+        private ObservableCollection<PacifierItem> selectedPacifiers = [];
 
         /// <summary>
         /// 
@@ -36,7 +38,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void OnSensorDataUpdated(object sender, EventArgs e)
+        private void OnSensorDataUpdated(object? sender, EventArgs? e)
         {
             Dispatcher.Invoke(() =>
             {
@@ -52,18 +54,19 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             var pacifierIds = ExposeSensorDataManager.Instance.GetPacifierIds();
 
             // Debug: Print the count of pacifiers
-            // MessageBox.Show($"Loaded {pacifierIds.Count} pacifiers.");
+             //MessageBox.Show($"Loaded {pacifierIds.Count} pacifiers.");
 
             foreach (var pacifierId in pacifierIds)
             {
+                
                 // Check if the pacifier is already in the list based on PacifierId
                 if (!connectedPacifiers.Any(pacifier => pacifier.PacifierId == pacifierId))
                 {
-                    var connectedPacifierItem = new PacifierItem(PacifierItem.ItemType.Pacifier)
+                    //Debug.WriteLine($"Loaded Pacifier {pacifierId}.");
+                    var connectedPacifierItem = new PacifierItem(pacifierId)
                     {
                         ButtonText = $"Pacifier {pacifierId}",
                         IsChecked = false,
-                        PacifierId = pacifierId,
                         CircleText = " "
                     };
 

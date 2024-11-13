@@ -1,7 +1,10 @@
 ﻿using OxyPlot;
 using OxyPlot.Series;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
+using static Smart_Pacifier___Tool.Components.PacifierItem;
 
 namespace Smart_Pacifier___Tool.Components
 {
@@ -9,83 +12,115 @@ namespace Smart_Pacifier___Tool.Components
     {
         private readonly LineSeries _series;
 
-        public PlotModel PlotModel
-        { 
-            get; 
-            private set; 
-        }
+        // PlotModel represents the plot data for OxyPlot
+        public PlotModel PlotModel { get; private set; }
 
-        public string PlotId
+        // ID of the plot (can be used for identifying specific plots)
+        public string PlotId { get; set; }
+
+        // The number of data points to display before removing the oldest
+        public double Interval { get; set; }
+
+        // The label for the measurement group
+        public string GroupName { get; set; }
+
+        // Type of the sensor (e.g., temperature, humidity)
+        public string? SensorId { get; set; }
+
+        // DependencyProperty to bind an ObservableCollection of DataPoints
+        public static readonly DependencyProperty DataPointsProperty =
+            DependencyProperty.Register(
+                nameof(DataPoints),
+                typeof(ObservableCollection<DataPoint>),
+                typeof(LineChartGraph),
+                new PropertyMetadata(new ObservableCollection<DataPoint>(), OnDataPointsChanged));
+
+        // ObservableCollection for binding DataPoints to the graph
+        public ObservableCollection<DataPoint> DataPoints
         {
-            get;
-            set;
+            get => (ObservableCollection<DataPoint>)GetValue(DataPointsProperty);
+            set => SetValue(DataPointsProperty, value);
         }
 
-        public int Interval
-        {
-            get;
-            set;
-        }
-
-        public string SensorM
-        {
-            get;
-            set;
-        }
-
-        public LineChartGraph()
+        // Constructor to initialize the LineChartGraph
+        public LineChartGraph(SensorGroup sensorGroup, string plotId, double interval)
         {
             InitializeComponent();
 
-            SensorM = "sensor";
-            PlotId = "none";
-            Interval = 10;
+            // Default values
+            GroupName = sensorGroup.GroupName;
+            PlotId = plotId;
+            Interval = interval;
 
-            // Initialize the PlotModel and Series
-            PlotModel = new PlotModel { Title = SensorM };
+            // Initialize the PlotModel and LineSeries
+            PlotModel = new PlotModel { Title = GroupName };
             _series = new LineSeries
             {
-                Title = "NOT GOOD",
+                Title = SensorId,
                 MarkerType = MarkerType.Circle
             };
-            
-            PlotModel.Series.Add(_series);
-            DataContext = this; // Set DataContext to enable data binding
 
+            // Add the series to the PlotModel
+            PlotModel.Series.Add(_series);
+            DataContext = this; // Enable data binding
         }
 
+        // Method to update the plot with new data points when DataPoints collection changes
+        private static void OnDataPointsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var chart = d as LineChartGraph;
+            if (chart != null)
+            {
+                chart.UpdateDataPoints(chart.DataPoints); // Ensure this properly updates the graph
+            }
+        }
+
+
+        // Update the graph with a new data point
         public void UpdateData(double xValue, double yValue)
         {
-            // Create a new DataPoint using the OxyPlot DataPoint constructor
-            var dataPoint = new OxyPlot.DataPoint(xValue, yValue);
 
-            // Add new data point to the series
-            _series.Points.Add(dataPoint);
+            Debug.WriteLine($"Updating data point: {xValue}, {yValue}");
 
-            // Limit the number of data points displayed, if needed
-            if (_series.Points.Count > Interval) // adjust this value as required
+            // Update ObservableCollection directly
+            DataPoints.Add(new DataPoint(xValue, yValue));
+
+            // Limit number of data points to 'Interval'
+            if (DataPoints.Count > Interval)
             {
-                _series.Points.RemoveAt(0);
+                DataPoints.RemoveAt(0);
             }
 
-            // Refresh the plot to display the new data point
+            // Refresh the plot
             PlotModel.InvalidatePlot(true);
         }
 
+
+        // Update the graph with a collection of data points
         public void UpdateDataPoints(ObservableCollection<DataPoint> graphData)
         {
-            // Clear existing points
+            // Clear the existing points and add the new ones
             _series.Points.Clear();
-
-            // Add points from the graphData collection
             foreach (var point in graphData)
             {
                 _series.Points.Add(new OxyPlot.DataPoint(point.X, point.Y));
             }
 
-            // Refresh the plot to display the new data points
+            // Refresh the plot
             PlotModel.InvalidatePlot(true);
         }
 
+        // Simple class to represent a DataPoint with X and Y values
+        public class DataPoint
+        {
+            public double X { get; set; }
+            public double Y { get; set; }
+
+            public DataPoint(double x, double y)
+            {
+                X = x;
+                Y = y;
+            }
+        }
     }
 }
