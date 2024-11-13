@@ -76,8 +76,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
                 lock (_dataLock)
                 {
                     _sensorDataList.Add(sensorData);
-                    SensorDataUpdated?.Invoke(this, EventArgs.Empty);
+                    
                 }
+                SensorDataUpdated?.Invoke(this, EventArgs.Empty);
 
                 return (pacifierId, detectedSensorType, parsedData);
             }
