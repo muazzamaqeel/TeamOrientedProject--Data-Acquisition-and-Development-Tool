@@ -54,6 +54,9 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Exception exception = await Record.ExceptionAsync(async () => await _broker.Subscribe(topic));
             Assert.Null(exception); // Verify that no exception was thrown during subscription
         }
+        
+        
+        /*
         public async Task TestMQTTSendMessage()
         {
             await EnsureBrokerConnected(); // Ensure connection before sending
@@ -63,6 +66,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Exception exception = await Record.ExceptionAsync(async () => await _broker.SendMessage(topic, message));
             Assert.Null(exception); // Verify that no exception was thrown during message sending
         }
+        */
 
 
 
