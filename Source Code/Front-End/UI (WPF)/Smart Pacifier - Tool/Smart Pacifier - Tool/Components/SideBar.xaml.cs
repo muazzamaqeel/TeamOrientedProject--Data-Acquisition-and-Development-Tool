@@ -8,16 +8,25 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Smart_Pacifier___Tool
 {
+    /// <summary>
+    /// Interaction logic for Sidebar.xaml
+    /// </summary>
     public partial class Sidebar : UserControl
     {
         private const string DeveloperTabVisibleKey = "DeveloperTabVisible";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Sidebar"/> class.
+        /// </summary>
         public Sidebar()
         {
             InitializeComponent();
             UpdateDeveloperTabVisibility();
         }
 
+        /// <summary>
+        /// Updates the visibility of the Developer Tab based on application properties.
+        /// </summary>
         public void UpdateDeveloperTabVisibility()
         {
             // Check if the Developer Tab should be visible
@@ -31,16 +40,11 @@ namespace Smart_Pacifier___Tool
             }
         }
 
-
-
-
-
         private void CampaignsButton_Click(object sender, RoutedEventArgs e)
         {
             var campaignsView = ((App)Application.Current).ServiceProvider.GetRequiredService<CampaignsView>();
             ((MainWindow)Application.Current.MainWindow).NavigateTo(campaignsView);
         }
-
 
         private void MonitoringButton_Click(object sender, RoutedEventArgs e)
         {
@@ -54,17 +58,13 @@ namespace Smart_Pacifier___Tool
             var settingsViewFactory = ((App)Application.Current).ServiceProvider.GetRequiredService<Func<string, SettingsView>>();
             var settingsView = settingsViewFactory("");
             ((MainWindow)Application.Current.MainWindow).NavigateTo(settingsView);
-
         }
+
         private void DeveloperButton_Click(object sender, RoutedEventArgs e)
         {
             // Resolve the DeveloperView from the service provider and navigate to it
             var developerView = ((App)Application.Current).ServiceProvider.GetRequiredService<DeveloperView>();
             ((MainWindow)Application.Current.MainWindow).NavigateTo(developerView);
         }
-
-
-
-
     }
 }

@@ -28,23 +28,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="CampaignTextBox" Style="{StaticResource TextBoxStyle}" Grid.Column="0"/>
-                <TextBlock Text="Enter campaign name..." 
-                   Foreground="Gray" 
-                   IsHitTestVisible="False" 
-                   VerticalAlignment="Center" 
-                   Margin="20,0,0,0">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding Text, ElementName=CampaignTextBox}" Value="">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                <components:TextBoxWithPlaceholder x:Name="CampaignTextBox" PlaceholderText="Enter campaign name..." Grid.Column="0"/>
                 <Button Style="{StaticResource ModernButtonStyle}" Content="Create" Click="CreateCampaign_Click" Width="100" Grid.Column="1" Margin="10,0,0,0"/>
             </Grid>
             <ScrollViewer VerticalScrollBarVisibility="Auto" Height="Auto">

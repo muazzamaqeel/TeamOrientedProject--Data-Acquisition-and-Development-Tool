@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             xmlns:local="clr-namespace:Smart_Pacifier___Tool.Components"
              mc:Ignorable="mc">
 
     <Grid Background="{StaticResource MainViewBackgroundColor}">
@@ -133,23 +134,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="ApiKeyInput" Style="{StaticResource TextBoxStyle}" Grid.Column="0"/>
-                                <TextBlock Text="Enter LocalHost API Token..." 
-                                   Foreground="Gray" 
-                                   IsHitTestVisible="False" 
-                                   VerticalAlignment="Center" 
-                                   Margin="20,0,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Text, ElementName=ApiKeyInput}" Value="">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                <local:TextBoxWithPlaceholder x:Name="ApiKeyInput" PlaceholderText="Enter LocalHost API Token..." Grid.Column="0"/>
                                 <Button Style="{StaticResource ModernButtonStyle}" Content="Submit" Click="SubmitApiKey_Click" Width="100" Grid.Column="1" Margin="10,0,0,0"/>
                             </Grid>
                         </StackPanel>
@@ -173,7 +158,6 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="InfluxDB Server Interface" Foreground="{StaticResource MainViewForegroundColor}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
-
 
                         <!-- Buttons Section -->
                         <StackPanel Orientation="Vertical" Grid.Row="1" Grid.RowSpan="5" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,10,0">
@@ -211,23 +195,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="ServerApiKeyInput" Style="{StaticResource TextBoxStyle}" Grid.Column="0"/>
-                                <TextBlock Text="Enter Server API Token..." 
-                                   Foreground="Gray" 
-                                   IsHitTestVisible="False" 
-                                   VerticalAlignment="Center" 
-                                   Margin="20,0,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Text, ElementName=ServerApiKeyInput}" Value="">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                <local:TextBoxWithPlaceholder x:Name="ServerApiKeyInput" PlaceholderText="Enter Server API Token..." Grid.Column="0"/>
                                 <Button Style="{StaticResource ModernButtonStyle}" Content="Submit" Click="ServerSubmitApiKey_Click" Width="100" Grid.Column="1" Margin="10,0,0,0"/>
                             </Grid>
                         </StackPanel>
