@@ -18,7 +18,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
     {
         private ICollectionView _filteredCampaigns;
         private readonly IDatabaseService _databaseService;
-        private readonly IManagerCampaign _managerCampaign;
+        private readonly IManagerCampaign _managerCampaign; // 
         public List<Campaign> Campaigns { get; set; } = new List<Campaign>();
         public string SearchName { get; set; } = string.Empty;
         public string ActualSearchName { get; set; } = string.Empty; // New property
@@ -222,8 +222,8 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         {
             if (sender is Border border && border.DataContext is Campaign selectedCampaign)
             {
-                // Create an instance of CampaignsInternal as a UserControl
-                var campaignsInternal = new CampaignsInternal();
+                // Create an instance of CampaignsInternal, passing the database singleton and campaign name
+                var campaignsInternal = new CampaignsInternal(_managerCampaign, selectedCampaign.CampaignName);
 
                 // Get a reference to MainWindow
                 var mainWindow = Application.Current.MainWindow as MainWindow;
@@ -234,7 +234,6 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 }
             }
         }
-
 
 
 

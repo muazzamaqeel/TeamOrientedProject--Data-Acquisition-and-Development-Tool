@@ -16,9 +16,13 @@
 
         <!-- Header Grid (Non-Scrollable) -->
         <Grid Background="{StaticResource AccentColor}" Grid.Row="0" Margin="0,0,0,0">
-            <TextBlock Text="Campaign Management" 
-                       HorizontalAlignment="Center" VerticalAlignment="Center" 
-                       Foreground="White" FontSize="24" FontWeight="Bold"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock x:Name="CampaignTitle" 
+                           Text="Campaign Management" 
+                           HorizontalAlignment="Center" VerticalAlignment="Center" 
+                           Foreground="White" FontSize="24" FontWeight="Bold"/>
+            </StackPanel>
+
             <Button Style="{StaticResource ModernButtonStyle}" Content="New Campaign" HorizontalAlignment="Left" Height="25" Margin="10,0,0,0" VerticalAlignment="Center" Width="100" Click="NewCampaign_Button"/>
             <Button Style="{StaticResource ModernButtonStyle}" Content="Delete Campaign" HorizontalAlignment="Right" Height="25" Margin="10,0,10,0" VerticalAlignment="Center" Width="120" Click="DeleteCampaign_Button"/>
             <Button Style="{StaticResource ModernButtonStyle}" Content="Export Data" HorizontalAlignment="Right" Height="25" Margin="0,0,120,0" VerticalAlignment="Center" Width="90" Click="ExportData_Button"/>

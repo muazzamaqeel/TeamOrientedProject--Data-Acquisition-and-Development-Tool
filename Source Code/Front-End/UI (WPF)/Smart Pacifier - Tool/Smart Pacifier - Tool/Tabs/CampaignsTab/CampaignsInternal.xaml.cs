@@ -1,6 +1,8 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
+using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 {
@@ -9,9 +11,21 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
     /// </summary>
     public partial class CampaignsInternal : UserControl
     {
-        public CampaignsInternal()
+        private readonly IManagerCampaign _managerCampaign;
+        private readonly string _campaignName;
+
+        // Constructor accepting the database manager and campaign name
+        public CampaignsInternal(IManagerCampaign managerCampaign, string campaignName)
         {
             InitializeComponent();
+            _managerCampaign = managerCampaign;
+            _campaignName = campaignName;
+
+            // Debug to confirm the campaign name is passed correctly
+            //Debug.WriteLine($"CampaignsInternal initialized with CampaignName: {_campaignName}");
+
+            // Update the UI with the campaign name
+            CampaignTitle.Text = $"{_campaignName}";
         }
 
         // Placeholder event handler for New Campaign button
