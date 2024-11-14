@@ -109,18 +109,15 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
 
         private void RunAlgorithmForCampaign(Campaign selectedCampaign)
         {
-            var config = ((App)Application.Current).LoadDatabaseConfiguration();
-            string scriptName = config.PythonScript?.FileName ?? "python1.py"; // Default to "python1.py" if not specified
+            // Navigate to AlgorithmsInternal, passing the campaign name and database object
+            var algorithmsInternal = new AlgorithmsInternal(selectedCampaign.CampaignName, _databaseService);
 
-            try
+            // Get a reference to MainWindow
+            var mainWindow = Application.Current.MainWindow as MainWindow;
+            if (mainWindow != null)
             {
-                // You can modify ExecuteScript to accept parameters if needed
-                string result = _algorithmLayer.ExecuteScript(scriptName);
-                MessageBox.Show($"Python script '{scriptName}' executed successfully for campaign '{selectedCampaign.CampaignName}'.", "Execution Success", MessageBoxButton.OK);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Use NavigateTo to replace the content in ContentArea with AlgorithmsInternal
+                mainWindow.NavigateTo(algorithmsInternal);
             }
         }
 
