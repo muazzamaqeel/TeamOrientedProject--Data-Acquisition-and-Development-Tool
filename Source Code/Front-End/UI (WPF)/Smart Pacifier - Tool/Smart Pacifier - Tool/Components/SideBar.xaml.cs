@@ -67,12 +67,12 @@ namespace Smart_Pacifier___Tool
             var developerView = ((App)Application.Current).ServiceProvider.GetRequiredService<DeveloperView>();
             ((MainWindow)Application.Current.MainWindow).NavigateTo(developerView);
         }
-
         private void AlgorithmButton_Click(object sender, RoutedEventArgs e)
         {
             var algoview = ((App)Application.Current).ServiceProvider.GetRequiredService<AlgorithmView>();
             ((MainWindow)Application.Current.MainWindow).NavigateTo(algoview);
         }
+    
 
     }
 }
