@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Navigation;
 using static Smart_Pacifier___Tool.Components.LineChartGraph;
 
 namespace Smart_Pacifier___Tool.Components
@@ -25,15 +26,19 @@ namespace Smart_Pacifier___Tool.Components
         public static readonly DependencyProperty SensorIsCheckedProperty =
             DependencyProperty.Register("SensorIsChecked", typeof(bool), typeof(SensorItem), new PropertyMetadata(false));
 
-        public static readonly DependencyProperty SensorGroupsProperty =
-            DependencyProperty.Register("SensorGroups", typeof(ObservableCollection<SensorGroup>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<SensorGroup>()));
-
         public static readonly DependencyProperty LinkedPacifiersProperty =
-            DependencyProperty.Register("LinkedPacifiers", typeof(ObservableCollection<PacifierItem>), typeof(PacifierItem), new PropertyMetadata(new ObservableCollection<PacifierItem>()));
+            DependencyProperty.Register("LinkedPacifiers", typeof(ObservableCollection<PacifierItem>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<PacifierItem>()));
+
+
+        public static readonly DependencyProperty SensorGroupsProperty =
+            DependencyProperty.Register("SensorGroups", typeof(ObservableCollection<string>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<string>()));
+
+        public static readonly DependencyProperty MeasurementGroupProperty =
+    DependencyProperty.Register("MeasurementGroup", typeof(ObservableCollection<Dictionary<string, object>>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<Dictionary<string, object>>()));
 
         // New DependencyProperty for graph data
         public static readonly DependencyProperty GraphDataProperty =
-            DependencyProperty.Register("GraphData", typeof(ObservableCollection<DataPoint>), typeof(PacifierItem), new PropertyMetadata(new ObservableCollection<DataPoint>()));
+            DependencyProperty.Register("GraphData", typeof(ObservableCollection<DataPoint>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<DataPoint>()));
 
 
         public string SensorId { get; set; }
@@ -58,19 +63,23 @@ namespace Smart_Pacifier___Tool.Components
             set { SetValue(SensorIsCheckedProperty, value); }
         }
 
-        public ObservableCollection<SensorGroup> SensorGroups
-        {
-            get { return (ObservableCollection<SensorGroup>)GetValue(SensorGroupsProperty); }
-            set { SetValue(SensorGroupsProperty, value); }
-        }
-
         public ObservableCollection<PacifierItem> LinkedPacifiers 
         {
             get { return (ObservableCollection<PacifierItem>)GetValue(LinkedPacifiersProperty); }
             set { SetValue(LinkedPacifiersProperty, value); }
-        } 
-            
+        }
 
+        public ObservableCollection<string> SensorGroups
+        {
+            get { return (ObservableCollection<string>)GetValue(SensorGroupsProperty); }
+            set { SetValue(SensorGroupsProperty, value); }
+        }
+
+        public ObservableCollection<Dictionary<string, object>> MeasurementGroup
+        {
+            get { return (ObservableCollection<Dictionary<string, object>>)GetValue(MeasurementGroupProperty); }
+            set { SetValue(MeasurementGroupProperty, value); }
+        }
 
         // Reference to the parent PacifierItem
         public PacifierItem ParentPacifierItem { get; set; } // Parent
@@ -79,11 +88,11 @@ namespace Smart_Pacifier___Tool.Components
         {
             InitializeComponent();
             SensorId = sensorId;
-            SensorGroups = new ObservableCollection<SensorGroup>();
+            MeasurementGroup = new ObservableCollection<Dictionary<string, object>>();
+            SensorGroups = new ObservableCollection<string>();
             LinkedPacifiers = new ObservableCollection<PacifierItem>(); // Track which pacifiers use this sensor
             DataContext = this;
             HasGraphs = false;
-
             ParentPacifierItem = parentPacifierItem;
 
         }
@@ -100,59 +109,6 @@ namespace Smart_Pacifier___Tool.Components
                 ToggleChanged?.Invoke(this, EventArgs.Empty);
                 SensorIsChecked = toggleButton.IsChecked == true; // Update the IsChecked property
             }
-        }
-    }
-
-    public class SensorGroup
-    {
-        public string GroupName { get; set; }
-        public MeasurementGroup MeasurementGroup { get; set; }
-
-        // Reference to the parent SensorItem
-        public SensorItem ParentSensorItem { get; set; }
-
-        public SensorGroup(string groupName, SensorItem parentSensorItem)
-        {
-            GroupName = groupName;
-
-            MeasurementGroup = new MeasurementGroup(groupName, this);
-
-            ParentSensorItem = parentSensorItem;
-        }
-
-        public SensorGroup GetSensorGroup()
-        {
-            return this;
-        }
-    }
-
-    public class MeasurementGroup(string groupName, SensorGroup parentSensorGroup)
-    {
-        public string? SensorGroup { get; set; }
-        public string GroupName { get; set; } = groupName;
-        public Dictionary<string, double> Measurements { get; set; } = new Dictionary<string, double>();
-
-        // Reference to the parent SensorGroup
-        public SensorGroup ParentSensorGroup { get; set; } = parentSensorGroup;
-
-        public MeasurementGroup GetMeasurementGroup()
-        {
-            return this;
-        }
-
-        public void AddOrUpdateMeasurement(string name, double value)
-        {
-            Measurements[name] = value;
-        }
-
-        public bool ContainsMeasurement(string name)
-        {
-            return Measurements.ContainsKey(name);
-        }
-
-        public double? GetMeasurement(string name)
-        {
-            return Measurements.TryGetValue(name, out var value) ? value : (double?)null;
         }
     }
 

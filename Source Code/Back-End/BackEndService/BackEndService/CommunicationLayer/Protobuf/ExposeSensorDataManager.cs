@@ -7,6 +7,7 @@ using Protos;
 using Google.Protobuf.Collections;
 using Google.Protobuf.Reflection;
 using InfluxData.Net.InfluxDb.Models.Responses;
+using System.Collections.ObjectModel;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 {
@@ -34,9 +35,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             }
         }
 
-        public (string pacifierId, string sensorType, List<Dictionary<string, object>> parsedData) ParseSensorData(byte[] data)
+        public (string pacifierId, string sensorType, ObservableCollection<Dictionary<string, object>> parsedData) ParseSensorData(byte[] data)
         {
-            var parsedData = new List<Dictionary<string, object>>();
+            var parsedData = new ObservableCollection<Dictionary<string, object>>();
             var pacifierId = "defaultPacifier";
             var sensorType = "defaultSensor";
 
@@ -155,9 +156,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             return null;
         }
 
-        private List<Dictionary<string, object>> CollectFieldDescriptors(MessageDescriptor messageDescriptor, Dictionary<string, FieldDescriptor> fieldDescriptorMap, MapField<string, ByteString> sensorDataDictionary)
+        private ObservableCollection<Dictionary<string, object>> CollectFieldDescriptors(MessageDescriptor messageDescriptor, Dictionary<string, FieldDescriptor> fieldDescriptorMap, MapField<string, ByteString> sensorDataDictionary)
         {
-            var result = new List<Dictionary<string, object>>();  // List of dictionaries to hold the final result
+            var result = new ObservableCollection<Dictionary<string, object>>();  // List of dictionaries to hold the final result
             var groupDictionary = new Dictionary<string, object>();  // Temporary dictionary to hold each field and its value
 
             // Iterate through all fields in the message descriptor
