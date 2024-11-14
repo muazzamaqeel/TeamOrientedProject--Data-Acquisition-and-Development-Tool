@@ -101,7 +101,7 @@ namespace Smart_Pacifier___Tool
 
 
 
-
+            /*
             //ExecutePythonScript();
             var config = LoadDatabaseConfiguration();
             string scriptName = config.PythonScript?.FileName ?? "python1.py"; // Default to "python1.py" if not specified
@@ -115,6 +115,8 @@ namespace Smart_Pacifier___Tool
             {
                 MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+            */
         }
 
         /// <summary>
@@ -169,6 +171,7 @@ namespace Smart_Pacifier___Tool
             });
 
             //Register PythonScriptEngine as IAlgorithmLayer
+            services.AddSingleton<IAlgorithmLayer>(sp => PythonScriptEngine.GetInstance());
             services.AddSingleton<IAlgorithmLayer>(sp => PythonScriptEngine.GetInstance());
 
             // Register other necessary services

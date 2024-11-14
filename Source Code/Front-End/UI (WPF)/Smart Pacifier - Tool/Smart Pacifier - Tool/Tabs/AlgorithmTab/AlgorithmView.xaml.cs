@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
@@ -12,18 +13,18 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
     public partial class AlgorithmView : UserControl, INotifyPropertyChanged
     {
         private readonly IDatabaseService _databaseService;
-        private readonly IAlgorithmLayer _algorithmLayer;
         private readonly IManagerCampaign _managerCampaign;
+        private readonly IAlgorithmLayer _algorithmLayer;
 
         public ObservableCollection<Campaign> Campaigns { get; set; } = new ObservableCollection<Campaign>();
         private Dictionary<string, Campaign> campaignDataMap = new Dictionary<string, Campaign>();
 
-        public AlgorithmView(IDatabaseService databaseService, IAlgorithmLayer algorithmLayer, IManagerCampaign managerCampaign)
+        public AlgorithmView(IDatabaseService databaseService, IManagerCampaign managerCampaign, IAlgorithmLayer algorithmLayer)
         {
             InitializeComponent();
             _databaseService = databaseService;
-            _algorithmLayer = algorithmLayer;
             _managerCampaign = managerCampaign;
+            _algorithmLayer = algorithmLayer;
 
             DataContext = this;
 
@@ -101,23 +102,16 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
         {
             if (sender is Button button && button.DataContext is Campaign selectedCampaign)
             {
-                // Perform action when a campaign is clicked
-                // For example, run the algorithm for the selected campaign
-                RunAlgorithmForCampaign(selectedCampaign);
-            }
-        }
+                // Navigate to AlgorithmsInternal, passing the campaign name, database object, and algorithm layer
+                var algorithmsInternal = new AlgorithmsInternal(selectedCampaign.CampaignName, _databaseService, _algorithmLayer);
 
-        private void RunAlgorithmForCampaign(Campaign selectedCampaign)
-        {
-            // Navigate to AlgorithmsInternal, passing the campaign name and database object
-            var algorithmsInternal = new AlgorithmsInternal(selectedCampaign.CampaignName, _databaseService);
-
-            // Get a reference to MainWindow
-            var mainWindow = Application.Current.MainWindow as MainWindow;
-            if (mainWindow != null)
-            {
-                // Use NavigateTo to replace the content in ContentArea with AlgorithmsInternal
-                mainWindow.NavigateTo(algorithmsInternal);
+                // Get a reference to MainWindow
+                var mainWindow = Application.Current.MainWindow as MainWindow;
+                if (mainWindow != null)
+                {
+                    // Use NavigateTo to replace the content in ContentArea with AlgorithmsInternal
+                    mainWindow.NavigateTo(algorithmsInternal);
+                }
             }
         }
 

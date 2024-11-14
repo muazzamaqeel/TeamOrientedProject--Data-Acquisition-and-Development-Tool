@@ -2,6 +2,6 @@
 {
     public interface IAlgorithmLayer
     {
-        string ExecuteScript(string pythonCode);
+        string ExecuteScript(string scriptNameOrCode, string campaignName);
     }
 }

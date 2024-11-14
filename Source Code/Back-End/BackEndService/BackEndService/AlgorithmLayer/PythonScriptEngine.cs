@@ -1,8 +1,8 @@
 ﻿using SmartPacifier.Interface.Services;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using Newtonsoft.Json.Linq;
 
 public class PythonScriptEngine : IAlgorithmLayer
 {
@@ -26,7 +26,7 @@ public class PythonScriptEngine : IAlgorithmLayer
         return _instance;
     }
 
-    public string ExecuteScript(string scriptNameOrCode)
+    public string ExecuteScript(string scriptNameOrCode, string campaignName)
     {
         try
         {
@@ -60,7 +60,7 @@ public class PythonScriptEngine : IAlgorithmLayer
             var startInfo = new ProcessStartInfo
             {
                 FileName = "python",
-                Arguments = scriptPath != null ? $"\"{scriptPath}\"" : $"-c \"{scriptNameOrCode}\"",
+                Arguments = scriptPath != null ? $"\"{scriptPath}\" \"{campaignName}\"" : $"-c \"{scriptNameOrCode}\" \"{campaignName}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,

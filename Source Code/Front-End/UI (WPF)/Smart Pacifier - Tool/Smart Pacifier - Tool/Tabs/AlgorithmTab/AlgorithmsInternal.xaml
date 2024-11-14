@@ -6,7 +6,35 @@
              xmlns:local="clr-namespace:Smart_Pacifier___Tool.Tabs.AlgorithmTab"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-        <!-- Your UI elements go here -->
+    <Grid Background="{StaticResource MainViewBackgroundColor}">
+        <!-- Header Section -->
+        <Grid Background="{StaticResource AccentColor}" Height="70" VerticalAlignment="Top">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding CampaignName, StringFormat='Algorithm Execution for {0}'}"
+                           Foreground="White" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Main Content -->
+        <Grid Margin="10,80,10,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="2*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Side: Output Display -->
+            <StackPanel Grid.Column="0" Margin="5">
+                <TextBlock Text="Script Output:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
+                <TextBox x:Name="ScriptOutputTextBox" Text="{Binding ScriptOutput}" IsReadOnly="True" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" TextWrapping="Wrap" Background="{StaticResource MainViewSecondaryBackgroundColor}" Foreground="{StaticResource MainViewForegroundColor}" />
+            </StackPanel>
+
+            <!-- Right Side: Script Selection and Run Button -->
+            <StackPanel Grid.Column="1" Margin="5" VerticalAlignment="Top">
+                <!-- ComboBox to select Python script -->
+                <ComboBox x:Name="ScriptComboBox" Width="200" Margin="5" ItemsSource="{Binding PythonScripts}" SelectedItem="{Binding SelectedScript}" />
+                <!-- Run Script Button -->
+                <Button Content="Run Script" Width="100" Height="30" Margin="5" Click="RunScriptButton_Click" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>
