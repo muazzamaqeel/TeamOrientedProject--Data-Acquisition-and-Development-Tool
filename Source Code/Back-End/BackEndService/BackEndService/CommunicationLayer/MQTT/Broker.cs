@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -171,9 +172,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             public byte[] Payload { get; set; }
             public string PacifierId { get; set; }
             public string SensorType { get; set; }
-            public List<Dictionary<string, object>> ParsedData { get; set; }
+            public ObservableCollection<Dictionary<string, object>> ParsedData { get; set; }
 
-            public MessageReceivedEventArgs(string topic, byte[] payload, string pacifierId, string sensorType, List<Dictionary<string, object>> parsedData)
+            public MessageReceivedEventArgs(string topic, byte[] payload, string pacifierId, string sensorType, ObservableCollection<Dictionary<string, object>> parsedData)
             {
                 Topic = topic;
                 Payload = payload;

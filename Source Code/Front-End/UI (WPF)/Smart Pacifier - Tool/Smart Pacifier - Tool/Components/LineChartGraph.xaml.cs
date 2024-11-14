@@ -62,16 +62,13 @@ namespace Smart_Pacifier___Tool.Components
         /// <summary>
         /// Initializes a new instance of the <see cref="LineChartGraph"/> class.
         /// </summary>
-        /// <param name="sensorGroup">The sensor group.</param>
         /// <param name="plotId">The plot ID.</param>
         /// <param name="interval">The interval for data points.</param>
-        public LineChartGraph(SensorGroup sensorGroup, string plotId, double interval)
+        public LineChartGraph(SensorItem sensorItem, double interval)
         {
             InitializeComponent();
 
             // Default values
-            GroupName = sensorGroup.GroupName;
-            PlotId = plotId;
             Interval = interval;
 
             // Initialize the PlotModel and LineSeries
