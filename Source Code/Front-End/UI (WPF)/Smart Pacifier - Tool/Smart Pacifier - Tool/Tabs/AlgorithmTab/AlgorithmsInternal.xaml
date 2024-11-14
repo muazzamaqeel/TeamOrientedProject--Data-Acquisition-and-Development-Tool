@@ -18,18 +18,17 @@
         <!-- Main Content -->
         <Grid Margin="10,80,10,10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*" />
-                <ColumnDefinition Width="2*" />
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
 
             <!-- Left Side: Output Display -->
-            <StackPanel Grid.Column="0" Margin="5">
+            <StackPanel Grid.Column="0" Margin="322,0,0,10">
                 <TextBlock Text="Script Output:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
-                <TextBox x:Name="ScriptOutputTextBox" Text="{Binding ScriptOutput}" IsReadOnly="True" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" TextWrapping="Wrap" Background="{StaticResource MainViewSecondaryBackgroundColor}" Foreground="{StaticResource MainViewForegroundColor}" />
+                <TextBox x:Name="ScriptOutputTextBox" Text="{Binding ScriptOutput}" IsReadOnly="True" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" TextWrapping="Wrap" Background="{StaticResource MainViewSecondaryBackgroundColor}" Foreground="{StaticResource MainViewForegroundColor}" Height="324" />
             </StackPanel>
 
             <!-- Right Side: Script Selection and Run Button -->
-            <StackPanel Grid.Column="1" Margin="5" VerticalAlignment="Top">
+            <StackPanel Margin="0,24,458,0" VerticalAlignment="Top">
                 <!-- ComboBox to select Python script -->
                 <ComboBox x:Name="ScriptComboBox" Width="200" Margin="5" ItemsSource="{Binding PythonScripts}" SelectedItem="{Binding SelectedScript}" />
                 <!-- Run Script Button -->
