@@ -28,10 +28,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         public ObservableCollection<PacifierItem> _checkedPacifierItems = new ObservableCollection<PacifierItem>();
         public ObservableCollection<SensorItem> _checkedSensorItems = new ObservableCollection<SensorItem>();
 
-        // Maps for storing grid and row references
-        public Dictionary<PacifierItem, Grid> PacifierGridMap = new Dictionary<PacifierItem, Grid>();
-        public Dictionary<Tuple<PacifierItem, SensorItem>, RowDefinition> SensorRowMap = new Dictionary<Tuple<PacifierItem, SensorItem>, RowDefinition>();
-
         // Dictionary mapping PacifierItem to its associated sensors
         public Dictionary<PacifierItem, ObservableCollection<SensorItem>> PacifierToSensorsMap = new Dictionary<PacifierItem, ObservableCollection<SensorItem>>();
         // Dictionary mapping SensorItem to its associated pacifiers
@@ -190,26 +186,26 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
                         if (pacifierItem != null && pacifierItem.IsChecked)
                         {
-                            Debug.WriteLine($"FirstOrDefault Pacifier_{pacifierItem.PacifierId}");
+                            //Debug.WriteLine($"FirstOrDefault Pacifier_{pacifierItem.PacifierId}");
                             // Find or create the SensorItem for the given sensor type
                             var sensorItem = SensorItems.FirstOrDefault(s => s.SensorId == e.SensorType);
 
                             if (sensorItem == null)
                             {
-                                Debug.WriteLine($"Add Sensor_{e.SensorType}");
+                                //Debug.WriteLine($"Add Sensor_{e.SensorType}");
                                 // Add a new sensor item if it doesn't exist
                                 sensorItem = new SensorItem(e.SensorType, pacifierItem);
                                 pacifierItem.Sensors.Add(sensorItem);
                             }
                             else if (sensorItem.SensorIsChecked)
                             {
-                                Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
+                                //Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
                                 if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))
                                 {
-                                    Debug.WriteLine($"Linked Pacifier_{pacifierItem.PacifierId} to Sensor_{sensorItem.SensorId}");
+                                    //Debug.WriteLine($"Linked Pacifier_{pacifierItem.PacifierId} to Sensor_{sensorItem.SensorId}");
                                     sensorItem.LinkedPacifiers.Add(pacifierItem);
                                 }
-                                Debug.WriteLine($"Selected Sensor_{e.SensorType}");
+                                //Debug.WriteLine($"Selected Sensor_{e.SensorType}");
 
                                 // Add the entire list of dictionaries to the SensorItem
                                 sensorItem.MeasurementGroup.Clear();
@@ -222,14 +218,14 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                             }
                             else
                             {
-                                Debug.WriteLine($"Is Not Checked: Sensor_{sensorItem.SensorId}");
+                                //Debug.WriteLine($"Is Not Checked: Sensor_{sensorItem.SensorId}");
                             }
 
                         }
                         else
                         {
                             // Optionally log if the pacifier item was not found or is not checked
-                             Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found or not checked.");
+                             //Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found or not checked.");
                         }
                     });
                 }
