@@ -13,6 +13,7 @@ using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.CampaignsTab;
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using System.Configuration;
@@ -177,6 +178,7 @@ namespace Smart_Pacifier___Tool
             services.AddSingleton<IManagerSensors, ManagerSensors>();
             services.AddSingleton<MainWindow>();
             services.AddSingleton<DeveloperView>();
+            services.AddTransient<AlgorithmView>();
             services.AddSingleton<IBrokerMain, BrokerMain>();
 
             // UI component registration
