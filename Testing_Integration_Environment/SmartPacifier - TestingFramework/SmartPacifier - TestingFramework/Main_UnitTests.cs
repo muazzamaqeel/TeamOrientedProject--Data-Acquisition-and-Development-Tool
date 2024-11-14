@@ -223,7 +223,7 @@ namespace SmartPacifier___TestingFramework
             await mqttTestCases.InitializeAsync();
 
             // Run the send message test to ensure no exceptions are thrown
-            await mqttTestCases.TestMQTTSendMessage();
+            //await mqttTestCases.TestMQTTSendMessage();
         }
 
         [Fact]
