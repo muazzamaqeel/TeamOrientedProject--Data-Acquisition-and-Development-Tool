@@ -38,17 +38,15 @@
             <!-- Right Side: Output Display -->
             <StackPanel Grid.Column="1" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Top">
                 <TextBlock Text="Script Output:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
-                <TextBox x:Name="ScriptOutputTextBox" 
-                         Text="{Binding ScriptOutput}" 
+                <TextBox x:Name="ScriptOutputTextBox" Text="{Binding ScriptOutput}" 
                          IsReadOnly="True" 
                          VerticalScrollBarVisibility="Auto" 
+                         HorizontalScrollBarVisibility="Auto" 
                          AcceptsReturn="True" 
                          TextWrapping="Wrap" 
                          Background="{StaticResource MainViewSecondaryBackgroundColor}" 
                          Foreground="{StaticResource MainViewForegroundColor}" 
-                         FontSize="14" 
-                         Padding="10" 
-                         Height="500"/>
+                         Height="324" />
             </StackPanel>
         </Grid>
     </Grid>

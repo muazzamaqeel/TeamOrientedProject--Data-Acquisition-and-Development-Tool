@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -78,7 +79,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
             }
         }
 
-        private void RunScriptButton_Click(object sender, RoutedEventArgs e)
+        private async void RunScriptButton_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(SelectedScript))
             {
@@ -88,8 +89,36 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
 
             try
             {
-                // Execute the script, passing the campaign name as an argument
-                string result = _algorithmLayer.ExecuteScript(SelectedScript, _campaignName);
+                // Retrieve the actual campaign data from the database as line protocol data
+                var campaignData = await _databaseService.GetCampaignDataAlgorithmLayerAsync(_campaignName);
+
+                if (campaignData == null || campaignData.Count == 0)
+                {
+                    MessageBox.Show("No data found for the selected campaign.", "Data Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Convert data to line protocol format and write to a temporary file
+                var lines = new List<string>();
+                foreach (var kvp in campaignData)
+                {
+                    lines.Add($"{kvp.Key}: {kvp.Value}");
+                }
+
+                // Define the path to the temporary data file
+                var tempFilePath = Path.GetTempFileName();
+                File.WriteAllLines(tempFilePath, lines);
+
+                // Construct the full path to the Python script
+                var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                var scriptsDirectory = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript");
+                var scriptPath = Path.Combine(scriptsDirectory, SelectedScript);
+
+                // Confirm data was written to the file and the script path for debugging
+                MessageBox.Show($"Data written to file: {tempFilePath}\nScript Path: {scriptPath}", "Debug Info", MessageBoxButton.OK);
+
+                // Execute the Python script, passing the file path as an argument
+                string result = _algorithmLayer.ExecuteScript(scriptPath, tempFilePath);
                 ScriptOutput = result;
             }
             catch (Exception ex)

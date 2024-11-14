@@ -264,7 +264,57 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         }
 
 
+        public async Task<Dictionary<string, object>> GetCampaignDataAlgorithmLayerAsync(string campaignName)
+        {
+            var campaignData = new Dictionary<string, object>
+            {
+                { "campaignName", campaignName },
+                { "pacifiers", new List<Dictionary<string, object>>() }
+            };
 
+            var fluxQuery = $@"
+                from(bucket: ""{_bucket}"")
+                |> range(start: -30d)
+                |> filter(fn: (r) => r._measurement == ""sensor_data"" and r.campaign_name == ""{campaignName}"")
+                |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
+            ";
+
+            var queryApi = _client.GetQueryApi();
+            var tables = await queryApi.QueryAsync(fluxQuery, _org);
+
+            var pacifiers = (List<Dictionary<string, object>>)campaignData["pacifiers"];
+
+            foreach (var table in tables)
+            {
+                foreach (var record in table.Records)
+                {
+                    var pacifierData = new Dictionary<string, object>
+                    {
+                        { "name", record.GetValueByKey("pacifier_name")?.ToString() ?? "Unknown" },
+                        { "sensors", new List<Dictionary<string, object>>() }
+                    };
+
+                    var sensorData = new Dictionary<string, object>
+                    {
+                        { "type", record.GetValueByKey("sensor_type")?.ToString() ?? "Unknown" },
+                        { "data", new Dictionary<string, object>() }
+                    };
+
+                    foreach (var key in record.Values.Keys)
+                    {
+                        if (!key.StartsWith("_") && key != "campaign_name" && key != "pacifier_name" && key != "sensor_type")
+                        {
+                            ((Dictionary<string, object>)sensorData["data"])[key] = record.GetValueByKey(key);
+                        }
+                    }
+
+                    ((List<Dictionary<string, object>>)pacifierData["sensors"]).Add(sensorData);
+                    pacifiers.Add(pacifierData);
+                }
+            }
+
+            return campaignData;
+        }
 
     }
 }
