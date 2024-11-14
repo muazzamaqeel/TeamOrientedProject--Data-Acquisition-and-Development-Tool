@@ -25,7 +25,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Button Width="200" Height="100" Margin="5" Click="CampaignButton_Click" Background="{StaticResource MainViewSecondaryBackgroundColor}" Foreground="{StaticResource MainViewForegroundColor}">
+                        <Button Width="200" Height="100" Margin="5" Style="{StaticResource ModernButtonStyle}" Click="CampaignButton_Click" Background="{StaticResource MainViewSecondaryBackgroundColor}" Foreground="{StaticResource MainViewForegroundColor}">
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding CampaignName}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{Binding TimeRange}" FontSize="12" HorizontalAlignment="Center"/>
