@@ -100,7 +100,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
             if (sender is Button button && button.DataContext is Campaign selectedCampaign)
             {
                 // Navigate to AlgorithmsInternal, passing the campaign name and database service
-                var algorithmsInternal = new AlgorithmsInternal(selectedCampaign.CampaignName, _databaseService);
+                var algorithmsInternal = new AlgoDatabase(selectedCampaign.CampaignName, _databaseService);
 
                 // Get a reference to MainWindow
                 var mainWindow = Application.Current.MainWindow as MainWindow;

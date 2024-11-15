@@ -9,7 +9,7 @@ using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
 {
-    public partial class AlgorithmsInternal : UserControl, INotifyPropertyChanged
+    public partial class AlgoDatabase : UserControl, INotifyPropertyChanged
     {
         private readonly string _campaignName;
         private readonly IDatabaseService _databaseService;
@@ -44,7 +44,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
 
         public string CampaignName => _campaignName;
 
-        public AlgorithmsInternal(string campaignName, IDatabaseService databaseService)
+        public AlgoDatabase(string campaignName, IDatabaseService databaseService)
         {
             InitializeComponent();
             pythonScriptEngine = new PythonScriptEngine(); // Initialize the PythonScriptEngine
