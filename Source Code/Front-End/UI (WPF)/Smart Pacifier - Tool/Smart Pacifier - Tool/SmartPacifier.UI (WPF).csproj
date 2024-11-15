@@ -12,12 +12,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\SmartPacifier.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Resources\OutputResources\config.json" />
     <None Remove="Resources\OutputResources\TeamKey.pem" />
     <None Remove="Tabs\SettingsTab\.pem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\SmartPacifier.ico" />
   </ItemGroup>
 
   <ItemGroup>
