@@ -21,7 +21,7 @@ using System.IO;
 using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra;
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
@@ -183,6 +183,7 @@ namespace Smart_Pacifier___Tool
             services.AddSingleton<MainWindow>();
             services.AddSingleton<DeveloperView>();
             services.AddTransient<AlgorithmView>();
+            services.AddTransient<AlgoSelection>();
             services.AddSingleton<IBrokerMain, BrokerMain>();
 
             // UI component registration

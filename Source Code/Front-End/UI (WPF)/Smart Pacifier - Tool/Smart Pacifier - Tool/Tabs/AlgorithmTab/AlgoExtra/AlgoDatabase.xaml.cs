@@ -2,167 +2,131 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using SmartPacifier.Interface.Services;
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra;
 
 namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 {
-    public partial class AlgoDatabase : UserControl, INotifyPropertyChanged
+    public partial class AlgorithmView : UserControl, INotifyPropertyChanged
     {
-        private readonly string _campaignName;
         private readonly IDatabaseService _databaseService;
-        private readonly PythonScriptEngine _pythonScriptEngine;
-        public event PropertyChangedEventHandler PropertyChanged;
-        private readonly PythonScriptEngine pythonScriptEngine;
+        private readonly IManagerCampaign _managerCampaign;
 
-        // Properties for script selection and output
-        public ObservableCollection<string> PythonScripts { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<Campaign> Campaigns { get; set; } = new ObservableCollection<Campaign>();
+        private Dictionary<string, Campaign> campaignDataMap = new Dictionary<string, Campaign>();
 
-        private string _selectedScript;
-        public string SelectedScript
-        {
-            get => _selectedScript;
-            set
-            {
-                _selectedScript = value;
-                OnPropertyChanged(nameof(SelectedScript));
-            }
-        }
-
-        private string _scriptOutput;
-        public string ScriptOutput
-        {
-            get => _scriptOutput;
-            set
-            {
-                _scriptOutput = value;
-                OnPropertyChanged(nameof(ScriptOutput));
-            }
-        }
-
-        public string CampaignName => _campaignName;
-
-        public AlgoDatabase(string campaignName, IDatabaseService databaseService)
+        public AlgorithmView(IDatabaseService databaseService, IManagerCampaign managerCampaign)
         {
             InitializeComponent();
-            pythonScriptEngine = new PythonScriptEngine(); // Initialize the PythonScriptEngine
-            _campaignName = campaignName;
             _databaseService = databaseService;
-
-            // Instantiate PythonScriptEngine directly
-            _pythonScriptEngine = new PythonScriptEngine();
+            _managerCampaign = managerCampaign;
 
             DataContext = this;
 
-            LoadAvailableScripts();
+            LoadCampaignData();
         }
 
-        // Load available Python scripts into the ComboBox
-        private void LoadAvailableScripts()
+        private async void LoadCampaignData()
         {
-            var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string scriptsDirectory = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript");
-            scriptsDirectory = Path.GetFullPath(scriptsDirectory);
+            var csvData = await _managerCampaign.GetCampaignDataAsCSVAsync();
+            var lines = csvData.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
 
-            if (Directory.Exists(scriptsDirectory))
+            campaignDataMap.Clear();
+            StringBuilder outputLog = new StringBuilder("Processing Campaign Data:\n");
+
+            foreach (var line in lines.Skip(1))
             {
-                var scriptFiles = Directory.GetFiles(scriptsDirectory, "*.py");
-                foreach (var script in scriptFiles)
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                var columns = line.Split(',');
+
+                if (columns.Length < 4) continue;
+
+                var campaignName = columns[0];
+                var status = columns[1];
+                var startTimeStr = columns[2];
+                var endTimeStr = columns[3];
+
+                if (!campaignDataMap.ContainsKey(campaignName))
                 {
-                    PythonScripts.Add(Path.GetFileName(script));
+                    campaignDataMap[campaignName] = new Campaign
+                    {
+                        CampaignName = campaignName,
+                        PacifierCount = 0,
+                        Date = "N/A",
+                        TimeRange = "N/A"
+                    };
+                }
+
+                var campaign = campaignDataMap[campaignName];
+                outputLog.AppendLine($"Processing {campaignName} with status {status}");
+
+                // Format and set TimeRange based on start and end times
+                DateTime.TryParse(startTimeStr, out var campaignStart);
+                DateTime.TryParse(endTimeStr, out var campaignEnd);
+
+                if (!string.IsNullOrWhiteSpace(startTimeStr) && !string.IsNullOrWhiteSpace(endTimeStr))
+                {
+                    campaign.TimeRange = $"{campaignStart:MM/dd/yyyy HH:mm:ss} - {campaignEnd:MM/dd/yyyy HH:mm:ss}";
+                }
+                else if (!string.IsNullOrWhiteSpace(startTimeStr))
+                {
+                    campaign.TimeRange = $"{campaignStart:MM/dd/yyyy HH:mm:ss} - N/A";
+                }
+                else if (!string.IsNullOrWhiteSpace(endTimeStr))
+                {
+                    campaign.TimeRange = $"N/A - {campaignEnd:MM/dd/yyyy HH:mm:ss}";
                 }
             }
-            else
-            {
-                MessageBox.Show($"Scripts directory not found at: {scriptsDirectory}", "Directory Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
 
-            if (PythonScripts.Count > 0)
-            {
-                SelectedScript = PythonScripts[0];
-            }
+            UpdateCampaignsList();
         }
 
-        private async void RunScriptButton_Click(object sender, RoutedEventArgs e)
+        private void UpdateCampaignsList()
         {
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "algorithm_debug_log.txt");
-
-            try
+            Campaigns.Clear();
+            foreach (var campaign in campaignDataMap.Values)
             {
-                File.AppendAllText(logPath, "RunScriptButton_Click started\n");
-
-                if (string.IsNullOrEmpty(SelectedScript))
-                {
-                    File.AppendAllText(logPath, "No script selected\n");
-                    MessageBox.Show("Please select a script to run.", "No Script Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                File.AppendAllText(logPath, $"Selected Script: {SelectedScript}\n");
-
-                // Retrieve the campaign data from the database
-                var campaignData = await _databaseService.GetCampaignDataAlgorithmLayerAsync(_campaignName);
-                File.AppendAllText(logPath, "Campaign data retrieved from database\n");
-
-                if (campaignData == null || campaignData.Count == 0)
-                {
-                    File.AppendAllText(logPath, "No data found for the selected campaign\n");
-                    MessageBox.Show("No data found for the selected campaign.", "Data Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // Convert campaign data to JSON format
-                var campaignDataJson = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    CampaignName = _campaignName,
-                    Pacifiers = campaignData
-                });
-                File.AppendAllText(logPath, "Campaign data converted to JSON format\n");
-
-                // Construct the full path to the Python script
-                var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                var scriptsDirectory = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript");
-                var scriptPath = Path.Combine(scriptsDirectory, SelectedScript);
-
-                if (!File.Exists(scriptPath))
-                {
-                    string errorMsg = $"Script file not found at path: {scriptPath}";
-                    File.AppendAllText(logPath, errorMsg + "\n");
-                    MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                File.AppendAllText(logPath, $"Script path confirmed: {scriptPath}\n");
-                MessageBox.Show($"Script path confirmed: {scriptPath}", "Path Confirmed", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                // Execute the Python script, passing the JSON data as an argument
-                string result = await pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, campaignDataJson);
-                File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
-
-                // Save result to a text file
-                string resultFilePath = Path.Combine(baseDirectory, "PythonScriptResult.txt");
-                File.WriteAllText(resultFilePath, result);
-                File.AppendAllText(logPath, $"Result saved to {resultFilePath}\n");
-
-                // Update the UI with the result
-                ScriptOutput = result;
-                MessageBox.Show("Python script execution completed. Check output for details.", "Execution Completed", MessageBoxButton.OK, MessageBoxImage.Information);
+                Campaigns.Add(campaign);
             }
-            catch (Exception ex)
+
+            OnPropertyChanged(nameof(Campaigns));
+        }
+
+        private void CampaignButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.DataContext is Campaign selectedCampaign)
             {
-                string errorMsg = $"Error executing Python script: {ex.Message}";
-                File.AppendAllText(logPath, errorMsg + "\nDetails:\n" + ex.StackTrace);
-                MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Navigate to AlgorithmsInternal, passing the campaign name and database service
+                var algorithmsInternal = new AlgoDatabase(selectedCampaign.CampaignName, _databaseService);
+
+                // Get a reference to MainWindow
+                var mainWindow = Application.Current.MainWindow as MainWindow;
+                if (mainWindow != null)
+                {
+                    // Use NavigateTo to replace the content in ContentArea with AlgorithmsInternal
+                    mainWindow.NavigateTo(algorithmsInternal);
+                }
             }
         }
 
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        // Raise the PropertyChanged event to notify the UI about property updates
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+    }
+
+    // Define the Campaign class
+    public class Campaign
+    {
+        public string CampaignName { get; set; } = string.Empty;
+        public int PacifierCount { get; set; }
+        public string Date { get; set; } = string.Empty;
+        public string TimeRange { get; set; } = string.Empty;
     }
 }
