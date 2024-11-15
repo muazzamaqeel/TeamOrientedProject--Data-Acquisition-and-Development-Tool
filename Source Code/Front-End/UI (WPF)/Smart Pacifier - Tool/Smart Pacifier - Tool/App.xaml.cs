@@ -171,8 +171,9 @@ namespace Smart_Pacifier___Tool
             });
 
             //Register PythonScriptEngine as IAlgorithmLayer
-            services.AddSingleton<IAlgorithmLayer>(sp => PythonScriptEngine.GetInstance());
-            services.AddSingleton<IAlgorithmLayer>(sp => PythonScriptEngine.GetInstance());
+            // Correct registration using the class constructor
+            //services.AddSingleton<IAlgorithmLayer, PythonScriptEngine>();
+
 
             // Register other necessary services
             services.AddSingleton<ILocalHost, LocalHostSetup>();

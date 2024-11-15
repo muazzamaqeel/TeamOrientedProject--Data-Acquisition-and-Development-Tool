@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Extensions.DependencyInjection;
 using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
@@ -14,17 +13,15 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
     {
         private readonly IDatabaseService _databaseService;
         private readonly IManagerCampaign _managerCampaign;
-        private readonly IAlgorithmLayer _algorithmLayer;
 
         public ObservableCollection<Campaign> Campaigns { get; set; } = new ObservableCollection<Campaign>();
         private Dictionary<string, Campaign> campaignDataMap = new Dictionary<string, Campaign>();
 
-        public AlgorithmView(IDatabaseService databaseService, IManagerCampaign managerCampaign, IAlgorithmLayer algorithmLayer)
+        public AlgorithmView(IDatabaseService databaseService, IManagerCampaign managerCampaign)
         {
             InitializeComponent();
             _databaseService = databaseService;
             _managerCampaign = managerCampaign;
-            _algorithmLayer = algorithmLayer;
 
             DataContext = this;
 
@@ -102,8 +99,8 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
         {
             if (sender is Button button && button.DataContext is Campaign selectedCampaign)
             {
-                // Navigate to AlgorithmsInternal, passing the campaign name, database object, and algorithm layer
-                var algorithmsInternal = new AlgorithmsInternal(selectedCampaign.CampaignName, _databaseService, _algorithmLayer);
+                // Navigate to AlgorithmsInternal, passing the campaign name and database service
+                var algorithmsInternal = new AlgorithmsInternal(selectedCampaign.CampaignName, _databaseService);
 
                 // Get a reference to MainWindow
                 var mainWindow = Application.Current.MainWindow as MainWindow;

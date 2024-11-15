@@ -1,5 +1,0 @@
-Reading from file: C:\Users\muazz\AppData\Local\Temp\campaign_data.json
-Loaded campaign data successfully.
-Processing Line: C:\programming\TeamOrientedProject---Smart-Pacifier\Source Code\Front-End\UI (WPF)\Smart Pacifier - Tool\Smart Pacifier - Tool\bin\Debug\net8.0-windows\campaign_data.txt
-Skipping non-protocol line.
-Data saved to C:\Users\muazz\AppData\Local\Temp\script_output.txt

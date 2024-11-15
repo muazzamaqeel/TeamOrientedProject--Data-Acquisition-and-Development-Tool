@@ -18,6 +18,31 @@
     <Page Remove="NewFolder\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="AlgorithmLayer\lib\Python.Runtime.dll" />
+    <None Remove="AlgorithmLayer\lib\python310.dll" />
+    <None Remove="AlgorithmLayer\lib\python311.dll" />
+    <None Remove="AlgorithmLayer\lib\python313.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="AlgorithmLayer\lib\Python.Runtime.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AlgorithmLayer\lib\python311.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="AlgorithmLayer\lib\python310.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AlgorithmLayer\lib\python313.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
  
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.1" />
@@ -34,6 +59,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2849.39" />
     <PackageReference Include="Python.Runtime" Version="2.7.9" />
+    <PackageReference Include="pythonnet" Version="3.0.4" />
     <PackageReference Include="YamlDotNet" Version="16.1.3" />
   </ItemGroup>
 

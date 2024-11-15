@@ -1,67 +1,100 @@
-﻿using SmartPacifier.Interface.Services;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 
-public class PythonScriptEngine : IAlgorithmLayer
+public class PythonScriptEngine
 {
-    private static PythonScriptEngine? _instance;
-    private static readonly object _lock = new object();
-
-    private PythonScriptEngine() { }
-
-    public static PythonScriptEngine GetInstance()
+    public async Task<string> ExecuteScriptAsync(string scriptPath, string campaignDataJson)
     {
-        if (_instance == null)
+        string debugLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "execute_script_debug_log.txt");
+        File.AppendAllText(debugLogPath, "Starting ExecuteScriptAsync with Process approach\n");
+
+        string pythonExePath = "python"; // Ensure Python is accessible in the PATH
+        string resultFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "python_script_output.txt");
+
+        MessageBox.Show(scriptPath);
+
+
+        if (!File.Exists(scriptPath))
         {
-            lock (_lock)
+            string errorMsg = $"Python script file not found at path:\n{scriptPath}";
+            File.AppendAllText(debugLogPath, errorMsg + "\n");
+            MessageBox.Show(errorMsg, "Script Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+            return $"Error: Python script file not found at path:\n{scriptPath}";
+        }
+
+        File.AppendAllText(debugLogPath, $"Script path confirmed: {scriptPath}\n");
+
+        return await Task.Run(() =>
+        {
+            try
             {
-                if (_instance == null)
+                ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    _instance = new PythonScriptEngine();
+                    FileName = pythonExePath,
+                    Arguments = $"\"{scriptPath}\" \"{campaignDataJson}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                File.AppendAllText(debugLogPath, $"Starting Python process with arguments: {psi.Arguments}\n");
+
+                using (Process process = new Process { StartInfo = psi })
+                {
+                    process.Start();
+
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
+
+                    process.WaitForExit();
+
+                    // Log that the script execution completed
+                    File.AppendAllText(debugLogPath, "Python script executed.\n");
+
+                    if (!string.IsNullOrWhiteSpace(output))
+                    {
+                        File.AppendAllText(debugLogPath, "Python script output:\n" + output + "\n");
+                    }
+                    else
+                    {
+                        File.AppendAllText(debugLogPath, "Python script produced no standard output.\n");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(error))
+                    {
+                        File.AppendAllText(debugLogPath, "Python script error:\n" + error + "\n");
+                    }
+
+                    string result = !string.IsNullOrWhiteSpace(output) ? output : error;
+
+                    // Save the output to a text file
+                    File.WriteAllText(resultFilePath, result);
+                    File.AppendAllText(debugLogPath, $"Python script output saved to file: {resultFilePath}\n");
+
+                    // Display the result in a message box
+                    MessageBox.Show("Script executed and saved output. Check the log file for details.", "Execution Completed", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Open the output file in the default editor
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = resultFilePath,
+                        UseShellExecute = true
+                    });
+
+                    return result;
                 }
             }
-        }
-        return _instance;
-    }
-
-    public string ExecuteScript(string scriptName, string filePath)
-    {
-        try
-        {
-            var startInfo = new ProcessStartInfo
+            catch (Exception ex)
             {
-                FileName = "python",
-                Arguments = $"\"{scriptName}\" \"{filePath}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using (var process = Process.Start(startInfo))
-            {
-                if (process == null)
-                {
-                    throw new InvalidOperationException("Process failed to start.");
-                }
-
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-
-                if (!string.IsNullOrEmpty(error))
-                {
-                    throw new Exception($"Python Error: {error}");
-                }
-
-                return output;
+                string errorMsg = $"Execution Error: {ex.Message}";
+                File.AppendAllText(debugLogPath, errorMsg + "\nDetails:\n" + ex.StackTrace + "\n");
+                MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return $"{errorMsg}\nDetails: {ex.StackTrace}";
             }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Error executing Python script: {ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            return $"Error: {ex.Message}";
-        }
+        });
     }
 }

@@ -13,10 +13,12 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
     {
         private readonly string _campaignName;
         private readonly IDatabaseService _databaseService;
-        private readonly IAlgorithmLayer _algorithmLayer;
+        private readonly PythonScriptEngine _pythonScriptEngine;
+        public event PropertyChangedEventHandler PropertyChanged;
 
         // Properties for script selection and output
         public ObservableCollection<string> PythonScripts { get; set; } = new ObservableCollection<string>();
+
         private string _selectedScript;
         public string SelectedScript
         {
@@ -41,12 +43,14 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
 
         public string CampaignName => _campaignName;
 
-        public AlgorithmsInternal(string campaignName, IDatabaseService databaseService, IAlgorithmLayer algorithmLayer)
+        public AlgorithmsInternal(string campaignName, IDatabaseService databaseService)
         {
             InitializeComponent();
             _campaignName = campaignName;
             _databaseService = databaseService;
-            _algorithmLayer = algorithmLayer;
+
+            // Instantiate PythonScriptEngine directly
+            _pythonScriptEngine = new PythonScriptEngine();
 
             DataContext = this;
 
@@ -81,54 +85,79 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
 
         private async void RunScriptButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(SelectedScript))
-            {
-                MessageBox.Show("Please select a script to run.", "No Script Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "algorithm_debug_log.txt");
 
             try
             {
-                // Retrieve the actual campaign data from the database as line protocol data
+                File.AppendAllText(logPath, "RunScriptButton_Click started\n");
+
+                if (string.IsNullOrEmpty(SelectedScript))
+                {
+                    File.AppendAllText(logPath, "No script selected\n");
+                    MessageBox.Show("Please select a script to run.", "No Script Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                File.AppendAllText(logPath, $"Selected Script: {SelectedScript}\n");
+
+                // Retrieve the campaign data from the database
                 var campaignData = await _databaseService.GetCampaignDataAlgorithmLayerAsync(_campaignName);
+                File.AppendAllText(logPath, "Campaign data retrieved from database\n");
 
                 if (campaignData == null || campaignData.Count == 0)
                 {
+                    File.AppendAllText(logPath, "No data found for the selected campaign\n");
                     MessageBox.Show("No data found for the selected campaign.", "Data Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                // Convert data to line protocol format and write to a temporary file
-                var lines = new List<string>();
-                foreach (var kvp in campaignData)
+                // Convert campaign data to JSON format
+                var campaignDataJson = System.Text.Json.JsonSerializer.Serialize(new
                 {
-                    lines.Add($"{kvp.Key}: {kvp.Value}");
-                }
-
-                // Define the path to the temporary data file
-                var tempFilePath = Path.GetTempFileName();
-                File.WriteAllLines(tempFilePath, lines);
+                    CampaignName = _campaignName,
+                    Pacifiers = campaignData
+                });
+                File.AppendAllText(logPath, "Campaign data converted to JSON format\n");
 
                 // Construct the full path to the Python script
                 var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
                 var scriptsDirectory = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript");
                 var scriptPath = Path.Combine(scriptsDirectory, SelectedScript);
 
-                // Confirm data was written to the file and the script path for debugging
-                MessageBox.Show($"Data written to file: {tempFilePath}\nScript Path: {scriptPath}", "Debug Info", MessageBoxButton.OK);
+                if (!File.Exists(scriptPath))
+                {
+                    string errorMsg = $"Script file not found at path: {scriptPath}";
+                    File.AppendAllText(logPath, errorMsg + "\n");
+                    MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-                // Execute the Python script, passing the file path as an argument
-                string result = _algorithmLayer.ExecuteScript(scriptPath, tempFilePath);
+                File.AppendAllText(logPath, $"Script path confirmed: {scriptPath}\n");
+                MessageBox.Show($"Script path confirmed: {scriptPath}", "Path Confirmed", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Execute the Python script, passing the JSON data as an argument
+                string result = await _pythonScriptEngine.ExecuteScriptAsync(scriptPath, campaignDataJson);
+                File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
+
+                // Save result to a text file
+                string resultFilePath = Path.Combine(baseDirectory, "PythonScriptResult.txt");
+                File.WriteAllText(resultFilePath, result);
+                File.AppendAllText(logPath, $"Result saved to {resultFilePath}\n");
+
+                // Update the UI with the result
                 ScriptOutput = result;
+                MessageBox.Show("Python script execution completed. Check output for details.", "Execution Completed", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                string errorMsg = $"Error executing Python script: {ex.Message}";
+                File.AppendAllText(logPath, errorMsg + "\nDetails:\n" + ex.StackTrace);
+                MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
 
+        // Raise the PropertyChanged event to notify the UI about property updates
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
