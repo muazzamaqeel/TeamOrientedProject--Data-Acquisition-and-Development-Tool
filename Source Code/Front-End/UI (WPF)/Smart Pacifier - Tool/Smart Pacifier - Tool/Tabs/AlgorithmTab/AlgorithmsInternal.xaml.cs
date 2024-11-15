@@ -15,6 +15,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
         private readonly IDatabaseService _databaseService;
         private readonly PythonScriptEngine _pythonScriptEngine;
         public event PropertyChangedEventHandler PropertyChanged;
+        private readonly PythonScriptEngine pythonScriptEngine;
 
         // Properties for script selection and output
         public ObservableCollection<string> PythonScripts { get; set; } = new ObservableCollection<string>();
@@ -46,6 +47,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
         public AlgorithmsInternal(string campaignName, IDatabaseService databaseService)
         {
             InitializeComponent();
+            pythonScriptEngine = new PythonScriptEngine(); // Initialize the PythonScriptEngine
             _campaignName = campaignName;
             _databaseService = databaseService;
 
@@ -136,7 +138,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
                 MessageBox.Show($"Script path confirmed: {scriptPath}", "Path Confirmed", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 // Execute the Python script, passing the JSON data as an argument
-                string result = await _pythonScriptEngine.ExecuteScriptAsync(scriptPath, campaignDataJson);
+                string result = await pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, campaignDataJson);
                 File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
 
                 // Save result to a text file

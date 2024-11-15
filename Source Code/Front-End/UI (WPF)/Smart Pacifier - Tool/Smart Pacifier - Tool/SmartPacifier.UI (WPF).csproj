@@ -15,31 +15,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="lib\Python.Runtime.dll" />
-    <None Remove="lib\python310.dll" />
-    <None Remove="lib\python311.dll" />
-    <None Remove="lib\python313.dll" />
     <None Remove="Resources\OutputResources\config.json" />
     <None Remove="Resources\OutputResources\TeamKey.pem" />
     <None Remove="Tabs\SettingsTab\.pem" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="lib\Python.Runtime.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="lib\python311.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="lib\python310.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Include="lib\python313.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
     <EmbeddedResource Include="Resources\OutputResources\config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
@@ -103,6 +84,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="lib\" />
     <Folder Include="Resources\OutputResources\PythonFiles\GeneratedData\" />
   </ItemGroup>
 
