@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
+namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 {
     /// <summary>
     /// Interaction logic for AlgoLiveData.xaml

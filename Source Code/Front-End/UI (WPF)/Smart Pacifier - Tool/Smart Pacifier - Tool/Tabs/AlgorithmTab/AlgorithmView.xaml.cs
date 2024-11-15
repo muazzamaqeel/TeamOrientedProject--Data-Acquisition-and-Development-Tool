@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using SmartPacifier.Interface.Services;
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra;
 
 namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
 {

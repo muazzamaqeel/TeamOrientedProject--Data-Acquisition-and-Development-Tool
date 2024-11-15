@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using SmartPacifier.Interface.Services;
 
-namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
+namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 {
     public partial class AlgoDatabase : UserControl, INotifyPropertyChanged
     {
