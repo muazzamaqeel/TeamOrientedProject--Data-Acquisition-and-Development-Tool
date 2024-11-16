@@ -6,6 +6,8 @@ using Google.Protobuf;
 using Protos;
 using Google.Protobuf.Collections;
 using Google.Protobuf.Reflection;
+using InfluxData.Net.InfluxDb.Models.Responses;
+using System.Collections.ObjectModel;
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 {
@@ -33,20 +35,25 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             }
         }
 
-        public (string pacifierId, string sensorType, Dictionary<string, object> parsedData) ParseSensorData(string pacifierId, string topic, byte[] data)
+        public (string pacifierId, string sensorType, ObservableCollection<Dictionary<string, object>> parsedData) ParseSensorData(byte[] data)
         {
-            var parsedData = new Dictionary<string, object>();
-            string detectedSensorType = topic.Split('/').Last();
+            var parsedData = new ObservableCollection<Dictionary<string, object>>();
+            var pacifierId = "defaultPacifier";
+            var sensorType = "defaultSensor";
 
             try
             {
                 var sensorData = SensorData.Parser.ParseFrom(data);
-                sensorData.SensorType = detectedSensorType;
+                pacifierId = sensorData.PacifierId;
+                sensorType = sensorData.SensorType;
 
                 // Get the message type corresponding to sensorData.SensorType
                 Type sensorMessageType = GetSensorMessageType(sensorData.SensorType);
                 MessageDescriptor sensorMessageDescriptor = null;
                 Dictionary<string, FieldDescriptor> fieldDescriptorMap = null;
+
+                MapField<string, ByteString> sensorDataDictionary = sensorData.DataMap;
+
 
                 if (sensorMessageType != null)
                 {
@@ -57,36 +64,37 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
 
                         // Collect all field descriptors
                         fieldDescriptorMap = new Dictionary<string, FieldDescriptor>();
-                        CollectFieldDescriptors(sensorMessageDescriptor, fieldDescriptorMap);
+                        parsedData = CollectFieldDescriptors(sensorMessageDescriptor, fieldDescriptorMap, sensorDataDictionary);
                     }
                 }
                 else
                 {
-                    Console.WriteLine($"Sensor message type not found for sensor type '{sensorData.SensorType}'.");
+                    Console.WriteLine($"Sensor message type not found for sensor type '{sensorType}'.");
                 }
 
                 // Extract all fields dynamically, including nested structures
-                parsedData = ExtractAllFields(sensorData, fieldDescriptorMap);
+                //parsedData = ExtractAllFields(sensorData, fieldDescriptorMap);
 
                 // Display parsed fields immediately
-                Console.WriteLine($"Parsed data for Pacifier {pacifierId} on sensor type '{detectedSensorType}':");
-                DisplayParsedFields(parsedData);
+                Console.WriteLine($"Parsed data for Pacifier {pacifierId} on sensor type '{sensorType}':");
+                //DisplayParsedFields(parsedData);
 
                 // Add to sensor data list and trigger event
                 lock (_dataLock)
                 {
                     _sensorDataList.Add(sensorData);
-                    SensorDataUpdated?.Invoke(this, EventArgs.Empty);
+                    
                 }
+                SensorDataUpdated?.Invoke(this, EventArgs.Empty);
 
-                return (pacifierId, detectedSensorType, parsedData);
+                return (pacifierId, sensorType, parsedData);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to parse sensor data for Pacifier '{pacifierId}': {ex.Message}");
             }
 
-            return (pacifierId, detectedSensorType, parsedData);
+            return (pacifierId, sensorType, parsedData);
         }
 
         // Retrieve a list of unique pacifier IDs
@@ -148,96 +156,123 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
             return null;
         }
 
-        private void CollectFieldDescriptors(MessageDescriptor messageDescriptor, Dictionary<string, FieldDescriptor> fieldDescriptorMap)
+        private ObservableCollection<Dictionary<string, object>> CollectFieldDescriptors(MessageDescriptor messageDescriptor, Dictionary<string, FieldDescriptor> fieldDescriptorMap, MapField<string, ByteString> sensorDataDictionary)
         {
+            var result = new ObservableCollection<Dictionary<string, object>>();  // List of dictionaries to hold the final result
+            var groupDictionary = new Dictionary<string, object>();  // Temporary dictionary to hold each field and its value
+
+            // Iterate through all fields in the message descriptor
             foreach (var field in messageDescriptor.Fields.InDeclarationOrder())
             {
+                // Check if the field has not been processed yet
                 if (!fieldDescriptorMap.ContainsKey(field.Name))
                 {
+                    // Check if the field is not a message and if the sensor data dictionary contains the field
+                    if (field.FieldType != FieldType.Message && sensorDataDictionary.TryGetValue(field.Name, out ByteString? value))
+                    {
+                        // Get the ByteString value from the dictionary
+                        ByteString fieldValue = value;
+
+                        // Decode the field value (you would decode the byte data based on its field type)
+                        var decodedValue = DecodeByteStringDynamic(fieldValue, field);
+
+                        // Add the field and its decoded value to the temporary dictionary
+                        groupDictionary[field.Name] = decodedValue;
+                    }
+
+                    // Mark this field as processed by adding it to the field descriptor map
                     fieldDescriptorMap[field.Name] = field;
                 }
 
+                // Handle nested fields (messages within messages)
                 if (field.FieldType == FieldType.Message)
                 {
-                    CollectFieldDescriptors(field.MessageType, fieldDescriptorMap);
+                    // Create a new dictionary for the nested field and add it to the result
+                    var nestedDictionary = new Dictionary<string, object>();
+                    nestedDictionary["sensorGroup"] = field.Name;  // Add sensor group info
+
+                    // Recursively collect data for the nested message
+                    var nestedResult = CollectFieldDescriptors(field.MessageType, fieldDescriptorMap, sensorDataDictionary);
+
+                    // Merge the nested fields into the nested dictionary
+                    foreach (var nestedItem in nestedResult)
+                    {
+                        foreach (var kvp in nestedItem)
+                        {
+                            nestedDictionary[kvp.Key] = kvp.Value;
+                        }
+                    }
+
+                    // Add the nested dictionary to the final result
+                    result.Add(nestedDictionary);
                 }
             }
-        }
-        private Dictionary<string, object> ExtractAllFields(IMessage message, Dictionary<string, FieldDescriptor> fieldDescriptorMap = null)
-        {
-            var result = new Dictionary<string, object>();
 
-            foreach (var field in message.Descriptor.Fields.InFieldNumberOrder())
+            // If there are any fields added to the group dictionary, add the group to the result list
+            if (groupDictionary.Count > 0)
             {
-                var fieldValue = field.Accessor.GetValue(message);
-
-                if (fieldValue is IMessage nestedMessage)
-                {
-                    result[field.Name] = ExtractAllFields(nestedMessage, fieldDescriptorMap); // Recursively handle nested messages
-                }
-                else if (fieldValue is RepeatedField<IMessage> repeatedMessage)
-                {
-                    var repeatedFields = new List<Dictionary<string, object>>();
-                    foreach (var item in repeatedMessage)
-                    {
-                        repeatedFields.Add(ExtractAllFields(item, fieldDescriptorMap)); // Recursively extract repeated messages
-                    }
-                    result[field.Name] = repeatedFields;
-                }
-                else if (fieldValue is MapField<string, ByteString> dataMap)
-                {
-                    var decodedDataMap = new Dictionary<string, object>();
-                    foreach (var kvp in dataMap)
-                    {
-                        // Decode the ByteString without field descriptors
-                        var decodedValue = DecodeByteStringDynamic(kvp.Value, kvp.Key);
-                        decodedDataMap[kvp.Key] = decodedValue;
-                    }
-                    result[field.Name] = decodedDataMap;
-                }
-                else
-                {
-                    result[field.Name] = fieldValue;
-                }
+                result.Add(groupDictionary);
             }
 
-            return result;
+            return result;  // Return the final list of dictionaries
         }
 
-        private object DecodeByteStringDynamic(ByteString byteString, string key)
+
+
+        private object DecodeByteStringDynamic(ByteString byteString, FieldDescriptor fieldDescriptor)
         {
             byte[] bytes = byteString.ToByteArray();
 
-            // Attempt to decode based on the length
             try
             {
-                if (bytes.Length == sizeof(float))
+                // Decode based on field type using the FieldDescriptor
+                switch (fieldDescriptor.FieldType)
                 {
-                    return BitConverter.ToSingle(bytes, 0);
-                }
-                else if (bytes.Length == sizeof(int))
-                {
-                    return BitConverter.ToInt32(bytes, 0);
-                }
-                else if (bytes.Length == sizeof(double))
-                {
-                    return BitConverter.ToDouble(bytes, 0);
-                }
-                else if (bytes.Length == sizeof(long))
-                {
-                    return BitConverter.ToInt64(bytes, 0);
-                }
-                else
-                {
-                    // Fallback to Base64
-                    return Convert.ToBase64String(bytes);
+                    case FieldType.Int32:
+                        return BitConverter.ToInt32(bytes, 0);
+                    case FieldType.Int64:
+                        return BitConverter.ToInt64(bytes, 0);
+                    case FieldType.UInt32:
+                        return BitConverter.ToUInt32(bytes, 0);
+                    case FieldType.UInt64:
+                        return BitConverter.ToUInt64(bytes, 0);
+                    case FieldType.SInt32:
+                        return BitConverter.ToInt32(bytes, 0);
+                    case FieldType.SInt64:
+                        return BitConverter.ToInt64(bytes, 0);
+                    case FieldType.Float:
+                        return BitConverter.ToSingle(bytes, 0);
+                    case FieldType.Double:
+                        return BitConverter.ToDouble(bytes, 0);
+                    case FieldType.Bool:
+                        return BitConverter.ToBoolean(bytes, 0);
+                    case FieldType.String:
+                        return System.Text.Encoding.UTF8.GetString(bytes);
+                    case FieldType.Bytes:
+                        return bytes; // Return raw byte array
+                    case FieldType.Enum:
+                        var enumType = fieldDescriptor.EnumType;
+                        return Enum.ToObject(enumType.ClrType, BitConverter.ToInt32(bytes, 0));
+                    case FieldType.Message:
+                        // If it's a nested message, try to decode it accordingly
+                        var nestedMessageType = fieldDescriptor.MessageType;
+                        var message = Activator.CreateInstance(nestedMessageType.ClrType) as IMessage;
+                        if (message != null)
+                        {
+                            message.MergeFrom(bytes);
+                            return message;
+                        }
+                        break;
+                    default:
+                        return Convert.ToBase64String(bytes);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error decoding '{key}': {ex.Message}");
-                return Convert.ToBase64String(bytes);
+                Console.WriteLine($"Error decoding field: {ex.Message}");
             }
+
+            return Convert.ToBase64String(bytes); // Fallback to Base64 if no decoding is successful
         }
 
 

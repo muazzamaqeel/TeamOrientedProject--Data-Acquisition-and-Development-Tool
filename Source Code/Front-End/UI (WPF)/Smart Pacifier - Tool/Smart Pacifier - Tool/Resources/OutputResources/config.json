@@ -2,13 +2,13 @@
   "UseLocal": false,
   "Local": {
     "Host": "localhost:8086",
-    "ApiKey": "PUrnVTrvTNoFAc6OGDUGbx4XvPD9v2pISxw3W-YLGbWU2IlrD39AlS3TxAiLyTuFgUtePKQ8dlQ85dY1ic6sew=="
+    "ApiKey": "fL_20WSrKBK3m8yDDIgEvigRH1eS_pXcWAzRlD8iFG4-UzBgT63smc3_KjamDVf1NBxepVUQsvwJBPdzfcT-_A=="
   },
   "Server": {
-    "Host": "18.194.233.197",
+    "Host": "18.195.167.238",
     "Port": "8086",
     "Username": "ubuntu",
-    "ApiKey": "N8VHmvjqq2SnYLR4R_BbS6ggM2cCDyvrID6XZqYUJ-0DMDQUxLDHiwVGYNtJAhqnxupX4X7TZwNYkOUc1FIX8A=="
+    "ApiKey": "QxULQIMLDf5gfdJLrqpHYfuPSYr4Ms3i6PIDOTD1LNpmERf-IIDktJyzxmyTMtHwOHBa-BaChFGUHKFeecoH1w=="
   },
   "PythonScript": {
     "FileName": "python1.py"

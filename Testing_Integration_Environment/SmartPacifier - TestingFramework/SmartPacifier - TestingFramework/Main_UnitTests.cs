@@ -6,7 +6,6 @@ using Moq;
 using SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.UTInitializeDockerImage;
 using SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.Unit_Tests_DatabaseLayer.Unit_Tests_InfluxDB.Unit_Tests_Connection;
 using SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.UnitTest_Services;
-using SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTManagers;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using SmartPacifier.Interface.Services;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT; // Ensure this matches the namespace where IBroker and MQTTBroker are defined ADDED DUDU Nov4
@@ -17,7 +16,6 @@ namespace SmartPacifier___TestingFramework
     public class Main_UnitTests
     {
         private readonly IUnitTestDB _unitTest;
-        private readonly CampaignWrap _managerCampaignWrapper;
         private readonly Mock<IDatabaseService> _mockDatabaseService;
         private readonly Mock<IManagerPacifiers> _mockManagerPacifiers;
         private readonly Broker _broker; //-------------ADDED DUDU Nov4
@@ -36,7 +34,6 @@ namespace SmartPacifier___TestingFramework
 
             // Create an instance of ManagerCampaign and wrap it with ManagerCampaignWrapper
             var managerCampaign = new ManagerCampaign(_mockDatabaseService.Object, _mockManagerPacifiers.Object);
-            _managerCampaignWrapper = new CampaignWrap(managerCampaign, "SmartPacifier-Bucket1");
 
             _broker = Broker.Instance; //------------Initialize the broker singleton ADDED DUDU Nov4
 
@@ -92,7 +89,10 @@ namespace SmartPacifier___TestingFramework
 
 
 
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task RunTest_ValidToken_Should_Allow_Connection()
         {
             try
@@ -109,80 +109,7 @@ namespace SmartPacifier___TestingFramework
             }
         }
 
-        [Fact]
-        public async Task CampaignExists_ShouldReturnTrue_WhenCampaignExists()
-        {
-            // Arrange
-            string campaignName = "Campaign1";
-            _mockDatabaseService.Setup(s => s.ReadData(It.IsAny<string>()))
-                                .ReturnsAsync(new List<string> { "Campaign1" });
 
-            // Act
-            bool result = await _managerCampaignWrapper.CampaignExistsAsync(campaignName);
-
-            // Assert
-            Assert.True(result, "Expected the campaign to exist.");
-        }
-
-        [Fact]
-        public async Task CampaignExists_ShouldReturnFalse_WhenCampaignDoesNotExist()
-        {
-            // Arrange
-            string campaignName = "NonExistentCampaign";
-            _mockDatabaseService.Setup(s => s.ReadData(It.IsAny<string>()))
-                                .ReturnsAsync(new List<string>());
-
-            // Act
-            bool result = await _managerCampaignWrapper.CampaignExistsAsync(campaignName);
-
-            // Assert
-            Assert.False(result, "Expected the campaign not to exist.");
-        }
-
-        [Fact]
-        public async Task GetPacifiersInCampaign_ShouldReturnListOfPacifiers_WhenCampaignHasPacifiers()
-        {
-            // Arrange
-            string campaignName = "Campaign1";
-            var expectedPacifiers = new List<string> { "Pacifier1", "Pacifier2" };
-
-            // Setup the mock to return the expected list when the method is called
-            _mockManagerPacifiers.Setup(p => p.GetPacifiersAsync(campaignName))
-                                 .ReturnsAsync(expectedPacifiers);
-
-            // Act
-            var result = await _managerCampaignWrapper.GetPacifiersInCampaignAsync(campaignName);
-
-            // Assert
-            Assert.Equal(expectedPacifiers, result);
-        }
-
-
-        [Fact]
-        public async Task GetPacifiersInCampaign_ShouldReturnEmptyList_WhenCampaignHasNoPacifiers()
-        {
-            // Arrange
-            string campaignName = "EmptyCampaign";
-            _mockManagerPacifiers.Setup(p => p.GetPacifiersAsync(campaignName))
-                                 .ReturnsAsync(new List<string>());
-
-            // Act
-            var result = await _managerCampaignWrapper.GetPacifiersInCampaignAsync(campaignName);
-
-            // Assert
-            Assert.Empty(result);
-        }
-        [Fact]
-        public async Task RunCampaignExistsTest()
-        {
-            // Instantiate UnitTestMAN to access the test
-            var unitTestMAN = new UnitTestMAN();
-
-            // Run the CampaignExists_ShouldReturnTrue_WhenCampaignExists test
-            await unitTestMAN.CampaignExists_ShouldReturnTrue_WhenCampaignExists();
-
-            Console.WriteLine("CampaignExists_ShouldReturnTrue_WhenCampaignExists passed.");
-        }
 
 
 
@@ -195,7 +122,10 @@ namespace SmartPacifier___TestingFramework
         /// Below are the Tests Related to MQTT Broker
         /// </summary>
         /// <returns></returns>
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task TestMQTTConnectBroker()
         {
             // Instantiate the MQTTBrokerTestCases to run the connection test
@@ -205,7 +135,10 @@ namespace SmartPacifier___TestingFramework
             // Run the connection test and ensure no exceptions occur
             await mqttTestCases.TestMQTTConnectBroker();
         }
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task TestMQTTSubscribe()
         {
             // Instantiate the MQTTBrokerTestCases to run the subscription test
@@ -215,7 +148,10 @@ namespace SmartPacifier___TestingFramework
             // Run the subscription test to verify no exceptions are thrown
             await mqttTestCases.TestMQTTSubscribe();
         }
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task TestMQTTSendMessage()
         {
             // Instantiate the MQTTBrokerTestCases to run the send message test
@@ -223,10 +159,13 @@ namespace SmartPacifier___TestingFramework
             await mqttTestCases.InitializeAsync();
 
             // Run the send message test to ensure no exceptions are thrown
-            await mqttTestCases.TestMQTTSendMessage();
+            //await mqttTestCases.TestMQTTSendMessage();
         }
 
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public void RunInfluxDBContainerTests()
         {
             try

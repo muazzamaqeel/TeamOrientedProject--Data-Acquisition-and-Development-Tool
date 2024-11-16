@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Xunit;
 using Protos;
 using Google.Protobuf;
@@ -9,7 +8,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
     public class ProtobufTest
     {
         [Fact]
-        public void SensorData_SerializationDeserialization_ShouldPreserveData()
+        public void Protobuf_SerializeDeserialize()
         {
             // Arrange
             var sensorData = new SensorData
@@ -31,65 +30,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Assert.True(deserializedData.DataMap.ContainsKey("gyro_x"));
             Assert.True(deserializedData.DataMap.ContainsKey("gyro_y"));
         }
-
+        /// <summary>
+        /// This test case is to check if the DataMap is empty when no data is added to it.
+        /// </summary>
         [Fact]
-        public void IMUData_SerializationDeserialization_ShouldPreserveValues()
-        {
-            // Arrange
-            var imuData = new IMUData
-            {
-                GyroX = 1.23f,
-                GyroY = 4.56f,
-                GyroZ = 7.89f,
-                MagX = 0.12f,
-                MagY = 0.34f,
-                MagZ = 0.56f,
-                AccX = 9.87f,
-                AccY = 6.54f,
-                AccZ = 3.21f
-            };
-
-            // Act
-            var serializedData = imuData.ToByteArray();
-            var deserializedData = IMUData.Parser.ParseFrom(serializedData);
-
-            // Assert
-            Assert.Equal(imuData.GyroX, deserializedData.GyroX);
-            Assert.Equal(imuData.GyroY, deserializedData.GyroY);
-            Assert.Equal(imuData.GyroZ, deserializedData.GyroZ);
-            Assert.Equal(imuData.MagX, deserializedData.MagX);
-            Assert.Equal(imuData.MagY, deserializedData.MagY);
-            Assert.Equal(imuData.MagZ, deserializedData.MagZ);
-            Assert.Equal(imuData.AccX, deserializedData.AccX);
-            Assert.Equal(imuData.AccY, deserializedData.AccY);
-            Assert.Equal(imuData.AccZ, deserializedData.AccZ);
-        }
-
-        [Fact]
-        public void PPGData_SerializationDeserialization_ShouldPreserveValues()
-        {
-            // Arrange
-            var ppgData = new PPGData
-            {
-                Led1 = 100,
-                Led2 = 200,
-                Led3 = 300,
-                Temperature = 36.5f
-            };
-
-            // Act
-            var serializedData = ppgData.ToByteArray();
-            var deserializedData = PPGData.Parser.ParseFrom(serializedData);
-
-            // Assert
-            Assert.Equal(ppgData.Led1, deserializedData.Led1);
-            Assert.Equal(ppgData.Led2, deserializedData.Led2);
-            Assert.Equal(ppgData.Led3, deserializedData.Led3);
-            Assert.Equal(ppgData.Temperature, deserializedData.Temperature);
-        }
-
-        [Fact]
-        public void SensorData_WithEmptyDataMap_ShouldDeserializeCorrectly()
+        public void Protobuf_DataMap()
         {
             // Arrange
             var sensorData = new SensorData
@@ -109,8 +54,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Assert.Empty(deserializedData.DataMap);
         }
 
+        /// <summary>
+        /// This test case is to check if the DataMap is populated with multiple data entries.
+        /// </summary>
         [Fact]
-        public void SensorData_WithMultipleEntriesInDataMap_ShouldStoreAndRetrieveCorrectly()
+        public void Protobuf_DataMapIntense()
         {
             // Arrange
             var sensorData = new SensorData

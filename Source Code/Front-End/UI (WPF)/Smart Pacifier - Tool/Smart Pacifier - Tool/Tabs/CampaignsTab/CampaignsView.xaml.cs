@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using Smart_Pacifier___Tool.Components;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using SmartPacifier.Interface.Services;
@@ -16,7 +18,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
     {
         private ICollectionView _filteredCampaigns;
         private readonly IDatabaseService _databaseService;
-        private readonly IManagerCampaign _managerCampaign;
+        private readonly IManagerCampaign _managerCampaign; // 
         public List<Campaign> Campaigns { get; set; } = new List<Campaign>();
         public string SearchName { get; set; } = string.Empty;
         public string ActualSearchName { get; set; } = string.Empty; // New property
@@ -218,8 +220,22 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void Campaign_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            //((MainWindow)Application.Current.MainWindow).NavigateTo(new MonitoringView());
+            if (sender is Border border && border.DataContext is Campaign selectedCampaign)
+            {
+                // Create an instance of CampaignsInternal, passing the database singleton and campaign name
+                var campaignsInternal = new CampaignsInternal(_managerCampaign, selectedCampaign.CampaignName);
+
+                // Get a reference to MainWindow
+                var mainWindow = Application.Current.MainWindow as MainWindow;
+                if (mainWindow != null)
+                {
+                    // Use NavigateTo to replace the content in MainContent with CampaignsInternal
+                    mainWindow.NavigateTo(campaignsInternal);
+                }
+            }
         }
+
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
 

@@ -1,0 +1,48 @@
+stages:
+  - build
+  - test
+
+variables:
+  DOTNET_CLI_HOME: "$CI_PROJECT_DIR"
+  DOTNET_NOLOGO: "true"
+
+build-smart-pacifier-tool:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - echo "Restoring dependencies for Smart Pacifier - Tool..."
+    - dotnet restore "Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool"
+    - echo "Building Smart Pacifier - Tool..."
+    - dotnet build --no-restore "Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool"
+
+test-smart-pacifier-tool:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - echo "Testing Smart Pacifier - Tool..."
+    - dotnet test --no-build --verbosity normal "Source Code/Front-End/UI (WPF)/Smart Pacifier - Tool/Smart Pacifier - Tool"
+
+build-testing-framework:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - echo "Restoring dependencies for SmartPacifier - TestingFramework..."
+    - dotnet restore "Testing_Integration_Environment/SmartPacifier - TestingFramework"
+    - echo "Building SmartPacifier - TestingFramework..."
+    - dotnet build --no-restore "Testing_Integration_Environment/SmartPacifier - TestingFramework"
+
+test-testing-framework:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - echo "Testing SmartPacifier - TestingFramework..."
+    - dotnet test --no-build --verbosity normal "Testing_Integration_Environment/SmartPacifier - TestingFramework"
+
+cache:
+  stage: build
+  before_script:
+    - echo "Setting up caching for .NET packages..."
+  cache:
+    key: "$CI_COMMIT_REF_SLUG-dotnet-packages"
+    paths:
+      - ~/.nuget/packages/

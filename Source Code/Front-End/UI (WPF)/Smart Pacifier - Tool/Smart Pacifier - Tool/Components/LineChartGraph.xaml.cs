@@ -8,26 +8,41 @@ using static Smart_Pacifier___Tool.Components.PacifierItem;
 
 namespace Smart_Pacifier___Tool.Components
 {
+    /// <summary>
+    /// Interaction logic for LineChartGraph.xaml
+    /// </summary>
     public partial class LineChartGraph : UserControl
     {
         private readonly LineSeries _series;
 
-        // PlotModel represents the plot data for OxyPlot
+        /// <summary>
+        /// Gets the PlotModel representing the plot data for OxyPlot.
+        /// </summary>
         public PlotModel PlotModel { get; private set; }
 
-        // ID of the plot (can be used for identifying specific plots)
+        /// <summary>
+        /// Gets or sets the ID of the plot (can be used for identifying specific plots).
+        /// </summary>
         public string PlotId { get; set; }
 
-        // The number of data points to display before removing the oldest
+        /// <summary>
+        /// Gets or sets the number of data points to display before removing the oldest.
+        /// </summary>
         public double Interval { get; set; }
 
-        // The label for the measurement group
+        /// <summary>
+        /// Gets or sets the label for the measurement group.
+        /// </summary>
         public string GroupName { get; set; }
 
-        // Type of the sensor (e.g., temperature, humidity)
+        /// <summary>
+        /// Gets or sets the type of the sensor (e.g., temperature, humidity).
+        /// </summary>
         public string? SensorId { get; set; }
 
-        // DependencyProperty to bind an ObservableCollection of DataPoints
+        /// <summary>
+        /// DependencyProperty to bind an ObservableCollection of DataPoints.
+        /// </summary>
         public static readonly DependencyProperty DataPointsProperty =
             DependencyProperty.Register(
                 nameof(DataPoints),
@@ -35,21 +50,25 @@ namespace Smart_Pacifier___Tool.Components
                 typeof(LineChartGraph),
                 new PropertyMetadata(new ObservableCollection<DataPoint>(), OnDataPointsChanged));
 
-        // ObservableCollection for binding DataPoints to the graph
+        /// <summary>
+        /// Gets or sets the ObservableCollection for binding DataPoints to the graph.
+        /// </summary>
         public ObservableCollection<DataPoint> DataPoints
         {
             get => (ObservableCollection<DataPoint>)GetValue(DataPointsProperty);
             set => SetValue(DataPointsProperty, value);
         }
 
-        // Constructor to initialize the LineChartGraph
-        public LineChartGraph(SensorGroup sensorGroup, string plotId, double interval)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LineChartGraph"/> class.
+        /// </summary>
+        /// <param name="plotId">The plot ID.</param>
+        /// <param name="interval">The interval for data points.</param>
+        public LineChartGraph(SensorItem sensorItem, double interval)
         {
             InitializeComponent();
 
             // Default values
-            GroupName = sensorGroup.GroupName;
-            PlotId = plotId;
             Interval = interval;
 
             // Initialize the PlotModel and LineSeries
@@ -65,7 +84,9 @@ namespace Smart_Pacifier___Tool.Components
             DataContext = this; // Enable data binding
         }
 
-        // Method to update the plot with new data points when DataPoints collection changes
+        /// <summary>
+        /// Method to update the plot with new data points when DataPoints collection changes.
+        /// </summary>
         private static void OnDataPointsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var chart = d as LineChartGraph;
@@ -75,11 +96,13 @@ namespace Smart_Pacifier___Tool.Components
             }
         }
 
-
-        // Update the graph with a new data point
+        /// <summary>
+        /// Updates the graph with a new data point.
+        /// </summary>
+        /// <param name="xValue">The X value of the data point.</param>
+        /// <param name="yValue">The Y value of the data point.</param>
         public void UpdateData(double xValue, double yValue)
         {
-
             Debug.WriteLine($"Updating data point: {xValue}, {yValue}");
 
             // Update ObservableCollection directly
@@ -95,8 +118,10 @@ namespace Smart_Pacifier___Tool.Components
             PlotModel.InvalidatePlot(true);
         }
 
-
-        // Update the graph with a collection of data points
+        /// <summary>
+        /// Updates the graph with a collection of data points.
+        /// </summary>
+        /// <param name="graphData">The collection of data points.</param>
         public void UpdateDataPoints(ObservableCollection<DataPoint> graphData)
         {
             // Clear the existing points and add the new ones
@@ -110,12 +135,26 @@ namespace Smart_Pacifier___Tool.Components
             PlotModel.InvalidatePlot(true);
         }
 
-        // Simple class to represent a DataPoint with X and Y values
+        /// <summary>
+        /// Simple class to represent a DataPoint with X and Y values.
+        /// </summary>
         public class DataPoint
         {
+            /// <summary>
+            /// Gets or sets the X value of the data point.
+            /// </summary>
             public double X { get; set; }
+
+            /// <summary>
+            /// Gets or sets the Y value of the data point.
+            /// </summary>
             public double Y { get; set; }
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="DataPoint"/> class.
+            /// </summary>
+            /// <param name="x">The X value.</param>
+            /// <param name="y">The Y value.</param>
             public DataPoint(double x, double y)
             {
                 X = x;

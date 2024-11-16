@@ -184,15 +184,15 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                     // Use Dispatcher to safely update the ObservableCollection on the UI thread
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        
+
                         // Find the PacifierItem in PacifierItems with a matching ItemId and also in checkedPacifiers
                         var pacifierItem = PacifierItems.FirstOrDefault(p => p.PacifierId == e.PacifierId);
 
                         if (pacifierItem != null && pacifierItem.IsChecked)
                         {
-                            Debug.WriteLine($"Selected Pacifier_{pacifierItem.PacifierId}");
+                            Debug.WriteLine($"FirstOrDefault Pacifier_{pacifierItem.PacifierId}");
                             // Find or create the SensorItem for the given sensor type
-                            var sensorItem = pacifierItem.Sensors.FirstOrDefault(s => s.SensorId == e.SensorType);
+                            var sensorItem = SensorItems.FirstOrDefault(s => s.SensorId == e.SensorType);
 
                             if (sensorItem == null)
                             {
@@ -201,74 +201,36 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                 sensorItem = new SensorItem(e.SensorType, pacifierItem);
                                 pacifierItem.Sensors.Add(sensorItem);
                             }
-                            else
+                            else if (sensorItem.SensorIsChecked)
                             {
                                 Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
-
                                 if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))
                                 {
+                                    Debug.WriteLine($"Linked Pacifier_{pacifierItem.PacifierId} to Sensor_{sensorItem.SensorId}");
                                     sensorItem.LinkedPacifiers.Add(pacifierItem);
                                 }
-                                
+                                Debug.WriteLine($"Selected Sensor_{e.SensorType}");
 
-                                // Process each parsed data point
-                                foreach (var kvp in e.ParsedData)
-                                {
+                                // Add the entire list of dictionaries to the SensorItem
+                                sensorItem.MeasurementGroup.Clear();
+                                sensorItem.MeasurementGroup = new ObservableCollection<Dictionary<string, object>>(e.ParsedData);
 
-                                    if (sensorItem.SensorIsChecked)
-                                    {
-                                        Debug.WriteLine($"Selected Sensor_{e.SensorType}");
-
-                                        var sensorGroupName = kvp.Key.Split('_')[0]; // Get the prefix before '_'
-
-                                        // Find or create the SensorGroup for the sensor
-                                        var sensorGroup = sensorItem.SensorGroups.FirstOrDefault(g => g.GroupName == sensorGroupName);
-                                        if (sensorGroup == null)
-                                        {
-                                            Debug.WriteLine($"Add SensorGroup_{sensorGroupName}");
-                                            // Add a new sensor group if it doesn't exist
-                                            sensorGroup = new SensorGroup(sensorGroupName, sensorItem);
-                                            sensorItem.SensorGroups.Add(sensorGroup);
-                                        }
-                                        else
-                                        {
-                                            Debug.WriteLine($"Exists SensorGroup_{sensorGroupName}");
-                                            // Ensure the MeasurementGroup for the sensor group is initialized
-                                            if (sensorGroup.MeasurementGroup == null)
-                                            {
-                                                Debug.WriteLine($"Add MeasurementGroup_{kvp.Key} Value_{kvp.Value}");
-                                                // Create a new MeasurementGroup if it doesn't exist
-                                                sensorGroup.MeasurementGroup = new MeasurementGroup(sensorGroup.GroupName, sensorGroup);
+                                //Debug
+                                //DisplaySensorDetails(pacifierItem, sensorItem);
 
 
-                                            }
-
-                                            Debug.WriteLine($"AddOrUpdate MeasurementGroup_{kvp.Key} Value_{kvp.Value}");
-                                            // Update or add the measurement to the MeasurementGroup
-                                            sensorGroup.MeasurementGroup.AddOrUpdateMeasurement(kvp.Key, Convert.ToDouble(kvp.Value));
-
-                                        }
-
-                                    }
-                                }
-                                
-                                //AddPacifierSensorPair();
-
-
-
-
-                                // Optionally, you could add debugging output here to log measurements, etc.
-                                // Debug.WriteLine($"Updated measurement: {kvp.Key} with value {kvp.Value}");
                             }
+                            else
+                            {
+                                Debug.WriteLine($"Is Not Checked: Sensor_{sensorItem.SensorId}");
+                            }
+
                         }
                         else
                         {
                             // Optionally log if the pacifier item was not found or is not checked
-                            // Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found or not checked.");
+                             Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found or not checked.");
                         }
-
-
-
                     });
                 }
                 catch (Exception ex)
@@ -280,86 +242,11 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             else
             {
                 // Debug log for skipped messages
-                // Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in selected list or invalid data.");
+                 //Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in selected list or invalid data.");
             }
         }
 
-
-
-        //private async Task DisplaySensorDetails(MeasurementGroup measurementGroup)
-        //{
-        //    if (measurementGroup == null)
-        //    {
-        //        Debug.WriteLine("Data not found.");
-        //        return;
-        //    }
-
-        //    Debug.WriteLine($"PacifierId from Sensor Group: {measurementGroup.ParentSensorGroup.ParentSensorItem.ParentPacifierItem.ButtonText}");
-        //    Debug.WriteLine($"SensorId from Sensor Group: {measurementGroup.ParentSensorGroup.ParentSensorItem.SensorId}");
-        //    Debug.WriteLine($"GroupName: {measurementGroup.GroupName}");
-        //    foreach (var measurement in measurementGroup.Measurements)
-        //    {
-        //        Debug.WriteLine($"Measurement Name: {measurement.Key}, Value: {measurement.Value:F2}");
-        //    }
-
-        //    foreach (var sensorItem in measurementGroup.ParentSensorGroup.ParentSensorItem.ParentPacifierItem.Sensors)
-        //    {
-        //        foreach (var pacifierItem in sensorItem.LinkedPacifiers)
-        //        {
-        //            Debug.WriteLine($"Sensor: {sensorItem.SensorId} - Pacifier: {pacifierItem.ItemId} ");
-        //        }
-
-        //    }
-        //    // Display details about the pacifier (synchronous)
-        //    //Debug.WriteLine($"PacifierId: {pacifierItem.ItemId}");
-        //    //Debug.WriteLine($"Button Text: {pacifierItem.ButtonText}");
-        //    //Debug.WriteLine($"IsChecked: {pacifierItem.IsChecked}");
-
-        //    // Iterate over each sensor associated with this pacifier and display their details
-        //    //foreach (var sensorItem in measurementGroup.ParentSensorItem.P)
-        //    //{
-        //    //    Debug.WriteLine($"PacifierId from Sensor: {sensorItem.ParentPacifierItem.ItemId}");
-        //    //    Debug.WriteLine($"SensorId: {sensorItem.SensorId}");
-
-
-        //    //    // Iterate through sensor groups (if any) and display their details
-        //    //    foreach (var sensorGroup in sensorItem.SensorGroups)
-        //    //    {
-        //    //        //Debug.WriteLine($"PacifierId from Sensor Group: {sensorGroup.ParentSensorItem.ParentPacifierItem.ButtonText}");
-        //    //        //Debug.WriteLine($"SensorId from Sensor Group: {sensorGroup.ParentSensorItem.SensorId}");
-        //    //        Debug.WriteLine($"GroupName: {sensorGroup.GroupName}");
-
-        //    //        // Access the MeasurementGroup from SensorGroup (asynchronous, if required)
-        //    //        if (sensorGroup.MeasurementGroup != null)
-        //    //        {
-        //    //            if (!string.IsNullOrEmpty(sensorGroup.MeasurementGroup.GroupName))
-        //    //            {
-        //    //                Debug.WriteLine($"Measurement Group Name: {sensorGroup.MeasurementGroup.GroupName}");
-        //    //            }
-        //    //            else
-        //    //            {
-        //    //                Debug.WriteLine("MeasurementGroup exists, but GroupName is null or empty.");
-        //    //            }
-
-        //    //            // Iterate over the measurements in the MeasurementGroup (asynchronous if needed)
-        //    //            foreach (var measurement in sensorGroup.MeasurementGroup.Measurements)
-        //    //            {
-        //    //                Debug.WriteLine($"Measurement Name: {measurement.Key}, Value: {measurement.Value:F2}");
-        //    //            }
-        //    //        }
-        //    //        else
-        //    //        {
-        //    //            Debug.WriteLine("No MeasurementGroup available in this sensor group.");
-        //    //        }
-        //    //    }
-        //    //}
-
-        //    // Ensure all tasks are completed before continuing or closing
-        //    await Task.CompletedTask;
-        //}
-
-
-        private void DisplaySensorDetails(PacifierItem pacifierItem)
+        private void DisplaySensorDetails(PacifierItem pacifierItem, SensorItem sensorItem)
         {
             if (pacifierItem == null)
             {
@@ -375,42 +262,24 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             detailsBuilder.AppendLine($"Button Text: {pacifierItem.ButtonText}");
             detailsBuilder.AppendLine($"IsChecked: {pacifierItem.IsChecked}");
             detailsBuilder.AppendLine();
+            detailsBuilder.AppendLine($"SensorId: {sensorItem.SensorId}");
 
-            foreach (var sensorItem in pacifierItem.Sensors)
+            foreach (var sensorGroup in sensorItem.MeasurementGroup)
             {
-                detailsBuilder.AppendLine($"SensorId: {sensorItem.SensorId}");
-                detailsBuilder.AppendLine($"PacifierId from Sensor: {sensorItem.ParentPacifierItem.PacifierId}");
-
-                foreach (var sensorGroup in sensorItem.SensorGroups)
+                if (sensorGroup != null)
                 {
-                    detailsBuilder.AppendLine($"GroupName: {sensorGroup.GroupName}");
-                    detailsBuilder.AppendLine($"SensorId from Sensor Group: {sensorGroup.ParentSensorItem.SensorId}");
-                    detailsBuilder.AppendLine($"PacifierId from Sensor Group: {sensorGroup.ParentSensorItem.ParentPacifierItem.PacifierId}");
-
-                    if (sensorGroup.MeasurementGroup != null)
+                    foreach (var measurement in sensorGroup)
                     {
-                        if (!string.IsNullOrEmpty(sensorGroup.MeasurementGroup.GroupName))
-                        {
-                            detailsBuilder.AppendLine($"Measurement Group Name: {sensorGroup.MeasurementGroup.GroupName}");
-                        }
-                        else
-                        {
-                            detailsBuilder.AppendLine("MeasurementGroup exists, but GroupName is null or empty.");
-                        }
-
-                        foreach (var measurement in sensorGroup.MeasurementGroup.Measurements)
-                        {
-                            detailsBuilder.AppendLine($"Measurement Name: {measurement.Key}, Value: {measurement.Value:F2}");
-                        }
+                        detailsBuilder.AppendLine($"Measurement Name: {measurement.Key}, Value: {measurement.Value}");
                     }
-                    else
-                    {
-                        detailsBuilder.AppendLine("No MeasurementGroup available in this sensor group.");
-                    }
-                    detailsBuilder.AppendLine();
+                }
+                else
+                {
+                    detailsBuilder.AppendLine("No MeasurementGroup available in this sensor.");
                 }
                 detailsBuilder.AppendLine();
             }
+            detailsBuilder.AppendLine();
 
             // Open the custom window to display the details asynchronously
             var sensorDetailsWindow = new SensorDetailsWindow(detailsBuilder.ToString());
@@ -443,24 +312,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             }
         }
 
-
-        //private void TrackValueChanges()
-        //{
-        //    // Unsubscribe from previous handlers to avoid duplication
-        //    foreach (var collection in _sensorDataDictionary.Values)
-        //    {
-        //        collection.CollectionChanged -= OnSensorDataCollectionChanged;
-        //    }
-
-        //    // Subscribe to each collection's CollectionChanged event
-        //    foreach (var collection in _sensorDataDictionary.Values)
-        //    {
-        //        string values = string.Join(", ", collection.Select(v => v.ToString("F2")));
-        //        Debug.WriteLine($"Values Changed: [{values}]");
-        //        collection.CollectionChanged += OnSensorDataCollectionChanged;
-        //    }
-        //}
-
         private void OnSensorDataCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             // Only proceed if an existing value was replaced
@@ -486,60 +337,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                 sensorItem.Visibility = toggledPacifiers ? Visibility.Visible : Visibility.Collapsed;
             }
         }
-
-        public void GroupMeasurements(ObservableCollection<string> sensorMeasurements)
-        {
-            //// Clear existing group and prefix lists before processing
-            //GroupedSensorMeasurements.Clear();
-            //GroupedMeasurements.Clear();
-
-            //var groupedMeasurements = sensorMeasurements
-            //    .GroupBy(m => m.Split('_')[0]) // Extract prefix (before the first '_')
-            //    .ToList();
-
-            //// Process each group
-            //foreach (var group in groupedMeasurements)
-            //{
-            //    // Add the prefix to GroupedSensorMeasurements if it isn't already added
-            //    if (!GroupedSensorMeasurements.Contains(group.Key))
-            //    {
-            //        GroupedSensorMeasurements.Add(group.Key);
-            //    }
-
-            //    // Store the measurements in GroupedMeasurements by prefix
-            //    GroupedMeasurements[group.Key] = new ObservableCollection<string>(group);
-            //}
-        }
-
-        //// Handle toggle changes for pacifiers or sensors
-        //public void HandleToggleChanged(object sender, EventArgs e)
-        //{
-        //    if (sender is PacifierItem pacifierItem)
-        //    {
-        //        if (pacifierItem.IsChecked)
-        //        {
-        //            if (pacifierItem.Type == PacifierItem.ItemType.Pacifier && !checkedPacifiers.Contains(pacifierItem))
-        //            {
-        //                checkedPacifiers.Add(pacifierItem);
-        //            }
-        //            else if (pacifierItem.Type == PacifierItem.ItemType.Sensor && !checkedSensors.Contains(pacifierItem))
-        //            {
-        //                checkedSensors.Add(pacifierItem);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            if (pacifierItem.Type == PacifierItem.ItemType.Pacifier && checkedPacifiers.Contains(pacifierItem))
-        //            {
-        //                checkedPacifiers.Remove(pacifierItem);
-        //            }
-        //            else if (pacifierItem.Type == PacifierItem.ItemType.Sensor && checkedSensors.Contains(pacifierItem))
-        //            {
-        //                checkedSensors.Remove(pacifierItem);
-        //            }
-        //        }
-        //    }
-        //}
 
         // Property changed notification
         public event PropertyChangedEventHandler? PropertyChanged;

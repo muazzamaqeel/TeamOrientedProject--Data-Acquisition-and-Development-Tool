@@ -10,6 +10,10 @@ using SmartPacifier.Interface.Services;
 using System.Data;
 using System.Globalization;
 using InfluxDB.Client.Core.Exceptions;
+using InfluxDB.Client.Configurations;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 {
@@ -99,7 +103,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             }
 
             // Optional: Show message box to verify the JSON records
-            System.Windows.MessageBox.Show(string.Join("\n\n", records), "Raw JSON Data", MessageBoxButton.OK, MessageBoxImage.Information);
+            //System.Windows.MessageBox.Show(string.Join("\n\n", records), "Raw JSON Data", MessageBoxButton.OK, MessageBoxImage.Information);
 
             return records;
         }
@@ -133,18 +137,18 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         public async Task<DataTable> GetSensorDataAsync()
         {
             string fluxQuery = @"
-    from(bucket: ""SmartPacifier-Bucket1"")
-    |> range(start: 0)
-    |> filter(fn: (r) => r._measurement == ""campaigns"")
-    |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
+        from(bucket: ""SmartPacifier-Bucket1"")
+        |> range(start: 0)
+        |> filter(fn: (r) => r._measurement == ""campaigns"" or r._measurement == ""campaign_metadata"")
+        |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
     ";
 
             DataTable dataTable = new DataTable();
 
-            // Define all columns explicitly to match XAML
+            // Define all columns, including entry_id and entry_time
             string[] columnNames = { "Measurement", "Campaign Name", "Pacifier Name", "Sensor Type", "Status", "LED1", "LED2", "LED3",
                              "Temperature", "Acc X", "Acc Y", "Acc Z", "Gyro X", "Gyro Y", "Gyro Z", "Mag X", "Mag Y", "Mag Z",
-                             "Creation", "Start Time", "End Time", "Timestamp" };
+                             "Creation", "Start Time", "End Time", "entry_id", "entry_time" };
 
             foreach (string colName in columnNames)
             {
@@ -163,7 +167,8 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
                 {
                     DataRow row = dataTable.NewRow();
 
-                    row["Timestamp"] = record.GetTime()?.ToDateTimeUtc().ToString("o");
+                    // Populate columns with data
+                    row["entry_time"] = record.GetTime()?.ToDateTimeUtc().ToString("yyyy-MM-dd HH:mm:ss");
                     row["Measurement"] = record.GetValueByKey("_measurement")?.ToString();
                     row["Campaign Name"] = record.GetValueByKey("campaign_name")?.ToString();
                     row["Pacifier Name"] = record.GetValueByKey("pacifier_name")?.ToString();
@@ -185,6 +190,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
                     row["Creation"] = record.GetValueByKey("creation")?.ToString();
                     row["Start Time"] = record.GetValueByKey("start_time")?.ToString();
                     row["End Time"] = record.GetValueByKey("end_time")?.ToString();
+                    row["entry_id"] = record.GetValueByKey("entry_id") ?? DBNull.Value;
 
                     dataTable.Rows.Add(row);
                 }
@@ -193,9 +199,74 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             return dataTable;
         }
 
+        // Corrected deletion function in C#
+        public async Task DeleteEntryFromDatabaseAsync(int entryId, string measurement)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    // Set up the headers
+                    client.DefaultRequestHeaders.Add("Authorization", $"Token {_token}");
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                    // Define the start and stop times for deletion
+                    string start = "1970-01-01T00:00:00Z";
+                    string stop = DateTime.UtcNow.ToString("o");
+
+                    // Create a dynamic predicate based on measurement type
+                    string predicate;
+                    if (measurement == "campaign_metadata")
+                    {
+                        // Only use entry_id for campaign_metadata
+                        predicate = $"_measurement=\"campaign_metadata\" AND entry_id=\"{entryId}\"";
+                    }
+                    else if (measurement == "campaigns")
+                    {
+                        // Use both measurement and entry_id for campaigns
+                        predicate = $"_measurement=\"campaigns\" AND entry_id=\"{entryId}\"";
+                    }
+                    else
+                    {
+                        MessageBox.Show("Unknown measurement type specified.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    // Create the JSON payload for the delete request
+                    var deleteRequest = new
+                    {
+                        start = start,
+                        stop = stop,
+                        predicate = predicate
+                    };
+
+                    var jsonContent = JsonConvert.SerializeObject(deleteRequest);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    // Send the DELETE request to the InfluxDB API
+                    var response = await client.PostAsync($"{_baseUrl}/api/v2/delete?org={_org}&bucket={_bucket}", content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        //MessageBox.Show("Entry deleted successfully from the database.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        string errorContent = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error deleting entry: {response.ReasonPhrase} - {errorContent}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error deleting entry from database: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
 
 
 
     }
 }
+
+

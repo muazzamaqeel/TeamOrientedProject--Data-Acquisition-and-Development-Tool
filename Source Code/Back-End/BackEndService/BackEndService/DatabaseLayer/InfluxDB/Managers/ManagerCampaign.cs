@@ -16,6 +16,7 @@ using System.IO;
 using System.Threading.Tasks;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Components;
 using System.Windows;
+using System.Diagnostics;
 
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
@@ -292,7 +293,57 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
 
 
+        public async Task<List<string>> GetPacifiersByCampaignNameAsync(string campaignName)
+        {
+            var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
+                        "|> range(start: -1y) " +
+                        $"|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\" and r[\"campaign_name\"] == \"{campaignName}\") " +
+                        "|> keep(columns: [\"pacifier_name\"])";
 
+            var pacifierData = await _databaseService.ReadData(query);
+            Debug.WriteLine($"Raw pacifier data for campaign '{campaignName}': {string.Join("\n", pacifierData)}");
+
+            var pacifierIds = new List<string>();
+
+            foreach (var data in pacifierData)
+            {
+                var parsedData = JsonNode.Parse(data);
+                if (parsedData?["pacifier_name"] != null)
+                {
+                    pacifierIds.Add(parsedData["pacifier_name"]?.ToString());
+                }
+            }
+
+            Debug.WriteLine($"Parsed pacifier names for campaign '{campaignName}': {string.Join(", ", pacifierIds)}");
+            return pacifierIds;
+        }
+
+
+
+        public async Task<List<string>> GetSensorsByPacifierNameAsync(string pacifierName, string campaignName)
+        {
+            var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
+                        "|> range(start: -1y) " +
+                        $"|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\" and r[\"pacifier_name\"] == \"{pacifierName}\" and r[\"campaign_name\"] == \"{campaignName}\") " +
+                        "|> keep(columns: [\"sensor_type\"])";
+
+            var sensorData = await _databaseService.ReadData(query);
+            Debug.WriteLine($"Raw sensor data for pacifier '{pacifierName}' in campaign '{campaignName}': {string.Join("\n", sensorData)}");
+
+            var sensorTypes = new List<string>();
+
+            foreach (var data in sensorData)
+            {
+                var parsedData = JsonNode.Parse(data);
+                if (parsedData?["sensor_type"] != null)
+                {
+                    sensorTypes.Add(parsedData["sensor_type"]?.ToString());
+                }
+            }
+
+            Debug.WriteLine($"Parsed sensor types for pacifier '{pacifierName}': {string.Join(", ", sensorTypes)}");
+            return sensorTypes;
+        }
 
 
 
