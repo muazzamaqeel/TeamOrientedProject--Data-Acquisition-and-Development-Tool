@@ -342,6 +342,8 @@ namespace Smart_Pacifier___Tool
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
+            //PythonScriptEngine.Instance.StopExecution();
+
 
             // Free the console
             FreeConsole();

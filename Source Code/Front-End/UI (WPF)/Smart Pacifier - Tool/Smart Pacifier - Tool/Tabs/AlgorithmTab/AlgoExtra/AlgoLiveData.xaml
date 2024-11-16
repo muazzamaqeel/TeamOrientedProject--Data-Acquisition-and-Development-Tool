@@ -30,40 +30,34 @@
                           Foreground="Black" />
 
                 <!-- Monitoring Buttons -->
-                <Button Content="Start Monitoring" Width="150" Height="40" Margin="0,5,0,10" 
+                <Button Content="Execute" Width="150" Height="40" Margin="0,5,0,10" 
                         HorizontalAlignment="Left" 
                         Click="StartMonitoringButton_Click"
                         Style="{StaticResource ModernButtonStyle}" />
-                <Button Content="Stop Monitoring" Width="150" Height="40" Margin="0,5,0,10" 
-                        HorizontalAlignment="Left" 
-                        Click="StopMonitoringButton_Click"
-                        Style="{StaticResource ModernButtonStyle}" />
 
-                <!-- Throttle Speed Control -->
-                <TextBlock Text="Throttle Speed (ms):" FontSize="16" FontWeight="Bold" Margin="0,10,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
-                <Slider x:Name="ThrottleSlider"
-                        Minimum="8" Maximum="10"
-                        Value="9"
-                        TickFrequency="1"
-                        IsSnapToTickEnabled="True"
-                        ValueChanged="ThrottleSlider_ValueChanged" />
-                <TextBlock Text="{Binding ThrottleSpeedSeconds, StringFormat=Speed: {0}s}" 
-                           Foreground="{StaticResource MainViewForegroundColor}" />
+                <!-- Scrolling Speed Control -->
+                <TextBlock Text="Adjust Scrolling Speed:" FontSize="16" FontWeight="Bold" Margin="0,20,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
+                <Slider x:Name="ScrollingSpeedSlider" Minimum="1" Maximum="10" Value="5"
+                        TickPlacement="BottomRight" TickFrequency="1" IsSnapToTickEnabled="True"
+                        Width="200" Margin="0,5,0,15" />
+                <TextBlock x:Name="SpeedDisplay" Text="Speed: Normal" 
+                           FontSize="14" Margin="0,5,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
             </StackPanel>
 
             <!-- Right Side: Real-Time Data Display -->
             <StackPanel Grid.Column="1" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Top">
                 <TextBlock Text="Real-Time Data Output:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
-                <TextBox x:Name="LiveDataOutputTextBox"
-                         Text="{Binding LiveDataOutput, UpdateSourceTrigger=PropertyChanged}"
-                         IsReadOnly="True"
-                         VerticalScrollBarVisibility="Auto"
-                         HorizontalScrollBarVisibility="Auto"
-                         AcceptsReturn="True"
-                         TextWrapping="Wrap"
-                         Background="{StaticResource MainViewSecondaryBackgroundColor}"
-                         Foreground="{StaticResource MainViewForegroundColor}"
-                         Height="324" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <TextBox x:Name="LiveDataOutputTextBox"
+                             Text="{Binding LiveDataOutput, UpdateSourceTrigger=PropertyChanged}"
+                             IsReadOnly="True"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Background="{StaticResource MainViewSecondaryBackgroundColor}"
+                             Foreground="{StaticResource MainViewForegroundColor}"
+                             FontSize="14" Padding="10"
+                             BorderBrush="{StaticResource AccentColor}" BorderThickness="2" />
+                </ScrollViewer>
             </StackPanel>
         </Grid>
     </Grid>
