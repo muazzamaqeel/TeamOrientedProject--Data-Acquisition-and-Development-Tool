@@ -43,7 +43,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             _databaseService = databaseService;
             _managerCampaign = managerCampaign;
 
-            LoadCampaignData();
+            LoadCampaignsData();
             FilteredCampaigns = CollectionViewSource.GetDefaultView(Campaigns);
             FilteredCampaigns.Filter = FilterCampaigns;
             FilteredCampaigns.Refresh();
@@ -51,99 +51,34 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             isLoaded = true;
         }
 
-
-
-        private async void LoadCampaignData()
+        private async void LoadCampaignsData()
         {
-            var csvData = await _managerCampaign.GetCampaignDataAsCSVAsync();
-            var lines = csvData.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            LoadingSpinner.Visibility = Visibility.Visible; // Show the spinner
 
-            campaignDataMap.Clear();
-            StringBuilder outputLog = new StringBuilder("Processing Campaign Data:\n");
-
-            foreach (var line in lines.Skip(1))
+            var campaigns = await _managerCampaign.GetCampaignsDataAsync();
+            foreach (var campaign in campaigns)
             {
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                var columns = line.Split(',');
-
-                if (columns.Length < 4) continue;
-
-                var campaignName = columns[0];
-                var status = columns[1];
-                var startTimeStr = columns[2];
-                var endTimeStr = columns[3];
-
-                if (!campaignDataMap.ContainsKey(campaignName))
+                var parts = campaign.Split(new[] { "Campaign: ", ", PacifierCount: " }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 2)
                 {
-                    campaignDataMap[campaignName] = new Campaign
+                    var campaignName = parts[0];
+                    if (int.TryParse(parts[1], out int pacifierCount))
                     {
-                        CampaignName = campaignName,
-                        PacifierCount = 0,
-                        Date = "N/A",
-                        TimeRange = "N/A"
-                    };
-                }
-
-                var campaign = campaignDataMap[campaignName];
-                outputLog.AppendLine($"Processing {campaignName} with status {status}");
-
-                // Format and set TimeRange based on start and end times
-                DateTime.TryParse(startTimeStr, out var campaignStart);
-                DateTime.TryParse(endTimeStr, out var campaignEnd);
-
-                if (!string.IsNullOrWhiteSpace(startTimeStr) && !string.IsNullOrWhiteSpace(endTimeStr))
-                {
-                    campaign.TimeRange = $"{campaignStart:MM/dd/yyyy HH:mm:ss} - {campaignEnd:MM/dd/yyyy HH:mm:ss}";
-                }
-                else if (!string.IsNullOrWhiteSpace(startTimeStr))
-                {
-                    campaign.TimeRange = $"{campaignStart:MM/dd/yyyy HH:mm:ss} - N/A";
-                }
-                else if (!string.IsNullOrWhiteSpace(endTimeStr))
-                {
-                    campaign.TimeRange = $"N/A - {campaignEnd:MM/dd/yyyy HH:mm:ss}";
+                        Campaigns.Add(new Campaign
+                        {
+                            CampaignName = campaignName,
+                            PacifierCount = pacifierCount,
+                            //Date = DateTime.Now.ToString("MM/dd/yyyy"), // Placeholder date
+                            //TimeRange = $"{DateTime.Now.ToString("hh:mm tt")} - {DateTime.Now.AddHours(1).ToString("hh:mm tt")}" // Placeholder time range
+                        });
+                    }
                 }
             }
 
-            UpdateCampaignsList();
-            MessageBox.Show(outputLog.ToString(), "Load Campaign Data Output", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-
-
-
-        private void UpdateCampaignsList()
-        {
-            Campaigns.Clear();
-            foreach (var campaign in campaignDataMap.Values)
-            {
-                Campaigns.Add(campaign);
-            }
-
-            OnPropertyChanged(nameof(Campaigns));         // Notify UI about Campaigns change
-            OnPropertyChanged(nameof(FilteredCampaigns)); // Notify UI about FilteredCampaigns change
             FilteredCampaigns.Refresh();
+            LoadingSpinner.Visibility = Visibility.Collapsed; // Hide the spinner
         }
 
-
-
-
-
-
-        private void GenerateCampaigns()
-        {
-            for (int i = 1; i <= 10; i++)
-            {
-                Campaigns.Add(new Campaign
-                {
-                    CampaignName = $"Campaign {i}",
-                    PacifierCount = i * 10,
-                    Date = DateTime.Now.AddDays(i).ToString("MM/dd/yyyy"),
-                    TimeRange = $"{DateTime.Now.AddHours(i).ToString("hh:mm tt")} - {DateTime.Now.AddHours(i + 1).ToString("hh:mm tt")}"
-                });
-            }
-        }
 
         private bool FilterCampaigns(object item)
         {
@@ -222,15 +157,12 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         {
             if (sender is Border border && border.DataContext is Campaign selectedCampaign)
             {
-                // Create an instance of CampaignsInternal, passing the database singleton and campaign name
-                var campaignsInternal = new CampaignsInternal(_managerCampaign, selectedCampaign.CampaignName);
-
                 // Get a reference to MainWindow
                 var mainWindow = Application.Current.MainWindow as MainWindow;
                 if (mainWindow != null)
                 {
                     // Use NavigateTo to replace the content in MainContent with CampaignsInternal
-                    mainWindow.NavigateTo(campaignsInternal);
+                    mainWindow.NavigateTo(new CampaignView(_managerCampaign, selectedCampaign.CampaignName));
                 }
             }
         }
