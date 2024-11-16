@@ -2,6 +2,6 @@
 {
     public interface IAlgorithmLayer
     {
-        string ExecuteScript(string pythonCode);
+        Task<string> ExecuteScriptAsync(string scriptPath, string dataFilePath);
     }
 }

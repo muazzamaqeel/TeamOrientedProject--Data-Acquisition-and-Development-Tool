@@ -264,6 +264,93 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         }
 
 
+        public async Task<Dictionary<string, object>> GetCampaignDataAlgorithmLayerAsync(string campaignName)
+        {
+            var campaignData = new Dictionary<string, object>
+    {
+        { "campaignName", campaignName },
+        { "pacifiers", new List<Dictionary<string, object>>() }
+    };
+
+            var fluxQuery = $@"
+        from(bucket: ""{_bucket}"")
+        |> range(start: -30d)
+        |> filter(fn: (r) => r._measurement == ""campaigns"" and r.campaign_name == ""{campaignName}"")
+        |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
+    ";
+
+            var queryApi = _client.GetQueryApi();
+            var tables = await queryApi.QueryAsync(fluxQuery, _org);
+
+            var pacifiers = (List<Dictionary<string, object>>)campaignData["pacifiers"];
+
+            foreach (var table in tables)
+            {
+                foreach (var record in table.Records)
+                {
+                    // Extract pacifier and sensor data from the record
+                    string pacifierName = record.GetValueByKey("pacifier_name")?.ToString() ?? "Unknown";
+                    string sensorType = record.GetValueByKey("sensor_type")?.ToString() ?? "Unknown";
+
+                    // Find existing pacifier data or create a new entry
+                    var pacifierData = pacifiers.FirstOrDefault(p => (string)p["name"] == pacifierName);
+                    if (pacifierData == null)
+                    {
+                        pacifierData = new Dictionary<string, object>
+                {
+                    { "name", pacifierName },
+                    { "sensors", new List<Dictionary<string, object>>() }
+                };
+                        pacifiers.Add(pacifierData);
+                    }
+
+                    // Prepare sensor data
+                    var sensorData = new Dictionary<string, object>
+            {
+                { "type", sensorType },
+                { "data", new Dictionary<string, object>() }
+            };
+
+                    var sensorValues = (Dictionary<string, object>)sensorData["data"];
+                    foreach (var key in record.Values.Keys)
+                    {
+                        // Avoid InfluxDB metadata fields and known tags
+                        if (!key.StartsWith("_") && key != "campaign_name" && key != "pacifier_name" && key != "sensor_type")
+                        {
+                            sensorValues[key] = record.GetValueByKey(key);
+                        }
+                    }
+
+                    // Add sensor data to the pacifier
+                    ((List<Dictionary<string, object>>)pacifierData["sensors"]).Add(sensorData);
+                }
+            }
+
+            // Debug: Output the retrieved data for inspection
+            var debugOutput = new System.Text.StringBuilder();
+            debugOutput.AppendLine($"Campaign Name: {campaignData["campaignName"]}");
+            debugOutput.AppendLine("Pacifiers:");
+
+            foreach (var pacifier in pacifiers)
+            {
+                debugOutput.AppendLine($"  Pacifier Name: {pacifier["name"]}");
+                var sensors = (List<Dictionary<string, object>>)pacifier["sensors"];
+                foreach (var sensor in sensors)
+                {
+                    debugOutput.AppendLine($"    Sensor Type: {sensor["type"]}");
+                    var data = (Dictionary<string, object>)sensor["data"];
+                    foreach (var key in data.Keys)
+                    {
+                        debugOutput.AppendLine($"      {key}: {data[key]}");
+                    }
+                }
+            }
+
+            MessageBox.Show(debugOutput.ToString(), "Campaign Data Debug Info");
+
+            return campaignData;
+        }
+
 
 
     }

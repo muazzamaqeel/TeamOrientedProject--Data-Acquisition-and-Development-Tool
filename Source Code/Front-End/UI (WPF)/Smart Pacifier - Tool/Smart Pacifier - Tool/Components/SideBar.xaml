@@ -53,6 +53,7 @@
             <Button Content="Active Monitoring" Click="MonitoringButton_Click"/>
             <Button Content="Campaigns" Click="CampaignsButton_Click"/>
             <Button x:Name="DeveloperButton" Content="Developer" Visibility="Collapsed" Click="DeveloperButton_Click"/>
+            <Button Content="Algorithm Layer" Click="AlgorithmButton_Click"/> 
             <Button Content="Settings" Click="SettingsButton_Click" />
         </StackPanel>
     </Grid>

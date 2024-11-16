@@ -8,6 +8,9 @@ on:
     branches: [ "Staging-Environment", "main-Production-Environment" ]
   pull_request:
     branches: [ "Staging-Environment", "main-Production-Environment" ]
+  schedule:
+    # Runs the workflow every day
+    - cron:  '45 11,11 * * *'
 
 jobs:
   build:
