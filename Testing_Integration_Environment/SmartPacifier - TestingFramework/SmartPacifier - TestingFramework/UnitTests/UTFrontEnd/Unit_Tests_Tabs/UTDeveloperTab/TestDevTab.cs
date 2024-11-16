@@ -35,7 +35,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTFrontEnd.Unit_Tests_Tabs.
 
 
         [Fact]
-        public async Task DeleteEntryFromDatabaseAsync_ShouldDeleteEntrySuccessfully()
+        public async Task MainApp_DeleteEntryFromDatabaseAsync()
         {
             var testEntryId = 99;
             var measurement = "campaign_metadata";

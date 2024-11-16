@@ -8,7 +8,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
     public class ProtobufTest
     {
         [Fact]
-        public void SensorData_SerializationDeserialization_ShouldPreserveData()
+        public void Protobuf_SerializeDeserialize()
         {
             // Arrange
             var sensorData = new SensorData
@@ -30,9 +30,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Assert.True(deserializedData.DataMap.ContainsKey("gyro_x"));
             Assert.True(deserializedData.DataMap.ContainsKey("gyro_y"));
         }
-
+        /// <summary>
+        /// This test case is to check if the DataMap is empty when no data is added to it.
+        /// </summary>
         [Fact]
-        public void SensorData_WithEmptyDataMap_ShouldDeserializeCorrectly()
+        public void Protobuf_DataMap()
         {
             // Arrange
             var sensorData = new SensorData
@@ -52,8 +54,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Assert.Empty(deserializedData.DataMap);
         }
 
+        /// <summary>
+        /// This test case is to check if the DataMap is populated with multiple data entries.
+        /// </summary>
         [Fact]
-        public void SensorData_WithMultipleEntriesInDataMap_ShouldStoreAndRetrieveCorrectly()
+        public void Protobuf_DataMapIntense()
         {
             // Arrange
             var sensorData = new SensorData

@@ -46,7 +46,7 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
         }
 
         [Fact]
-        public async Task CampaignExists()
+        public async Task CampaignCycleTest()
         {
             // Arrange
             string campaignName = "Campaign_Test";
@@ -78,14 +78,15 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
 
 
         [Fact]
-        public async Task PerformanceTest()
+
+        public async Task TestPerformance()
         {
             // Arrange: Define the measurements and sample data
             string measurementMetadata = "campaign_metadata";
             string measurementCampaigns = "campaigns";
 
             var sampleMetadata = new List<Dictionary<string, object>>
-    {
+        {
         new Dictionary<string, object>
         {
             { "campaign_name", "Campaign3" },
@@ -106,8 +107,8 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             { "entry_id", 10 },
             { "status", "stopped" },
             { "entry_time", "2024-10-02 08:30:00" }
-        }
-    };
+                }
+        };
 
             var sampleCampaigns = new List<Dictionary<string, object>>
     {
@@ -239,6 +240,138 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             Console.WriteLine($"Delete Duration: {deleteDuration}ms");
         }
 
+
+        [Fact]
+        public async Task PacifierCycleTest()
+        {
+            // Arrange
+            string campaignName = "Campaign2";
+            string pacifierName = "Pacifier1";
+            string measurement = "campaigns";
+            int entryId = 4; // This is the unique ID for the pacifier entry
+            var fields = new Dictionary<string, object>
+    {
+                { "sensor_type", "ppg" },
+                { "led1", 99 },
+                { "led2", 102 },
+                { "led3", 97 },
+                { "temperature", 36.4 },
+                { "entry_time", "2024-10-01 12:35:00" }
+            };
+                    var tags = new Dictionary<string, string>
+            {
+                { "campaign_name", campaignName },
+                { "pacifier_name", pacifierName },
+                { "entry_id", entryId.ToString() }
+            };
+
+            // Add the pacifier to the database
+            await _databaseService.WriteDataAsync(measurement, fields, tags);
+
+            try
+            {
+                // Act - Query the database to check if the pacifier exists
+                string query = $@"
+                from(bucket: ""{_databaseService.Bucket}"")
+                |> range(start: -1h)
+                |> filter(fn: (r) => r._measurement == ""{measurement}"" 
+                    and r.pacifier_name == ""{pacifierName}"" 
+                    and r.campaign_name == ""{campaignName}"")";
+
+                var result = await _databaseService.ReadData(query);
+
+                // Assert
+                Assert.True(result.Count > 0, $"Expected pacifier '{pacifierName}' to exist in campaign '{campaignName}'.");
+            }
+            finally
+            {
+                // Cleanup - Delete the pacifier entry using DeleteEntryAsync
+                await DeleteEntryAsync(measurement, entryId);
+            }
+        }
+
+
+        [Fact]
+        public async Task SensorCycleTest()
+        {
+            // Arrange
+            string campaignName = "Campaign2";
+            string pacifierName = "Pacifier1";
+            string sensorType = "ppg"; // Sensor type to check
+            string measurement = "campaigns";
+            int entryId = 4; // Unique ID for the sensor entry
+            var fields = new Dictionary<string, object>
+            {
+                { "led1", 99 },
+                { "led2", 102 },
+                { "led3", 97 },
+                { "temperature", 36.4 },
+                { "entry_time", "2024-10-01 12:35:00" }
+            };
+                    var tags = new Dictionary<string, string>
+            {
+                { "campaign_name", campaignName },
+                { "pacifier_name", pacifierName },
+                { "sensor_type", sensorType },
+                { "entry_id", entryId.ToString() }
+            };
+
+            // Add the sensor to the database
+            await _databaseService.WriteDataAsync(measurement, fields, tags);
+
+            try
+            {
+                // Act - Query the database to check if the sensor exists
+                string query = $@"
+                from(bucket: ""{_databaseService.Bucket}"")
+                |> range(start: -1h)
+                |> filter(fn: (r) => r._measurement == ""{measurement}"" 
+                and r.sensor_type == ""{sensorType}"" 
+                and r.pacifier_name == ""{pacifierName}"" 
+                and r.campaign_name == ""{campaignName}"")";
+
+                var result = await _databaseService.ReadData(query);
+
+                // Assert
+                Assert.True(result.Count > 0, $"Expected sensor '{sensorType}' to exist for pacifier '{pacifierName}' in campaign '{campaignName}'.");
+            }
+            finally
+            {
+                // Cleanup - Delete the sensor entry using DeleteEntryAsync
+                await DeleteEntryAsync(measurement, entryId);
+            }
+        }
+
+        [Fact]
+        public async Task TestConnection()
+        {
+            // Arrange
+            Assert.NotNull(_databaseService);
+
+                string query = $@"
+                from(bucket: ""{_databaseService.Bucket}"")
+                |> range(start: -1h)
+                |> limit(n: 1)"; // Check if the bucket is accessible
+
+            try
+            {
+                // Act
+                var result = await _databaseService.ReadData(query);
+
+                // Assert
+                Assert.NotNull(result);
+                Assert.True(result.Count > 0, "Expected at least one result from the connection check query.");
+            }
+            catch (Exception ex)
+            {
+                // Fail the test if an exception occurs
+                Assert.False(true, $"Database connection test failed: {ex.Message}");
+            }
+        }
+
+
+
+
         // Reusable function for deleting entries
         private async Task DeleteEntryAsync(string measurement, int entryId)
         {
@@ -249,6 +382,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
 
             await _databaseService.DeleteEntryFromDatabaseAsync(entryId, measurement); // Assuming the method signature matches
         }
+
+
+
+
+
 
 
 
