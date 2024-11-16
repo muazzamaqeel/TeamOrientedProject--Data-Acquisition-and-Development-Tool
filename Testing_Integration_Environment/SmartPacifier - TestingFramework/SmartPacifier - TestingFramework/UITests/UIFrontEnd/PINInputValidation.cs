@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using FlaUI.Core.AutomationElements;
 
-namespace SmartPacifier_UITests
+namespace SmartPacifier___TestingFramework.UITests.UIFrontEnd
 {
     public class PINValidationTests
     {

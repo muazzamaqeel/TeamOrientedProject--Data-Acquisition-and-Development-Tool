@@ -14,6 +14,17 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="UITests\UI_Tests-BackEnd\**" />
+	  <Compile Remove="UnitTests\UTTemplates\**" />
+	  <EmbeddedResource Remove="UITests\UI_Tests-BackEnd\**" />
+	  <EmbeddedResource Remove="UnitTests\UTTemplates\**" />
+	  <None Remove="UITests\UI_Tests-BackEnd\**" />
+	  <None Remove="UnitTests\UTTemplates\**" />
+	  <Page Remove="UITests\UI_Tests-BackEnd\**" />
+	  <Page Remove="UnitTests\UTTemplates\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Castle.Core" Version="5.1.1" />
 		<PackageReference Include="coverlet.collector" Version="6.0.2">
 			<PrivateAssets>all</PrivateAssets>
@@ -39,8 +50,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="UITests\UI_Tests-BackEnd\" />
-	  <Folder Include="UnitTests\UTTemplates\" />
 	  <Folder Include="UnitTests\UTFrontEnd\Unit_Tests_Tabs\UTMonitoringTab\" />
 	  <Folder Include="UnitTests\UTFrontEnd\Unit_Tests_Tabs\UTSettingsTab\" />
 	  <Folder Include="UnitTests\UTFrontEnd\Unit_Tests_Tabs\UTCampaignsTab\" />

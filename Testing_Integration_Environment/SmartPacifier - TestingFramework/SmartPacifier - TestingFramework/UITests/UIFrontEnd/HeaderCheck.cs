@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace SmartPacifier___TestingFramework.UITests.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Test_Sidebar
+namespace SmartPacifier___TestingFramework.UITests.UIFrontEnd
 {
     public class HeaderCheck
     {
@@ -16,7 +16,7 @@ namespace SmartPacifier___TestingFramework.UITests.UI_Tests_FrontEnd.UI_Tests_Ta
         public HeaderCheck(Application app)
         {
             this.app = app;
-            this.automation = new UIA3Automation();
+            automation = new UIA3Automation();
         }
 
         private bool CheckWindowHeader(string buttonName, string expectedHeader)
