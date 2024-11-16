@@ -17,7 +17,6 @@
 
   <ItemGroup>
     <None Remove="Resources\OutputResources\config.json" />
-    <None Remove="Resources\OutputResources\TeamKey.pem" />
     <None Remove="Tabs\SettingsTab\.pem" />
   </ItemGroup>
 
@@ -64,12 +63,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\OutputResources\TeamKey.pem">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <AutoGen>True</AutoGen>
@@ -82,10 +75,6 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Resources\OutputResources\PythonFiles\GeneratedData\" />
   </ItemGroup>
 
 	<Target Name="PostBuildCopy" AfterTargets="PostBuildEvent">
