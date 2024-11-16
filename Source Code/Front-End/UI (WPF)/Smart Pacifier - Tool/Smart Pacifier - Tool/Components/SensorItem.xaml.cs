@@ -29,16 +29,14 @@ namespace Smart_Pacifier___Tool.Components
         public static readonly DependencyProperty LinkedPacifiersProperty =
             DependencyProperty.Register("LinkedPacifiers", typeof(ObservableCollection<PacifierItem>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<PacifierItem>()));
 
+        public static readonly DependencyProperty SensorGraphsProperty =
+            DependencyProperty.Register("SensorGraphs", typeof(ObservableCollection<LineChartGraph>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<LineChartGraph>()));
 
         public static readonly DependencyProperty SensorGroupsProperty =
             DependencyProperty.Register("SensorGroups", typeof(ObservableCollection<string>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<string>()));
 
         public static readonly DependencyProperty MeasurementGroupProperty =
             DependencyProperty.Register("MeasurementGroup", typeof(ObservableCollection<Dictionary<string, object>>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<Dictionary<string, object>>()));
-
-        // New DependencyProperty for graph data
-        public static readonly DependencyProperty GraphDataProperty =
-            DependencyProperty.Register("GraphData", typeof(ObservableCollection<DataPoint>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<DataPoint>()));
 
 
         public string SensorId { get; set; }
@@ -87,6 +85,14 @@ namespace Smart_Pacifier___Tool.Components
             set { SetValue(MeasurementGroupProperty, value); }
         }
 
+        public ObservableCollection<LineChartGraph> SensorGraphs
+        {
+            get { return (ObservableCollection<LineChartGraph>)GetValue(SensorGraphsProperty); }
+            set { SetValue(SensorGraphsProperty, value); }
+        }
+
+        public DateTime dateTime { get; set; }
+
         // Reference to the parent PacifierItem
         public PacifierItem ParentPacifierItem { get; set; } // Parent
 
@@ -97,6 +103,7 @@ namespace Smart_Pacifier___Tool.Components
             MeasurementGroup = new ObservableCollection<Dictionary<string, object>>();
             SensorGroups = new ObservableCollection<string>();
             LinkedPacifiers = new ObservableCollection<PacifierItem>(); // Track which pacifiers use this sensor
+            SensorGraphs = new ObservableCollection<LineChartGraph>();
             DataContext = this;
             HasGraphs = false;
             ParentPacifierItem = parentPacifierItem;

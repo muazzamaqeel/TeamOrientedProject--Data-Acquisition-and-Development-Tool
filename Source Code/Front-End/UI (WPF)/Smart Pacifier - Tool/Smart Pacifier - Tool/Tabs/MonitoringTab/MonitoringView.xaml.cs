@@ -17,6 +17,8 @@ using System.Windows.Data;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 using System.Collections.Specialized;
 using static Smart_Pacifier___Tool.Components.PacifierItem;
+using DataPoint = OxyPlot.DataPoint;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -44,7 +46,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             this.DataContext = _viewModel;
 
             // Clear items
-            _viewModel.SensorTypes.Clear();
             _viewModel.PacifierItems.Clear();
 
             // Initialize the UI
@@ -319,9 +320,11 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             };
 
             // Set the new row index for the ScrollViewer
-            int newRowIndex = pacifierGrid.RowDefinitions.Count - 1;
+            int newRowIndex = pacifierGrid.RowDefinitions.Count;
             Grid.SetRow(graphScrollViewer, newRowIndex);
             Grid.SetColumnSpan(graphScrollViewer, 3);
+
+            pacifierGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
 
             graphScrollViewer.Content = CreateGraphForSensor(sensorItem);
             pacifierGrid.Children.Add(graphScrollViewer);
@@ -470,36 +473,46 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             Debug.WriteLine($"Monitoring: Created Container for graphs");
 
             // Iterate through each SensorGroup in the SensorItem
-            foreach (var sensorGroup in sensorItem.MeasurementGroup)
+            foreach (var sensorGroup in sensorItem.SensorGroups)
             {
-                var firstKvp = sensorGroup.FirstOrDefault();
+                // Create a unique identifier for each graph based on SensorId and groupName
+                string uniquePlotId = $"{sensorItem.SensorId}_{sensorGroup}";
 
-                if (firstKvp.Key != null && firstKvp.Key == "sensorGroup")
+                LineChartGraph graph = new LineChartGraph(sensorItem, sensorGroup)
                 {
-                    var groupName = firstKvp.Value;
+                    Width = 350,
+                    Height = 200,
+                    Name = uniquePlotId,
+                    PlotId = uniquePlotId,  // Ensure unique PlotId
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
+                    Margin = new Thickness(5)
+                };
 
-                    // Create a unique identifier for each graph based on SensorId and groupName
-                    string uniquePlotId = $"{sensorItem.SensorId}_{groupName}";
+                sensorItem.SensorGraphs.Add(graph);
 
-                    LineChartGraph graph = new LineChartGraph(sensorItem, 15)
-                    {
-                        Width = 350,
-                        Height = 200,
-                        Name = uniquePlotId,
-                        PlotId = uniquePlotId,  // Ensure unique PlotId
-                        HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
-                        Margin = new Thickness(5)
-                    };
-
-                    graphPanel.Children.Add(graph);
-                    Debug.WriteLine($"Monitoring: Created Graph for Sensor Group {groupName} with unique PlotId {uniquePlotId}");
-                }
+                graphPanel.Children.Add(graph);
+                Debug.WriteLine($"Monitoring: Created Graph for Sensor Group {sensorGroup} with unique PlotId {uniquePlotId}");
             }
 
             return graphPanel;
         }
 
+        // ================ Graph Data Bind ===============
 
+
+
+        //private LineChartGraph FindGraphByPlotId(string plotId)
+        //{
+        //    // Search for the graph with the specific PlotId
+        //    foreach (var child in graphPanel.Children)
+        //    {
+        //        if (child is LineChartGraph graph && graph.PlotId == plotId)
+        //        {
+        //            return graph;
+        //        }
+        //    }
+        //    return null;
+        //}
 
         // ================ Buttons ===============
 
@@ -533,48 +546,67 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// <param name="e"></param>
         private void Intervals_Button(object sender, RoutedEventArgs e)
         {
-            //var dialog = new IntervalSettingsDialog(new List<SensorItem>(_viewModel.checkedSensors));
-            //if (dialog.ShowDialog() == true)
-            //{
-            //    var intervals = dialog.SensorIntervals;
-            //    // Now you can use intervals for further processing
-            //    foreach (var sensor in intervals)
-            //    {
-            //        Console.WriteLine($"Sensor: {sensor.Key}, Intervals: {string.Join(", ", sensor.Value)}");
-            //    }
-            //}
+            if (_viewModel.CheckedSensorItems.Count > 0)
+            {
+
+                var dialog = new IntervalSettingsDialog(new List<PacifierItem>(_viewModel.CheckedPacifierItems), new List<SensorItem>(_viewModel.CheckedSensorItems));
+                if (dialog.ShowDialog() == true)
+                {
+                    var intervals = dialog.SensorIntervals;
+                    // Now you can use intervals for further processing
+                    foreach (var sensor in intervals)
+                    {
+                        Console.WriteLine($"Sensor: {sensor.Key}, Intervals: {string.Join(", ", sensor.Value)}");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please Select at least 1 Sensor.");
+            }
         }
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void AddPacifier_Button(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        /// <summary>
-        /// 
+        /// Handles the End Campaign button click.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void EndCampaign_Button(object sender, RoutedEventArgs e)
         {
-            if (_viewModel.SensorTypes != null && _viewModel.SensorTypes.Any())
-            {
-                // Combine all sensor types into a single string with line breaks
-                string sensorTypesText = string.Join("\n", _viewModel.GroupedSensorMeasurements);
+            // Show a confirmation dialog
+            MessageBoxResult result = MessageBox.Show(
+                "Are you sure you want to end the campaign? This action cannot be undone.",
+                "End Campaign Confirmation",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
 
-                // Display the message box
-                MessageBox.Show(sensorTypesText, "Sensor Types");
+            // Check the user's response
+            if (result == MessageBoxResult.Yes)
+            {
+                // User confirmed, proceed with ending the campaign
+                EndCampaign();
             }
             else
             {
-                MessageBox.Show("No sensor types available.", "Sensor Types");
+                // User chose not to proceed
+                MessageBox.Show("Campaign not ended.", "Operation Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
+
+        /// <summary>
+        /// Ends the campaign.
+        /// </summary>
+        private void EndCampaign()
+        {
+            // Logic to end the campaign goes here
+            MessageBox.Show("Campaign has been successfully ended.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // Retrieve PacifierSelectionView from the DI container
+            var pacifierSelectionView = ((App)Application.Current).ServiceProvider.GetRequiredService<PacifierSelectionView>();
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(pacifierSelectionView);
+        }
+
     }
 }
 
