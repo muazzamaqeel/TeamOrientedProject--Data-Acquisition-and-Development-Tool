@@ -15,6 +15,9 @@ using System.Windows.Controls;
 using static Smart_Pacifier___Tool.Components.PacifierItem;
 using System.Runtime.Intrinsics.X86;
 using System.IO.Packaging;
+using OxyPlot.Series;
+using OxyPlot;
+using OxyPlot.Axes;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 {
@@ -27,26 +30,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         // Memorizes the order for toggling buttons
         public ObservableCollection<PacifierItem> _checkedPacifierItems = new ObservableCollection<PacifierItem>();
         public ObservableCollection<SensorItem> _checkedSensorItems = new ObservableCollection<SensorItem>();
-
-        // Dictionary mapping PacifierItem to its associated sensors
-        public Dictionary<PacifierItem, ObservableCollection<SensorItem>> PacifierToSensorsMap = new Dictionary<PacifierItem, ObservableCollection<SensorItem>>();
-        // Dictionary mapping SensorItem to its associated pacifiers
-        public Dictionary<SensorItem, ObservableCollection<PacifierItem>> SensorToPacifiersMap = new Dictionary<SensorItem, ObservableCollection<PacifierItem>>();
-
-        // Dictionary to hold LineChartGraph objects per sensor ID
-        public Dictionary<string, Dictionary<string, LineChartGraph>> _lineChartGraphs = new Dictionary<string, Dictionary<string, LineChartGraph>>();
-
-        // ObservableCollections to hold sensor types and plot types
-        private ObservableCollection<string> _sensorTypes = new ObservableCollection<string>();
-        private ObservableCollection<string> _plotTypes = new ObservableCollection<string>();
-        private ObservableCollection<string> _sensorMeasurements = new ObservableCollection<string>();
-        private ObservableCollection<string> _groupedSensorMeasurements = new ObservableCollection<string>();
-        private ObservableCollection<string> _sensorValues = new ObservableCollection<string>();
-
-        private Dictionary<string, ObservableCollection<string>> _groupedMeasurements = new Dictionary<string, ObservableCollection<string>>();
-
-        // Dictionary to store real-time sensor data (as ObservableDictionary for binding)
-        public Dictionary<string, SensorItem> _sensorDataDictionary = new Dictionary<string, SensorItem>();
 
         // Properties to expose ObservableCollections for Pacifier and Sensor items
         public ObservableCollection<PacifierItem> PacifierItems
@@ -89,70 +72,12 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             }
         }
 
-        // Properties to bind sensorTypes and plotTypes to the UI
-        public ObservableCollection<string> SensorTypes
-        {
-            get => _sensorTypes;
-            set
-            {
-                _sensorTypes = value;
-                OnPropertyChanged(nameof(SensorTypes));
-            }
-        }
-
-        public ObservableCollection<string> PlotTypes
-        {
-            get => _plotTypes;
-            set
-            {
-                _plotTypes = value;
-                OnPropertyChanged(nameof(PlotTypes));
-            }
-        }
-
-        // Properties to bind sensorMeasurements and plotTypes to the UI
-        public ObservableCollection<string> SensorMeasurements
-        {
-            get => _sensorMeasurements;
-            set
-            {
-                _sensorMeasurements = value;
-                OnPropertyChanged(nameof(SensorMeasurements));
-            }
-        }
-
-        // Properties to bind GroupedSensorMeasurements and plotTypes to the UI
-        public ObservableCollection<string> GroupedSensorMeasurements
-        {
-            get => _groupedSensorMeasurements;
-            set
-            {
-                _sensorMeasurements = value;
-                OnPropertyChanged(nameof(GroupedSensorMeasurements));
-            }
-        }
-
-        // Properties to bind GroupedSensorMeasurements and plotTypes to the UI
-        public ObservableCollection<string> SensorValues
-        {
-            get => _sensorValues;
-            set
-            {
-                _sensorValues = value;
-                OnPropertyChanged(nameof(SensorValues));
-            }
-        }
 
         // Constructor initializing empty ObservableCollections
         public MonitoringViewModel()
         {
             PacifierItems = new ObservableCollection<PacifierItem>();
             SensorItems = new ObservableCollection<SensorItem>();
-            SensorTypes = new ObservableCollection<string>();
-            PlotTypes = new ObservableCollection<string>();
-            SensorMeasurements = new ObservableCollection<string>();
-            GroupedSensorMeasurements = new ObservableCollection<string>();
-            _sensorDataDictionary = new Dictionary<string, SensorItem>();
 
             // Receive real-time data from the broker
             SubscribeToBroker();
@@ -172,6 +97,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         /// </summary>
         private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
+            DateTime dateTime = DateTime.Now;
             // Only proceed if the pacifier ID is in the checkedPacifiers list and data is valid
             if (PacifierItems.Any(p => p.PacifierId == e.PacifierId) && e.SensorType != null && e.ParsedData != null)
             {
@@ -195,30 +121,50 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                 //Debug.WriteLine($"Add Sensor_{e.SensorType}");
                                 // Add a new sensor item if it doesn't exist
                                 sensorItem = new SensorItem(e.SensorType, pacifierItem);
+                                sensorItem.dateTime = dateTime;
                                 pacifierItem.Sensors.Add(sensorItem);
-                            }
-                            else if (sensorItem.SensorIsChecked)
-                            {
-                                //Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
-                                if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))
+
+                                foreach (var dictionary in e.ParsedData)
                                 {
-                                    //Debug.WriteLine($"Linked Pacifier_{pacifierItem.PacifierId} to Sensor_{sensorItem.SensorId}");
-                                    sensorItem.LinkedPacifiers.Add(pacifierItem);
+                                    if (dictionary.ContainsKey("sensorGroup"))
+                                    {
+                                        // Check for uniqueness
+                                        if (!sensorItem.SensorGroups.Contains(dictionary["sensorGroup"].ToString()))
+                                        {
+                                            sensorItem.SensorGroups.Add(dictionary["sensorGroup"].ToString());
+                                        }
+                                    }
                                 }
-                                //Debug.WriteLine($"Selected Sensor_{e.SensorType}");
-
-                                // Add the entire list of dictionaries to the SensorItem
-                                sensorItem.MeasurementGroup.Clear();
-                                sensorItem.MeasurementGroup = new ObservableCollection<Dictionary<string, object>>(e.ParsedData);
-
-                                //Debug
-                                //DisplaySensorDetails(pacifierItem, sensorItem);
-
-
                             }
                             else
                             {
-                                //Debug.WriteLine($"Is Not Checked: Sensor_{sensorItem.SensorId}");
+                                sensorItem.dateTime = dateTime;
+                                if (sensorItem.SensorIsChecked)
+                                {
+                                    //Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
+                                    if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))
+                                    {
+                                        //Debug.WriteLine($"Linked Pacifier_{pacifierItem.PacifierId} to Sensor_{sensorItem.SensorId}");
+                                        sensorItem.LinkedPacifiers.Add(pacifierItem);
+                                    }
+                                    //Debug.WriteLine($"Selected Sensor_{e.SensorType}");
+
+                                    // Add the entire list of dictionaries to the SensorItem
+                                    sensorItem.MeasurementGroup.Clear();
+                                    sensorItem.MeasurementGroup = new ObservableCollection<Dictionary<string, object>>(e.ParsedData);
+                                    AddLineSeries(sensorItem);
+                                    //foreach (var dictionary in sensorItem.MeasurementGroup)
+                                    //{
+                                    //    if (!sensorItem.SensorGroups.Contains(dictionary["sensorGroup"]))
+                                    //    {
+                                    //        sensorItem.SensorGroups.Add(dictionary["sensorGroup"]);
+                                    //    }
+
+                                    //}
+                                    //Debug
+                                    //DisplaySensorDetails(pacifierItem, sensorItem);
+                                }
+
                             }
 
                         }
@@ -241,6 +187,78 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                  //Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in selected list or invalid data.");
             }
         }
+
+
+        private void AddLineSeries(SensorItem sensorItem)
+        {
+
+            foreach (var measurementGraph in sensorItem.SensorGraphs)
+            {
+                //Debug.WriteLine($"AddLineSeries for Sensor {sensorItem.SensorId} to Graph {measurementGraph.Uid}");
+                AddDataToGraphs(measurementGraph, sensorItem);
+            }
+        }
+
+        private void AddDataToGraphs(LineChartGraph measurementGraph, SensorItem sensorItem)
+        {
+            foreach (var sensorGroup in sensorItem.MeasurementGroup)
+            {
+                var firstKvp = sensorGroup.FirstOrDefault();
+                string uniquePlotId = $"{sensorItem.SensorId}_{firstKvp.Value}";
+
+                //Debug.WriteLine($"AddDataToGraphs Graph ID {measurementGraph.PlotId} is this {uniquePlotId}");
+
+                if (measurementGraph.PlotId == uniquePlotId)
+                {
+                    // Now, add the remaining key-value pairs as DataPoints to the corresponding LineSeries
+                    foreach (var kvp in sensorGroup)
+                    {
+                        if (kvp.Key == "sensorGroup") continue; // Skip the sensorGroup field
+
+                        // Find the existing LineSeries for this sensor group (or create a new one if not found)
+                        var existingSeries = measurementGraph.LineSeriesCollection.FirstOrDefault(series => series.Title == kvp.Key);
+
+                        if (existingSeries == null)
+                        {
+                            // Create a new LineSeries for this sensor group if it doesn't already exist
+                            existingSeries = new LineSeries
+                            {
+                                Title = kvp.Key,
+                                MarkerType = MarkerType.Square
+                            };
+                            measurementGraph.LineSeriesCollection.Add(existingSeries);
+                            measurementGraph.PlotModel.Series.Add(existingSeries);
+
+                            //Debug.WriteLine($"AddDataToGraphs Created New Line Series {kvp.Key}");
+                        }
+
+                        //Debug.WriteLine($"AddDataToGraphs Line Series {kvp.Key} with Interval {measurementGraph.Interval}");
+
+                        // Add the value as DataPoint to the existing LineSeries for this sensor group
+                        DateTime xValue = sensorItem.dateTime;
+                        double yValue = Convert.ToDouble(kvp.Value); // Assuming the value can be converted to double
+
+                        existingSeries.Points.Add((new DataPoint(DateTimeAxis.ToDouble(xValue), yValue)));
+
+                        if (existingSeries.Points.Count > measurementGraph.Interval)
+                        {
+                            var difference = existingSeries.Points.Count - measurementGraph.Interval;
+                            for (int i = 0; i <= difference; i++)
+                            {
+                                existingSeries.Points.RemoveAt(0);
+                            }
+                        }
+
+                        //Debug.WriteLine($"AddDataToGraphs Add DataPoints {yValue}");
+                    }
+
+                }
+
+            }
+            measurementGraph.PlotModel.InvalidatePlot(true);
+
+        }
+
 
         private void DisplaySensorDetails(PacifierItem pacifierItem, SensorItem sensorItem)
         {
@@ -282,48 +300,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             sensorDetailsWindow.Show();
         }
 
-
-
-
-        public void AddPacifierSensorPair(PacifierItem pacifierItem, SensorItem sensorItem)
-        {
-            // Add sensor to the list for this pacifier
-            if (!PacifierToSensorsMap.ContainsKey(pacifierItem))
-            {
-                PacifierToSensorsMap[pacifierItem] = new ObservableCollection<SensorItem>();
-            }
-            if (!PacifierToSensorsMap[pacifierItem].Contains(sensorItem))
-            {
-                PacifierToSensorsMap[pacifierItem].Add(sensorItem);
-            }
-
-            // Add pacifier to the list for this sensor
-            if (!SensorToPacifiersMap.ContainsKey(sensorItem))
-            {
-                SensorToPacifiersMap[sensorItem] = new ObservableCollection<PacifierItem>();
-            }
-            if (!SensorToPacifiersMap[sensorItem].Contains(pacifierItem))
-            {
-                SensorToPacifiersMap[sensorItem].Add(pacifierItem);
-            }
-        }
-
-        private void OnSensorDataCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            // Only proceed if an existing value was replaced
-            if (e.Action == NotifyCollectionChangedAction.Add)
-            {
-                Debug.WriteLine("A value was replaced in _sensorDataDictionary.");
-                UpdateGraphs();
-            }
-        }
-
-        private void UpdateGraphs()
-        {
-            // This will be where you handle the graph updates after values change.
-            Debug.WriteLine("UpdateGraphs called.");
-        }
-
         public void TogglePacifierVisibility(PacifierItem pacifierItem)
         {
             bool toggledPacifiers = PacifierItems.Any(p => p.IsChecked);
@@ -355,8 +331,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                 IsReadOnly = true,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                HorizontalAlignment = HorizontalAlignment.Stretch
+                VerticalAlignment = System.Windows.VerticalAlignment.Stretch,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch
             };
 
             var grid = new Grid();
