@@ -79,21 +79,29 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             _databaseService = databaseService;
             _pythonScriptEngine = new PythonScriptEngine();
 
+            // Attach event handlers for lifecycle management
             Loaded += OnControlLoaded;
-            Unloaded += OnControlUnloaded; // Hook for cleanup on application closure
+            Unloaded += OnControlUnloaded;
+
             DataContext = this;
             LoadAvailableScripts();
         }
 
+
         private void OnControlLoaded(object sender, RoutedEventArgs e)
         {
-            LoadAvailableScripts();
+            // Reinitialize resources
+            _dataQueue = new BlockingCollection<string>();
+            _cancellationTokenSource = new CancellationTokenSource();
+            Debug.WriteLine("AlgoLiveData: Resources reinitialized on load.");
         }
+
 
         private void OnControlUnloaded(object sender, RoutedEventArgs e)
         {
-            Dispose(); // Ensure resources are properly disposed
+            Dispose(); // Ensure all resources are disposed
         }
+
 
         // Load available Python scripts into the ComboBox
         private void LoadAvailableScripts()
@@ -123,44 +131,26 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 SelectedScript = PythonScripts[0];
             }
         }
-
         private void StartMonitoringButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isMonitoring)
             {
-                Debug.WriteLine("Monitoring is already running. Ignoring start request.");
-                MessageBox.Show("Monitoring is already running.", "Start Monitoring", MessageBoxButton.OK, MessageBoxImage.Information);
+                Debug.WriteLine("Monitoring is already running.");
                 return;
             }
 
-            if (string.IsNullOrEmpty(SelectedScript))
-            {
-                MessageBox.Show("Please select a script to run.", "No Script Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            Debug.WriteLine("Starting monitoring...");
             _isMonitoring = true;
 
             try
             {
-                // Reinitialize resources for a fresh start
                 _dataQueue = new BlockingCollection<string>();
-                _isDataQueueCompleted = false;
-
                 SubscribeToBroker();
-                Debug.WriteLine("Subscribed to broker messages.");
-
                 StartThrottledDataProcessing();
-                Debug.WriteLine("Throttled data processing started.");
-
-                LiveDataOutput = $"Monitoring live data using script: {SelectedScript}";
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error during StartMonitoring: {ex.Message}");
-                MessageBox.Show($"Error while starting monitoring:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                _isMonitoring = false; // Revert state if something fails
+                Debug.WriteLine($"Error starting monitoring: {ex.Message}");
+                _isMonitoring = false;
             }
         }
 
@@ -205,21 +195,24 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         // Method to stop the Python script execution
         private void StopPythonScript()
         {
+            if (_pythonScriptEngine == null) return;
+
             try
             {
-                Debug.WriteLine("Attempting to stop Python script execution...");
-                _pythonScriptEngine?.StopExecution();
-                Debug.WriteLine("Python script execution stopped successfully.");
-
-                // Reinitialize for next use
-                _pythonScriptEngine = new PythonScriptEngine();
-                Debug.WriteLine("Python script engine reinitialized.");
+                _pythonScriptEngine.StopExecution();
+                Debug.WriteLine("Python script execution stopped.");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error stopping Python script: {ex.Message}");
             }
+            finally
+            {
+                _pythonScriptEngine = new PythonScriptEngine();
+                Debug.WriteLine("Python script engine reinitialized.");
+            }
         }
+
 
 
         // Subscribe to the broker to receive real-time data
@@ -235,14 +228,24 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         // Unsubscribe from broker to prevent further data processing
         private void UnsubscribeFromBroker()
         {
-            Broker.Instance.MessageReceived -= OnMessageReceived;
-            Debug.WriteLine("AlgoLiveData: Unsubscribed from broker messages.");
+            if (Broker.Instance != null)
+            {
+                try
+                {
+                    Broker.Instance.MessageReceived -= OnMessageReceived;
+                    Debug.WriteLine("AlgoLiveData: Unsubscribed from broker messages.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error unsubscribing from broker: {ex.Message}");
+                }
+            }
         }
 
         // Handle incoming broker messages and send data to Python for processing
         private async void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
-            if (_isDisposing) return; // Prevent further processing if the application is closing
+            if (_isDisposing) return;
 
             var liveDataJson = JsonSerializer.Serialize(new
             {
@@ -252,39 +255,61 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             });
 
             await SendDataToPythonScript(liveDataJson);
+
+            // Use the UpdateLiveDataOutput method to update the UI safely
+            UpdateLiveDataOutput(liveDataJson);
         }
 
+        private void UpdateLiveDataOutput(string data)
+        {
+            if (_isDisposing || LiveDataOutputTextBox == null) return;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    LiveDataOutput += $"\n\nProcessed Output:\n{data}";
+                    LiveDataOutputTextBox?.ScrollToEnd();
+                }
+                catch (ObjectDisposedException)
+                {
+                    Debug.WriteLine("LiveDataOutputTextBox was accessed after being disposed.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Unexpected error updating LiveDataOutput: {ex.Message}");
+                }
+            });
+        }
         private async Task SendDataToPythonScript(string liveDataJson)
         {
-            if (_isDisposing) return; // Prevent further processing if the application is closing
+            if (_isDisposing) return; // Prevent further processing if disposing
 
             try
             {
                 var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\OutputResources\PythonFiles\ExecutableScript", SelectedScript);
                 string result = await _pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, liveDataJson);
 
-                // Check if the data queue is still accepting additions
-                if (!_isDataQueueCompleted && !_dataQueue.IsAddingCompleted)
+                // Add to queue only if it hasn't been completed or disposed
+                if (!_isDisposing && !_isDataQueueCompleted && !_dataQueue.IsAddingCompleted)
                 {
                     _dataQueue.Add(result);
                 }
                 else
                 {
-                    Debug.WriteLine("Data queue is already completed. Skipping addition.");
+                    Debug.WriteLine("Data queue is already completed or disposing. Skipping addition.");
                 }
             }
-            catch (InvalidOperationException ex)
+            catch (ObjectDisposedException ex)
             {
-                Debug.WriteLine($"Invalid operation while adding to data queue: {ex.Message}");
-                MessageBox.Show($"An error occurred while processing live data:\n{ex.Message}", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Debug.WriteLine($"Attempted to access a disposed object: {ex.Message}");
             }
             catch (Exception ex)
             {
-                string errorMsg = $"Error executing Python script with live data: {ex.Message}";
-                Debug.WriteLine(errorMsg + "\nDetails:\n" + ex.StackTrace);
+                Debug.WriteLine($"Error executing Python script: {ex.Message}");
                 if (!_isDisposing)
                 {
-                    MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -307,16 +332,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 {
                     try
                     {
+                        if (_isDisposing) break;
+
                         if (_dataQueue.TryTake(out var data, Timeout.Infinite, _cancellationTokenSource.Token))
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                if (_isDisposing || LiveDataOutputTextBox == null) return;
-
-                                LiveDataOutput += $"\n\nProcessed Output:\n{data}";
-                                LiveDataOutputTextBox?.ScrollToEnd();
-                            });
-
+                            UpdateLiveDataOutput(data); // Update the UI safely
                             await Task.Delay(ThrottleSpeedSeconds * 1000, _cancellationTokenSource.Token);
                         }
                     }
@@ -337,8 +357,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 }
             });
         }
-
-
 
 
         private bool _isDataQueueCompleted = false; // Track if CompleteAdding has been called
@@ -370,17 +388,20 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 _throttleTask?.Dispose();
                 _throttleTask = null;
 
-                if (!_isDataQueueCompleted)
+                if (_dataQueue != null && !_dataQueue.IsAddingCompleted)
                 {
-                    _dataQueue.CompleteAdding(); // Mark queue as completed
-                    Debug.WriteLine("Data queue marked as complete.");
+                    try
+                    {
+                        _dataQueue.CompleteAdding();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        Debug.WriteLine("Attempted to complete adding on a disposed data queue.");
+                    }
                 }
 
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = null;
-
+                _dataQueue?.Dispose();
                 _dataQueue = new BlockingCollection<string>(); // Reinitialize the data queue
-                _isDataQueueCompleted = false;
                 Debug.WriteLine("Data queue reinitialized.");
             }
         }
@@ -389,11 +410,21 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         public void Dispose()
         {
             _isDisposing = true; // Prevent further operations
-            StopThrottledDataProcessing();
-            UnsubscribeFromBroker();
+            StopThrottledDataProcessing(); // Stop background tasks
+            UnsubscribeFromBroker(); // Unsubscribe from broker messages
+
+            // Dispose of resources
             _dataQueue?.Dispose();
+            _dataQueue = null;
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+
+            _pythonScriptEngine?.StopExecution();
+            _pythonScriptEngine = null;
+
             Debug.WriteLine("AlgoLiveData: Disposed all resources.");
         }
+
 
         // Handle throttle slider value changes
         private void ThrottleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
