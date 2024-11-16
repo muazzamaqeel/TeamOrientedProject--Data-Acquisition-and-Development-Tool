@@ -92,7 +92,10 @@ namespace SmartPacifier___TestingFramework
 
 
 
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task RunTest_ValidToken_Should_Allow_Connection()
         {
             try
@@ -172,7 +175,11 @@ namespace SmartPacifier___TestingFramework
             // Assert
             Assert.Empty(result);
         }
-        [Fact]
+        
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task RunCampaignExistsTest()
         {
             // Instantiate UnitTestMAN to access the test
@@ -195,7 +202,10 @@ namespace SmartPacifier___TestingFramework
         /// Below are the Tests Related to MQTT Broker
         /// </summary>
         /// <returns></returns>
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task TestMQTTConnectBroker()
         {
             // Instantiate the MQTTBrokerTestCases to run the connection test
@@ -205,7 +215,10 @@ namespace SmartPacifier___TestingFramework
             // Run the connection test and ensure no exceptions occur
             await mqttTestCases.TestMQTTConnectBroker();
         }
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task TestMQTTSubscribe()
         {
             // Instantiate the MQTTBrokerTestCases to run the subscription test
@@ -215,7 +228,10 @@ namespace SmartPacifier___TestingFramework
             // Run the subscription test to verify no exceptions are thrown
             await mqttTestCases.TestMQTTSubscribe();
         }
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public async Task TestMQTTSendMessage()
         {
             // Instantiate the MQTTBrokerTestCases to run the send message test
@@ -226,7 +242,10 @@ namespace SmartPacifier___TestingFramework
             //await mqttTestCases.TestMQTTSendMessage();
         }
 
-        [Fact]
+        /// <summary>
+        /// Not Finished
+        /// </summary>
+        /// <returns></returns>
         public void RunInfluxDBContainerTests()
         {
             try
