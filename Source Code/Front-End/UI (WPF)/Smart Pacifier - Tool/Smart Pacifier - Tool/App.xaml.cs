@@ -339,15 +339,80 @@ namespace Smart_Pacifier___Tool
 
 
 
-        /// <summary>
-        /// Cleanup when the application exits
-        /// </summary>
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
 
-            // Free the console when the application exits
+            // Free the console
             FreeConsole();
+
+            // Kill all locked processes
+            KillLockedProcesses("SmartPacifier.UI (WPF)");
+
+            // Dispose services
+            if (_serviceProvider is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            // Release Mutexes
+            appMutex?.ReleaseMutex();
+            brokerMutex?.ReleaseMutex();
         }
+
+
+        /// <summary>
+        /// Kill all child processes started by the application
+        /// </summary>
+        private void KillLockedProcesses(string processName)
+        {
+            try
+            {
+                var processes = System.Diagnostics.Process.GetProcessesByName(processName);
+                foreach (var process in processes)
+                {
+                    try
+                    {
+                        process.Kill();
+                        process.WaitForExit();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to kill process {process.ProcessName}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error while killing locked processes: {ex.Message}");
+            }
+        }
+
+
+
+        /// <summary>
+        /// Extension method to get the parent process ID
+        /// </summary>
+        private static int GetParentProcessId(System.Diagnostics.Process process)
+        {
+            try
+            {
+                using (var searcher = new System.Management.ManagementObjectSearcher(
+                    "SELECT ParentProcessId FROM Win32_Process WHERE ProcessId = " + process.Id))
+                {
+                    foreach (var obj in searcher.Get())
+                    {
+                        return Convert.ToInt32(obj["ParentProcessId"]);
+                    }
+                }
+            }
+            catch
+            {
+                // If unable to retrieve the parent process ID, return 0
+            }
+            return 0;
+        }
+
+
     }
 }

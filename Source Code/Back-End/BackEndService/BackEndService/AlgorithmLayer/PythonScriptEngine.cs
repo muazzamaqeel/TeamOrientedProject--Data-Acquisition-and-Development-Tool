@@ -89,9 +89,31 @@ public class PythonScriptEngine
         finally
         {
             listener.Stop();
-            _pythonProcess?.WaitForExit();
-            _pythonProcess?.Dispose();
-            _pythonProcess = null; // Reset the process reference
+
+            if (_pythonProcess != null)
+            {
+                try
+                {
+                    if (!_pythonProcess.HasExited)
+                    {
+                        _pythonProcess.WaitForExit();
+                    }
+
+                    _pythonProcess.Dispose();
+                    _pythonProcess = null; // Reset the process reference
+                }
+                catch (InvalidOperationException)
+                {
+                    // Process has already exited or no process is associated
+                    _pythonProcess = null; // Ensure the process reference is reset
+                }
+                catch (Exception ex)
+                {
+                    // Handle other potential exceptions
+                    Debug.WriteLine($"Exception in finally block: {ex.Message}");
+                    _pythonProcess = null; // Reset the process reference
+                }
+            }
         }
 
         return response;

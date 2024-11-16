@@ -42,8 +42,8 @@
                 <!-- Throttle Speed Control -->
                 <TextBlock Text="Throttle Speed (ms):" FontSize="16" FontWeight="Bold" Margin="0,10,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
                 <Slider x:Name="ThrottleSlider"
-                        Minimum="0" Maximum="10"
-                        Value="10"
+                        Minimum="8" Maximum="10"
+                        Value="9"
                         TickFrequency="1"
                         IsSnapToTickEnabled="True"
                         ValueChanged="ThrottleSlider_ValueChanged" />
