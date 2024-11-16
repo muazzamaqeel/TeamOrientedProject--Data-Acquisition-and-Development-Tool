@@ -9,16 +9,14 @@ using System.Windows;
 
 public class PythonScriptEngine
 {
-    private static readonly object fileLock = new object(); // Lock for file access synchronization
-    private const int InitialPort = 5000; // Starting port number
-    private int currentPort = InitialPort; // Current port to use
-
     private Process _pythonProcess; // Track the Python process
     private bool _isStopped = false; // Guard to prevent multiple stops
 
+    private const int InitialPort = 5000; // Starting port number
+    private int currentPort = InitialPort; // Current port to use
+
     public async Task<string> ExecuteScriptWithTcpAsync(string scriptPath, string campaignDataJson)
     {
-        string debugLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "execute_script_debug_log.txt");
         string response = "";
 
         // Ensure any existing process using the port is terminated
@@ -45,16 +43,12 @@ public class PythonScriptEngine
         if (listener == null)
         {
             string errorMsg = "Failed to start TCP listener after multiple attempts.";
-            WriteToLog(debugLogPath, errorMsg);
             MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return errorMsg;
         }
 
         try
         {
-            // Log to file with synchronized access
-            WriteToLog(debugLogPath, "Starting ExecuteScriptAsync with TCP Sockets\n");
-
             // Start the Python process with the selected port
             _pythonProcess = new Process
             {
@@ -78,20 +72,17 @@ public class PythonScriptEngine
                 // Send campaign data to Python script
                 byte[] dataToSend = Encoding.UTF8.GetBytes(campaignDataJson);
                 await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
-                WriteToLog(debugLogPath, "Sent data to Python script.\n");
 
                 // Read response from Python script
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 {
                     response = await reader.ReadToEndAsync();
-                    WriteToLog(debugLogPath, "Received response from Python script.\n");
                 }
             }
         }
         catch (Exception ex)
         {
             string errorMsg = $"Execution Error: {ex.Message}";
-            WriteToLog(debugLogPath, errorMsg + "\nDetails:\n" + ex.StackTrace);
             MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return $"{errorMsg}\nDetails: {ex.StackTrace}";
         }
@@ -119,27 +110,17 @@ public class PythonScriptEngine
                 if (_pythonProcess != null && !_pythonProcess.HasExited)
                 {
                     _pythonProcess.Kill();
-                    WriteToLog(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "execute_script_debug_log.txt"), "Python process terminated.\n");
                 }
             }
             catch (Exception ex)
             {
-                WriteToLog(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "execute_script_debug_log.txt"), $"Failed to terminate Python process: {ex.Message}\n");
+                // Handle exception if needed
             }
             finally
             {
                 _pythonProcess?.Dispose();
                 _pythonProcess = null;
             }
-        }
-    }
-
-    // Method to write to log file with synchronized access
-    private void WriteToLog(string filePath, string message)
-    {
-        lock (fileLock)
-        {
-            File.AppendAllText(filePath, message);
         }
     }
 
@@ -172,11 +153,10 @@ public class PythonScriptEngine
                             try
                             {
                                 Process.GetProcessById(pid).Kill();
-                                WriteToLog(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "execute_script_debug_log.txt"), $"Killed process with PID {pid} using port {port}\n");
                             }
                             catch (Exception ex)
                             {
-                                WriteToLog(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "execute_script_debug_log.txt"), $"Failed to kill process with PID {pid}: {ex.Message}\n");
+                                // Handle exception if needed
                             }
                         }
                     }

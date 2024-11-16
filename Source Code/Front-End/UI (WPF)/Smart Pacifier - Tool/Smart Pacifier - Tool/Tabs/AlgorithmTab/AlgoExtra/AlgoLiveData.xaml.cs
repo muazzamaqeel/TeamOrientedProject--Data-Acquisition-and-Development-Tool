@@ -258,15 +258,10 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         {
             if (_isDisposing) return; // Prevent further processing if the application is closing
 
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "live_data_script_log.txt");
-
             try
             {
-                File.AppendAllText(logPath, "Sending live data to Python script\n");
-
                 var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\OutputResources\PythonFiles\ExecutableScript", SelectedScript);
                 string result = await _pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, liveDataJson);
-                File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
 
                 // Check if the data queue is still accepting additions
                 if (!_isDataQueueCompleted && !_dataQueue.IsAddingCompleted)
@@ -286,13 +281,14 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             catch (Exception ex)
             {
                 string errorMsg = $"Error executing Python script with live data: {ex.Message}";
-                File.AppendAllText(logPath, errorMsg + "\nDetails:\n" + ex.StackTrace);
+                Debug.WriteLine(errorMsg + "\nDetails:\n" + ex.StackTrace);
                 if (!_isDisposing)
                 {
                     MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
+
 
 
 
