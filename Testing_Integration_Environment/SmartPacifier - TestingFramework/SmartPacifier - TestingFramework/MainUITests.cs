@@ -3,13 +3,11 @@ using System.Diagnostics;
 using FlaUI.Core;
 using FlaUI.UIA3;
 using Xunit;
-using SmartPacifier_UITests;
-using SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Tests_SettingsTab;
-using SmartPacifier___TestingFramework.UITests.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Test_Sidebar;
+using SmartPacifier___TestingFramework.UITests.UIFrontEnd;
 
 namespace SmartPacifier___TestingFramework
 {
-    public class Main_UITests
+    public class MainUITests
     {
         private Application? app;
 

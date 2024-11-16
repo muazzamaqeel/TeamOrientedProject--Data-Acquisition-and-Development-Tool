@@ -14,7 +14,7 @@ using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
 using InfluxDB.Client;
 
-namespace SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Tests_SettingsTab
+namespace SmartPacifier___TestingFramework.UITests.UIFrontEnd
 {
     public class UITests_Settings : IDisposable
     {

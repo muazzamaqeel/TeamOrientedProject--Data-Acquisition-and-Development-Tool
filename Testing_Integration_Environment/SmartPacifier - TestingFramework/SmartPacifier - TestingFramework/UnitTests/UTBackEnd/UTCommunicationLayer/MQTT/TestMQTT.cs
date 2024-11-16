@@ -5,12 +5,12 @@ using Xunit;
 
 namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLayer.MQTT
 {
-    public class MQTTBrokerTestCases : IAsyncLifetime
+    public class TestMQTT : IAsyncLifetime
     {
         private readonly Broker _broker;
         private static bool _isBrokerConnected = false; // Static variable to track connection state
 
-        public MQTTBrokerTestCases()
+        public TestMQTT()
         {
             _broker = Broker.Instance;
             _broker.MessageReceived += OnMessageReceived; // Subscribe to message events

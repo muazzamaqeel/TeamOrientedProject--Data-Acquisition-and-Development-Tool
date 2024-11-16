@@ -7,6 +7,9 @@ using System.Diagnostics;
 using Newtonsoft.Json;
 using SmartPacifier.BackEnd.Database.InfluxDB.Connection;
 using SmartPacifier___TestingFramework.UnitTests.UTFrontEnd.Unit_Tests_Tabs.UTDeveloperTab;
+using InfluxDB.Client.Api.Domain;
+using FileDomain = InfluxDB.Client.Api.Domain;
+using InfluxDB.Client.Writes;
 namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.UTInfluxDB
 {
     public class TestDB
@@ -34,16 +37,18 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
         }
         private AppConfiguration LoadDatabaseConfiguration()
         {
+            // Explicitly qualify System.IO.File to resolve ambiguity
             string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "config.json");
 
-            if (!File.Exists(configPath))
+            if (!System.IO.File.Exists(configPath)) // Specify System.IO.File explicitly
             {
                 throw new FileNotFoundException("Configuration file not found.", configPath);
             }
 
-            string configJson = File.ReadAllText(configPath);
+            string configJson = System.IO.File.ReadAllText(configPath); // Specify System.IO.File explicitly
             return JsonConvert.DeserializeObject<AppConfiguration>(configJson);
         }
+
 
         [Fact]
         public async Task CampaignCycleTest()
@@ -369,6 +374,40 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             }
         }
 
+        [Fact]
+        public async Task TestAPIToken()
+        {
+            // Arrange: Ensure the _databaseService is initialized
+            Assert.NotNull(_databaseService);
+
+            var point = PointData.Measurement("test_measurement")
+                .Field("test_field", 1)
+                .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
+
+            try
+            {
+                // Act: Write a test data point to the database
+                await _databaseService.WriteDataAsync("test_measurement",
+                    new Dictionary<string, object> { { "test_field", 1 } },
+                    new Dictionary<string, string>());
+
+                // Assert: Validate that the write operation succeeded
+                string query = $@"
+            from(bucket: ""{_databaseService.Bucket}"")
+            |> range(start: -1h)
+            |> filter(fn: (r) => r._measurement == ""test_measurement"")";
+
+                var result = await _databaseService.ReadData(query);
+
+                Assert.NotNull(result);
+                Assert.True(result.Count > 0, "Expected the test measurement to exist in the database.");
+            }
+            catch (Exception ex)
+            {
+                // Fail the test if an exception occurs
+                Assert.False(true, $"Expected valid connection and write, but got an error: {ex.Message}");
+            }
+        }
 
 
 

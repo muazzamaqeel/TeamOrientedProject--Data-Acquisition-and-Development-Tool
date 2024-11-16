@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 
-namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.UTInitializeDockerImage
+namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.UTInfluxDB
 {
     public class UTDockerImage
     {

@@ -5,7 +5,7 @@ using Google.Protobuf;
 
 namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLayer.Protobuf
 {
-    public class ProtobufTest
+    public class TestProtobuf
     {
         [Fact]
         public void Protobuf_SerializeDeserialize()
