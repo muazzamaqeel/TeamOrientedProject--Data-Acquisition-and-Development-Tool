@@ -103,7 +103,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             }
 
             // Optional: Show message box to verify the JSON records
-            System.Windows.MessageBox.Show(string.Join("\n\n", records), "Raw JSON Data", MessageBoxButton.OK, MessageBoxImage.Information);
+            //System.Windows.MessageBox.Show(string.Join("\n\n", records), "Raw JSON Data", MessageBoxButton.OK, MessageBoxImage.Information);
 
             return records;
         }
@@ -248,7 +248,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 
                     if (response.IsSuccessStatusCode)
                     {
-                        MessageBox.Show("Entry deleted successfully from the database.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        //MessageBox.Show("Entry deleted successfully from the database.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else
                     {
