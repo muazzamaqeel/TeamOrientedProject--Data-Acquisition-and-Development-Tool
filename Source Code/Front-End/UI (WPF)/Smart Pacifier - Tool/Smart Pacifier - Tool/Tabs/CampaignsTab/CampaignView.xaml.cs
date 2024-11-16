@@ -395,6 +395,25 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 LegendBorderThickness = 0
             });
 
+            var dateTimeAxis = new DateTimeAxis
+            {
+                Position = AxisPosition.Bottom,
+                StringFormat = "dd HH:mm:ss", // Date and time format on the X-axis
+                IntervalType = DateTimeIntervalType.Auto,
+                IntervalLength = 80, // Adjust this value to control the spacing of labels
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot,
+            };
+            plotModel.Axes.Add(dateTimeAxis);
+
+            var valueAxis = new LinearAxis
+            {
+                Position = AxisPosition.Left,
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot
+            };
+            plotModel.Axes.Add(valueAxis);
+
             foreach (var originalFieldGroup in fieldGroup.OriginalFieldGroups)
             {
                 var lineSeries = originalFieldGroup.LineSeries;
