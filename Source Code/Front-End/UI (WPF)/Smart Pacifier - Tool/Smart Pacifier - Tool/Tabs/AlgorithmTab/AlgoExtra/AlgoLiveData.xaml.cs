@@ -14,20 +14,20 @@ using System.Windows.Controls;
 
 namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 {
-    public partial class AlgoLiveData : UserControl, INotifyPropertyChanged
+    public partial class AlgoLiveData : UserControl, INotifyPropertyChanged, IDisposable
     {
         private readonly string _campaignName;
         private readonly IDatabaseService _databaseService;
-        private readonly PythonScriptEngine _pythonScriptEngine;
+        private PythonScriptEngine _pythonScriptEngine; // Removed readonly
 
         // Background processing for throttling
-        private readonly BlockingCollection<string> _dataQueue = new BlockingCollection<string>();
+        private BlockingCollection<string> _dataQueue = new BlockingCollection<string>(); // Removed 'readonly'
         private CancellationTokenSource _cancellationTokenSource;
-        private Task _throttleTask;
+        private Task _throttleTask; // Proper declaration of the _throttleTask variable
+        private bool _isDisposing = false; // Flag to indicate the application is closing
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        // Properties for script selection and output
         public ObservableCollection<string> PythonScripts { get; set; } = new ObservableCollection<string>();
 
         private string _selectedScript;
@@ -53,13 +53,9 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 // Ensure auto-scroll works properly
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
+                    if (!_isDisposing && LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
                     {
                         LiveDataOutputTextBox.ScrollToEnd();
-                    }
-                    else
-                    {
-                        Debug.WriteLine("LiveDataOutputTextBox is not initialized or loaded.");
                     }
                 });
             }
@@ -84,6 +80,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             _pythonScriptEngine = new PythonScriptEngine();
 
             Loaded += OnControlLoaded;
+            Unloaded += OnControlUnloaded; // Hook for cleanup on application closure
             DataContext = this;
             LoadAvailableScripts();
         }
@@ -91,6 +88,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         private void OnControlLoaded(object sender, RoutedEventArgs e)
         {
             LoadAvailableScripts();
+        }
+
+        private void OnControlUnloaded(object sender, RoutedEventArgs e)
+        {
+            Dispose(); // Ensure resources are properly disposed
         }
 
         // Load available Python scripts into the ComboBox
@@ -122,38 +124,126 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
         }
 
-        // Start monitoring live data
         private void StartMonitoringButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_isMonitoring)
+            {
+                Debug.WriteLine("Monitoring is already running. Ignoring start request.");
+                MessageBox.Show("Monitoring is already running.", "Start Monitoring", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             if (string.IsNullOrEmpty(SelectedScript))
             {
                 MessageBox.Show("Please select a script to run.", "No Script Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            SubscribeToBroker();
-            StartThrottledDataProcessing();
-            LiveDataOutput = $"Monitoring live data using script: {SelectedScript}";
+            Debug.WriteLine("Starting monitoring...");
+            _isMonitoring = true;
+
+            try
+            {
+                // Reinitialize resources for a fresh start
+                _dataQueue = new BlockingCollection<string>();
+                _isDataQueueCompleted = false;
+
+                SubscribeToBroker();
+                Debug.WriteLine("Subscribed to broker messages.");
+
+                StartThrottledDataProcessing();
+                Debug.WriteLine("Throttled data processing started.");
+
+                LiveDataOutput = $"Monitoring live data using script: {SelectedScript}";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error during StartMonitoring: {ex.Message}");
+                MessageBox.Show($"Error while starting monitoring:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _isMonitoring = false; // Revert state if something fails
+            }
         }
 
-        // Stop monitoring live data
+
+        private bool _isMonitoring = false; // Track monitoring state to avoid repeated stops
+
         private void StopMonitoringButton_Click(object sender, RoutedEventArgs e)
         {
-            StopThrottledDataProcessing();
-            Broker.Instance.MessageReceived -= OnMessageReceived;
-            LiveDataOutput += "\nMonitoring stopped.";
+            if (!_isMonitoring)
+            {
+                Debug.WriteLine("Monitoring is already stopped. Ignoring stop request.");
+                MessageBox.Show("Monitoring is already stopped.", "Stop Monitoring", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            Debug.WriteLine("Stopping monitoring...");
+
+            try
+            {
+                StopThrottledDataProcessing();
+                Debug.WriteLine("Throttled data processing stopped.");
+
+                // Do NOT stop the broker if it's not related to the issue
+                UnsubscribeFromBroker();
+                Debug.WriteLine("Unsubscribed from broker messages.");
+
+                StopPythonScript(); // Ensure Python script stops
+                Debug.WriteLine("Python script execution stopped.");
+
+                LiveDataOutput += "\nMonitoring stopped.";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error during StopMonitoring: {ex.Message}");
+                MessageBox.Show($"Error while stopping monitoring:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _isMonitoring = false; // Ensure the state is updated
+            }
         }
+        // Method to stop the Python script execution
+        private void StopPythonScript()
+        {
+            try
+            {
+                Debug.WriteLine("Attempting to stop Python script execution...");
+                _pythonScriptEngine?.StopExecution();
+                Debug.WriteLine("Python script execution stopped successfully.");
+
+                // Reinitialize for next use
+                _pythonScriptEngine = new PythonScriptEngine();
+                Debug.WriteLine("Python script engine reinitialized.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error stopping Python script: {ex.Message}");
+            }
+        }
+
 
         // Subscribe to the broker to receive real-time data
         private void SubscribeToBroker()
         {
-            Broker.Instance.MessageReceived += OnMessageReceived;
-            Debug.WriteLine("AlgoLiveData: Subscribed to broker messages.");
+            if (!_isDisposing)
+            {
+                Broker.Instance.MessageReceived += OnMessageReceived;
+                Debug.WriteLine("AlgoLiveData: Subscribed to broker messages.");
+            }
+        }
+
+        // Unsubscribe from broker to prevent further data processing
+        private void UnsubscribeFromBroker()
+        {
+            Broker.Instance.MessageReceived -= OnMessageReceived;
+            Debug.WriteLine("AlgoLiveData: Unsubscribed from broker messages.");
         }
 
         // Handle incoming broker messages and send data to Python for processing
         private async void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
+            if (_isDisposing) return; // Prevent further processing if the application is closing
+
             var liveDataJson = JsonSerializer.Serialize(new
             {
                 PacifierId = e.PacifierId,
@@ -166,6 +256,8 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
         private async Task SendDataToPythonScript(string liveDataJson)
         {
+            if (_isDisposing) return; // Prevent further processing if the application is closing
+
             string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "live_data_script_log.txt");
 
             try
@@ -176,18 +268,42 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 string result = await _pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, liveDataJson);
                 File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
 
-                _dataQueue.Add(result);
+                // Check if the data queue is still accepting additions
+                if (!_isDataQueueCompleted && !_dataQueue.IsAddingCompleted)
+                {
+                    _dataQueue.Add(result);
+                }
+                else
+                {
+                    Debug.WriteLine("Data queue is already completed. Skipping addition.");
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                Debug.WriteLine($"Invalid operation while adding to data queue: {ex.Message}");
+                MessageBox.Show($"An error occurred while processing live data:\n{ex.Message}", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
                 string errorMsg = $"Error executing Python script with live data: {ex.Message}";
                 File.AppendAllText(logPath, errorMsg + "\nDetails:\n" + ex.StackTrace);
-                MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (!_isDisposing)
+                {
+                    MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
+
+
         private void StartThrottledDataProcessing()
         {
+            if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+            {
+                Debug.WriteLine("Throttled data processing is already running. Skipping start.");
+                return;
+            }
+
             _cancellationTokenSource = new CancellationTokenSource();
             _throttleTask = Task.Run(async () =>
             {
@@ -199,12 +315,10 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                         {
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                LiveDataOutput += $"\n\nProcessed Output:\n{data}";
+                                if (_isDisposing || LiveDataOutputTextBox == null) return;
 
-                                if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
-                                {
-                                    LiveDataOutputTextBox.ScrollToEnd();
-                                }
+                                LiveDataOutput += $"\n\nProcessed Output:\n{data}";
+                                LiveDataOutputTextBox?.ScrollToEnd();
                             });
 
                             await Task.Delay(ThrottleSpeedSeconds * 1000, _cancellationTokenSource.Token);
@@ -212,22 +326,77 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                     }
                     catch (OperationCanceledException)
                     {
+                        Debug.WriteLine("Throttled data processing task canceled.");
+                        break;
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        Debug.WriteLine($"Invalid operation in data processing: {ex.Message}");
                         break;
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Error during throttled data processing: {ex.Message}");
+                        Debug.WriteLine($"Error in throttled data processing: {ex.Message}");
                     }
                 }
             });
         }
 
+
+
+
+        private bool _isDataQueueCompleted = false; // Track if CompleteAdding has been called
         private void StopThrottledDataProcessing()
         {
-            _cancellationTokenSource?.Cancel();
-            _throttleTask?.Wait();
-            _throttleTask?.Dispose();
-            _cancellationTokenSource?.Dispose();
+            if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
+            {
+                Debug.WriteLine("Throttled data processing is already stopped or not started. Skipping...");
+                return;
+            }
+
+            try
+            {
+                Debug.WriteLine("Cancelling throttled data processing...");
+                _cancellationTokenSource.Cancel();
+
+                if (_throttleTask != null)
+                {
+                    Task.WaitAny(_throttleTask); // Wait for the task to finish
+                    Debug.WriteLine("Throttled data processing task completed.");
+                }
+            }
+            catch (AggregateException ex)
+            {
+                Debug.WriteLine($"Task cancellation exception: {ex.Message}");
+            }
+            finally
+            {
+                _throttleTask?.Dispose();
+                _throttleTask = null;
+
+                if (!_isDataQueueCompleted)
+                {
+                    _dataQueue.CompleteAdding(); // Mark queue as completed
+                    Debug.WriteLine("Data queue marked as complete.");
+                }
+
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = null;
+
+                _dataQueue = new BlockingCollection<string>(); // Reinitialize the data queue
+                _isDataQueueCompleted = false;
+                Debug.WriteLine("Data queue reinitialized.");
+            }
+        }
+
+
+        public void Dispose()
+        {
+            _isDisposing = true; // Prevent further operations
+            StopThrottledDataProcessing();
+            UnsubscribeFromBroker();
+            _dataQueue?.Dispose();
+            Debug.WriteLine("AlgoLiveData: Disposed all resources.");
         }
 
         // Handle throttle slider value changes

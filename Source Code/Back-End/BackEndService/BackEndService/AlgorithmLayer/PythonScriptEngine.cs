@@ -9,9 +9,12 @@ using System.Windows;
 
 public class PythonScriptEngine
 {
-    private static readonly object fileLock = new object();  // Lock for file access synchronization
-    private const int InitialPort = 5000;  // Starting port number
-    private int currentPort = InitialPort;  // Current port to use
+    private static readonly object fileLock = new object(); // Lock for file access synchronization
+    private const int InitialPort = 5000; // Starting port number
+    private int currentPort = InitialPort; // Current port to use
+
+    private Process _pythonProcess; // Track the Python process
+    private bool _isStopped = false; // Guard to prevent multiple stops
 
     public async Task<string> ExecuteScriptWithTcpAsync(string scriptPath, string campaignDataJson)
     {
@@ -30,11 +33,11 @@ public class PythonScriptEngine
                 listener = new TcpListener(IPAddress.Loopback, currentPort);
                 listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 listener.Start();
-                break;  // Break out of the loop if we successfully start the listener
+                break; // Break out of the loop if we successfully start the listener
             }
             catch (SocketException)
             {
-                currentPort++;  // Increment port and retry
+                currentPort++; // Increment port and retry
                 continue;
             }
         }
@@ -47,15 +50,13 @@ public class PythonScriptEngine
             return errorMsg;
         }
 
-        Process? process = null;
-
         try
         {
             // Log to file with synchronized access
             WriteToLog(debugLogPath, "Starting ExecuteScriptAsync with TCP Sockets\n");
 
             // Start the Python process with the selected port
-            process = new Process
+            _pythonProcess = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -68,7 +69,7 @@ public class PythonScriptEngine
                 }
             };
 
-            process.Start();
+            _pythonProcess.Start();
 
             // Accept TCP connection from Python
             using (TcpClient client = await listener.AcceptTcpClientAsync())
@@ -97,11 +98,40 @@ public class PythonScriptEngine
         finally
         {
             listener.Stop();
-            process?.WaitForExit();
-            process?.Dispose();
+            _pythonProcess?.WaitForExit();
+            _pythonProcess?.Dispose();
+            _pythonProcess = null; // Reset the process reference
         }
 
         return response;
+    }
+
+    // Method to stop the Python script execution
+    public void StopExecution()
+    {
+        lock (this)
+        {
+            if (_isStopped) return; // Prevent multiple stop calls
+            _isStopped = true;
+
+            try
+            {
+                if (_pythonProcess != null && !_pythonProcess.HasExited)
+                {
+                    _pythonProcess.Kill();
+                    WriteToLog(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "execute_script_debug_log.txt"), "Python process terminated.\n");
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteToLog(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "execute_script_debug_log.txt"), $"Failed to terminate Python process: {ex.Message}\n");
+            }
+            finally
+            {
+                _pythonProcess?.Dispose();
+                _pythonProcess = null;
+            }
+        }
     }
 
     // Method to write to log file with synchronized access
