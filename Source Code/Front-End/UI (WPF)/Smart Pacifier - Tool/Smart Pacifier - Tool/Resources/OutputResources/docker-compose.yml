@@ -5,7 +5,7 @@ services:
     ports:
       - "8086:8086"
     volumes:
-      - influxdb-data:/var/lib/influxdb2
+      - influxdb-data:/var/lib/influxdb2  # Persist data locally
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
@@ -13,28 +13,21 @@ services:
       - DOCKER_INFLUXDB_INIT_ORG=thu-de
       - DOCKER_INFLUXDB_INIT_BUCKET=SmartPacifier-Bucket1
       - DOCKER_INFLUXDB_INIT_RETENTION=365d  
-    restart: unless-stopped
+    restart: unless-stopped  # Ensuring container restarts on failure
 
   mosquitto:
     image: eclipse-mosquitto:2.0
     container_name: mosquitto
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - "1883:1883"       # MQTT port
+      - "9001:9001"       # WebSocket port (optional, if needed)
     volumes:
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-    restart: unless-stopped
+      - "${MOSQUITTO_CONF_PATH:-./mosquitto.conf}:/mosquitto/config/mosquitto.conf"  # Use env variable with default
+    restart: unless-stopped  # Ensuring container restarts on failure
     environment:
-      - MQTT_ALLOW_ANONYMOUS=true
-
-  python_service:
-    image: python:3.8
-    container_name: python_service
-    command: sh -c "mkdir -p /scripts && tail -f /dev/null"  # Creates /scripts directory and keeps container running
-    restart: unless-stopped
-
+      - MQTT_ALLOW_ANONYMOUS=true  # Allow anonymous connections (optional)
 
 volumes:
   influxdb-data:
