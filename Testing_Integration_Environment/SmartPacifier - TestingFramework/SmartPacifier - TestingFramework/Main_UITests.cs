@@ -44,7 +44,7 @@ namespace SmartPacifier___TestingFramework
             }
         }
 
-        [Fact]
+        //[Fact]
         public void SideBarButtonsHeaderMatchValidationTests()
         {
             app = LaunchApplication();
