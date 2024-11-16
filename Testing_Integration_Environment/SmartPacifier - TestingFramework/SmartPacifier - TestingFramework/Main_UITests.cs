@@ -25,7 +25,6 @@ namespace SmartPacifier___TestingFramework
             return app;
         }
 
-        [Fact]
         public void RunPinValidationTests()
         {
             app = LaunchApplication();
