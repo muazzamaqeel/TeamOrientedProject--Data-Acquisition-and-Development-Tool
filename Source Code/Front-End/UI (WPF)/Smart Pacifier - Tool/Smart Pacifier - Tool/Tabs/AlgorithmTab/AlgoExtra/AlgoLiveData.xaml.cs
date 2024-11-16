@@ -27,7 +27,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        // Properties for live data source selection and output
+        // Properties for script selection and output
         public ObservableCollection<string> PythonScripts { get; set; } = new ObservableCollection<string>();
 
         private string _selectedScript;
@@ -86,15 +86,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             Loaded += OnControlLoaded;
             DataContext = this;
             LoadAvailableScripts();
-            SubscribeToBroker();
-            StartThrottledDataProcessing();
         }
 
         private void OnControlLoaded(object sender, RoutedEventArgs e)
         {
             LoadAvailableScripts();
-            SubscribeToBroker();
-            StartThrottledDataProcessing();
         }
 
         // Load available Python scripts into the ComboBox
@@ -109,7 +105,10 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 var scriptFiles = Directory.GetFiles(scriptsDirectory, "*.py");
                 foreach (var script in scriptFiles)
                 {
-                    PythonScripts.Add(Path.GetFileName(script));
+                    if (!PythonScripts.Contains(Path.GetFileName(script)))
+                    {
+                        PythonScripts.Add(Path.GetFileName(script));
+                    }
                 }
             }
             else
@@ -123,6 +122,28 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
         }
 
+        // Start monitoring live data
+        private void StartMonitoringButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(SelectedScript))
+            {
+                MessageBox.Show("Please select a script to run.", "No Script Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            SubscribeToBroker();
+            StartThrottledDataProcessing();
+            LiveDataOutput = $"Monitoring live data using script: {SelectedScript}";
+        }
+
+        // Stop monitoring live data
+        private void StopMonitoringButton_Click(object sender, RoutedEventArgs e)
+        {
+            StopThrottledDataProcessing();
+            Broker.Instance.MessageReceived -= OnMessageReceived;
+            LiveDataOutput += "\nMonitoring stopped.";
+        }
+
         // Subscribe to the broker to receive real-time data
         private void SubscribeToBroker()
         {
@@ -133,7 +154,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         // Handle incoming broker messages and send data to Python for processing
         private async void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
-            // Convert parsed data to JSON format
             var liveDataJson = JsonSerializer.Serialize(new
             {
                 PacifierId = e.PacifierId,
@@ -141,7 +161,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 Data = e.ParsedData
             });
 
-            // Send data to the Python script for additional processing
             await SendDataToPythonScript(liveDataJson);
         }
 
@@ -153,15 +172,10 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             {
                 File.AppendAllText(logPath, "Sending live data to Python script\n");
 
-                // Define the Python script path
-                var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                var scriptPath = Path.Combine(baseDirectory, @"Resources\OutputResources\PythonFiles\ExecutableScript", SelectedScript);
-
-                // Execute the Python script, passing the live data JSON
+                var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\OutputResources\PythonFiles\ExecutableScript", SelectedScript);
                 string result = await _pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, liveDataJson);
                 File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
 
-                // Add the processed data to the queue
                 _dataQueue.Add(result);
             }
             catch (Exception ex)
@@ -187,7 +201,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                             {
                                 LiveDataOutput += $"\n\nProcessed Output:\n{data}";
 
-                                // Ensure auto-scroll functionality works here
                                 if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
                                 {
                                     LiveDataOutputTextBox.ScrollToEnd();
@@ -199,7 +212,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                     }
                     catch (OperationCanceledException)
                     {
-                        break; // Exit gracefully when cancellation is requested
+                        break;
                     }
                     catch (Exception ex)
                     {
@@ -217,40 +230,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             _cancellationTokenSource?.Dispose();
         }
 
-        // Start monitoring live data
-        private void StartMonitoringButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(SelectedScript))
-            {
-                MessageBox.Show("Please select a script to run.", "No Script Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            LiveDataOutput = $"Monitoring live data using script: {SelectedScript}";
-        }
-
         // Handle throttle slider value changes
         private void ThrottleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            // Convert slider value into seconds (invert logic: higher slider = faster update)
-            ThrottleSpeedSeconds = 10 - (int)e.NewValue; // Example: Slider max = 10, min = 0
+            ThrottleSpeedSeconds = 10 - (int)e.NewValue;
             Debug.WriteLine($"Throttle speed updated to: {ThrottleSpeedSeconds} seconds");
-
-            // Ensure auto-scroll functionality works
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
-                {
-                    LiveDataOutputTextBox.ScrollToEnd();
-                }
-            });
-        }
-
-        // Handle cleanup when the control is unloaded
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
-        {
-            StopThrottledDataProcessing();
-            Broker.Instance.MessageReceived -= OnMessageReceived; // Unsubscribe from events
         }
 
         // Raise the PropertyChanged event to notify the UI about property updates
