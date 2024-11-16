@@ -14,6 +14,7 @@ using InfluxDB.Client.Configurations;
 using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
+using System.Diagnostics;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 {
@@ -93,7 +94,16 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 
                     foreach (var key in record.Values.Keys)
                     {
-                        recordData[key] = record.GetValueByKey(key);
+                        var value = record.GetValueByKey(key);
+                        if (key == "_time" && value is NodaTime.Instant instant)
+                        {
+                            // Convert NodaTime.Instant to a string format
+                            recordData[key] = instant.ToDateTimeOffset().ToString("o");
+                        }
+                        else
+                        {
+                            recordData[key] = value;
+                        }
                     }
 
                     // Convert the record dictionary to JSON
@@ -101,9 +111,6 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
                     records.Add(json);
                 }
             }
-
-            // Optional: Show message box to verify the JSON records
-            System.Windows.MessageBox.Show(string.Join("\n\n", records), "Raw JSON Data", MessageBoxButton.OK, MessageBoxImage.Information);
 
             return records;
         }

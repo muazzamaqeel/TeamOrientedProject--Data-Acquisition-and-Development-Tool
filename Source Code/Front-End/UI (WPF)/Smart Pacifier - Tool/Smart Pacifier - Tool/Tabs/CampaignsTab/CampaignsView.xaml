@@ -24,7 +24,9 @@
 			</StackPanel>
 		</Grid>
 
-		<!-- Campaigns Section -->
+        <ProgressBar x:Name="LoadingSpinner" IsIndeterminate="True" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" Width="200" Height="20"/>
+
+        <!-- Campaigns Section -->
 		<ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10,80,10,10">
             <ItemsControl ItemsSource="{Binding Campaigns}">
 				<ItemsControl.ItemTemplate>

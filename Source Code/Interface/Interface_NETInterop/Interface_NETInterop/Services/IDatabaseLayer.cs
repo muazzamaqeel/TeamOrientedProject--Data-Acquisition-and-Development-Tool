@@ -60,10 +60,10 @@ namespace SmartPacifier.Interface.Services
         Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags);
         Task<List<string>> ReadData(string query);
 
-        // Add the following methods
         Task<List<string>> GetPacifiersByCampaignNameAsync(string campaignName);
         Task<List<string>> GetSensorsByPacifierNameAsync(string pacifierName, string campaignName);
-
+        Task<List<string>> GetCampaignDataEntriesAsync(string campaignName);
+        Task<List<string>> GetCampaignsDataAsync();
     }
 
 

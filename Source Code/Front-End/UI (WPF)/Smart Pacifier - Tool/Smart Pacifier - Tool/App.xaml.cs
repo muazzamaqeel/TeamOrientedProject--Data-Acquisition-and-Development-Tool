@@ -186,7 +186,7 @@ namespace Smart_Pacifier___Tool
                 var localHostService = sp.GetRequiredService<ILocalHost>();
                 return new SettingsView(localHostService, defaultView);
             });
-            services.AddTransient<CampaignsView>();
+            services.AddSingleton<CampaignsView>();
         }
 
 
