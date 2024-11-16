@@ -157,9 +157,6 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         {
             if (sender is Border border && border.DataContext is Campaign selectedCampaign)
             {
-                // Create an instance of CampaignsInternal, passing the database singleton and campaign name
-                var campaignsInternal = new CampaignsInternal(_managerCampaign, selectedCampaign.CampaignName);
-
                 // Get a reference to MainWindow
                 var mainWindow = Application.Current.MainWindow as MainWindow;
                 if (mainWindow != null)
