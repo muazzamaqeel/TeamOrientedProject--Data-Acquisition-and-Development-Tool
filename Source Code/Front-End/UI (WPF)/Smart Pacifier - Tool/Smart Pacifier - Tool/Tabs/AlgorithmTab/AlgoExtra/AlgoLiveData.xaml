@@ -7,19 +7,44 @@
         <!-- Header Section -->
         <Grid Background="{StaticResource AccentColor}" Height="70" VerticalAlignment="Top" HorizontalAlignment="Stretch">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Text="Live Data View"
+                <TextBlock Text="Algorithm Live Data Monitoring"
                            Foreground="White" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
             </StackPanel>
         </Grid>
 
-        <!-- Centered Content Section -->
-        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,90,0,10">
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="Displaying real-time data..." 
-                           FontSize="16" 
-                           Foreground="{StaticResource MainViewForegroundColor}" 
-                           HorizontalAlignment="Center"/>
-                <!-- Add live data display elements here as needed -->
+        <!-- Main Content -->
+        <Grid Margin="10,80,10,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="3*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Side: Select Live Data Source -->
+            <StackPanel Grid.Column="0" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <TextBlock Text="Select Data Source:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
+                <ComboBox x:Name="DataSourceComboBox" Width="200" Margin="0,5,0,15" 
+                          ItemsSource="{Binding LiveDataSources}" 
+                          SelectedItem="{Binding SelectedDataSource}" 
+                          Background="{StaticResource MainViewSecondaryBackgroundColor}" 
+                          Foreground="{StaticResource MainViewSecondaryBackgroundColor}" />
+                <Button Content="Start Monitoring" Width="150" Height="40" Margin="0,5,0,0" 
+                        HorizontalAlignment="Left" 
+                        Click="StartMonitoringButton_Click"
+                        Style="{StaticResource ModernButtonStyle}" />
+            </StackPanel>
+
+            <!-- Right Side: Real-Time Data Display -->
+            <StackPanel Grid.Column="1" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                <TextBlock Text="Real-Time Data Output:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
+                <TextBox x:Name="LiveDataOutputTextBox" Text="{Binding LiveDataOutput}" 
+                         IsReadOnly="True" 
+                         VerticalScrollBarVisibility="Auto" 
+                         HorizontalScrollBarVisibility="Auto" 
+                         AcceptsReturn="True" 
+                         TextWrapping="Wrap" 
+                         Background="{StaticResource MainViewSecondaryBackgroundColor}" 
+                         Foreground="{StaticResource MainViewForegroundColor}" 
+                         Height="324" />
             </StackPanel>
         </Grid>
     </Grid>

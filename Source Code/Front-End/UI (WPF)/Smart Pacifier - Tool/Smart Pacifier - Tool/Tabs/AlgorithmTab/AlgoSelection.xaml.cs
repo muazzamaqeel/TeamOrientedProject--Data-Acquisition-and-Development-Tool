@@ -15,12 +15,15 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab
 
         private void LiveDataButton_Click(object sender, RoutedEventArgs e)
         {
-            var liveDataView = new AlgoLiveData();
-            var mainWindow = Application.Current.MainWindow as MainWindow;
-            if (mainWindow != null)
-            {
-                mainWindow.NavigateTo(liveDataView);
-            }
+            // Retrieve necessary services
+            var databaseService = ((App)Application.Current).ServiceProvider.GetRequiredService<IDatabaseService>();
+            string campaignName = "Live Monitoring Campaign"; // Use a default or specific campaign name
+
+            // Create an instance of AlgoLiveData with the required parameters
+            var algoLiveData = new AlgoLiveData(campaignName, databaseService);
+
+            // Navigate to the new view
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(algoLiveData);
         }
 
 

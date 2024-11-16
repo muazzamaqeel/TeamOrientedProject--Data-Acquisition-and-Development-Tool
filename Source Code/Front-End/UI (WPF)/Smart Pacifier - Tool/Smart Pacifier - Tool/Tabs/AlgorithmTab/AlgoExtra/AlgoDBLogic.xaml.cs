@@ -1,23 +1,23 @@
-﻿using System;
+﻿using SmartPacifier.Interface.Services;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 {
-    public partial class AlgoDatabase : UserControl, INotifyPropertyChanged
+    public partial class AlgoDBLogic : UserControl, INotifyPropertyChanged
     {
         private readonly string _campaignName;
         private readonly IDatabaseService _databaseService;
         private readonly PythonScriptEngine _pythonScriptEngine;
-        public event PropertyChangedEventHandler PropertyChanged;
-        private readonly PythonScriptEngine pythonScriptEngine;
 
-        // Properties for script selection and output
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public ObservableCollection<string> PythonScripts { get; set; } = new ObservableCollection<string>();
 
         private string _selectedScript;
@@ -44,18 +44,14 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
         public string CampaignName => _campaignName;
 
-        public AlgoDatabase(string campaignName, IDatabaseService databaseService)
+        public AlgoDBLogic(string campaignName, IDatabaseService databaseService)
         {
             InitializeComponent();
-            pythonScriptEngine = new PythonScriptEngine(); // Initialize the PythonScriptEngine
             _campaignName = campaignName;
             _databaseService = databaseService;
-
-            // Instantiate PythonScriptEngine directly
-            _pythonScriptEngine = new PythonScriptEngine();
+            _pythonScriptEngine = new PythonScriptEngine(); // Initialize the PythonScriptEngine
 
             DataContext = this;
-
             LoadAvailableScripts();
         }
 
@@ -114,7 +110,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 }
 
                 // Convert campaign data to JSON format
-                var campaignDataJson = System.Text.Json.JsonSerializer.Serialize(new
+                var campaignDataJson = JsonSerializer.Serialize(new
                 {
                     CampaignName = _campaignName,
                     Pacifiers = campaignData
@@ -135,16 +131,10 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 }
 
                 File.AppendAllText(logPath, $"Script path confirmed: {scriptPath}\n");
-                MessageBox.Show($"Script path confirmed: {scriptPath}", "Path Confirmed", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 // Execute the Python script, passing the JSON data as an argument
-                string result = await pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, campaignDataJson);
+                string result = await SendDataToPythonScriptAsync(scriptPath, campaignDataJson);
                 File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
-
-                // Save result to a text file
-                string resultFilePath = Path.Combine(baseDirectory, "PythonScriptResult.txt");
-                File.WriteAllText(resultFilePath, result);
-                File.AppendAllText(logPath, $"Result saved to {resultFilePath}\n");
 
                 // Update the UI with the result
                 ScriptOutput = result;
@@ -158,6 +148,12 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
         }
 
+        private async Task<string> SendDataToPythonScriptAsync(string scriptPath, string campaignDataJson)
+        {
+            // Use PythonScriptEngine to send data and receive a response
+            string response = await _pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, campaignDataJson);
+            return response;
+        }
 
         // Raise the PropertyChanged event to notify the UI about property updates
         protected virtual void OnPropertyChanged(string propertyName)

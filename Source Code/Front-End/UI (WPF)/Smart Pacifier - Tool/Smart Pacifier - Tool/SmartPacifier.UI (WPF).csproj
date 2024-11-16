@@ -15,6 +15,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="lib\**" />
+    <EmbeddedResource Remove="lib\**" />
+    <None Remove="lib\**" />
+    <Page Remove="lib\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Resources\OutputResources\config.json" />
     <None Remove="Resources\OutputResources\TeamKey.pem" />
     <None Remove="Tabs\SettingsTab\.pem" />
@@ -84,7 +91,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="lib\" />
     <Folder Include="Resources\OutputResources\PythonFiles\GeneratedData\" />
   </ItemGroup>
 
