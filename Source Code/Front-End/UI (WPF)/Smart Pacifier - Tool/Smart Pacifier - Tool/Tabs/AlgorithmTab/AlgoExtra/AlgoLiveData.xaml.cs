@@ -50,15 +50,22 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 _liveDataOutput = value;
                 OnPropertyChanged(nameof(LiveDataOutput));
 
-                // Automatically scroll the TextBox to the bottom
+                // Ensure auto-scroll works properly
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    LiveDataOutputTextBox?.ScrollToEnd();
+                    if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
+                    {
+                        LiveDataOutputTextBox.ScrollToEnd();
+                    }
+                    else
+                    {
+                        Debug.WriteLine("LiveDataOutputTextBox is not initialized or loaded.");
+                    }
                 });
             }
         }
 
-        private int _throttleSpeedSeconds = 1; // Default throttle speed in seconds
+        private int _throttleSpeedSeconds = 0; // Default to fastest speed
         public int ThrottleSpeedSeconds
         {
             get => _throttleSpeedSeconds;
@@ -76,7 +83,15 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             _databaseService = databaseService;
             _pythonScriptEngine = new PythonScriptEngine();
 
+            Loaded += OnControlLoaded;
             DataContext = this;
+            LoadAvailableScripts();
+            SubscribeToBroker();
+            StartThrottledDataProcessing();
+        }
+
+        private void OnControlLoaded(object sender, RoutedEventArgs e)
+        {
             LoadAvailableScripts();
             SubscribeToBroker();
             StartThrottledDataProcessing();
@@ -168,16 +183,27 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                     {
                         if (_dataQueue.TryTake(out var data, Timeout.Infinite, _cancellationTokenSource.Token))
                         {
-                            // Update the UI with throttled data
-                            LiveDataOutput += $"\n\nProcessed Output:\n{data}";
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                LiveDataOutput += $"\n\nProcessed Output:\n{data}";
 
-                            // Respect throttle speed (convert seconds to milliseconds)
+                                // Ensure auto-scroll functionality works here
+                                if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
+                                {
+                                    LiveDataOutputTextBox.ScrollToEnd();
+                                }
+                            });
+
                             await Task.Delay(ThrottleSpeedSeconds * 1000, _cancellationTokenSource.Token);
                         }
                     }
                     catch (OperationCanceledException)
                     {
-                        break; // Exit the loop if cancellation is requested
+                        break; // Exit gracefully when cancellation is requested
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error during throttled data processing: {ex.Message}");
                     }
                 }
             });
@@ -209,12 +235,22 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             // Convert slider value into seconds (invert logic: higher slider = faster update)
             ThrottleSpeedSeconds = 10 - (int)e.NewValue; // Example: Slider max = 10, min = 0
             Debug.WriteLine($"Throttle speed updated to: {ThrottleSpeedSeconds} seconds");
+
+            // Ensure auto-scroll functionality works
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
+                {
+                    LiveDataOutputTextBox.ScrollToEnd();
+                }
+            });
         }
 
         // Handle cleanup when the control is unloaded
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
             StopThrottledDataProcessing();
+            Broker.Instance.MessageReceived -= OnMessageReceived; // Unsubscribe from events
         }
 
         // Raise the PropertyChanged event to notify the UI about property updates
