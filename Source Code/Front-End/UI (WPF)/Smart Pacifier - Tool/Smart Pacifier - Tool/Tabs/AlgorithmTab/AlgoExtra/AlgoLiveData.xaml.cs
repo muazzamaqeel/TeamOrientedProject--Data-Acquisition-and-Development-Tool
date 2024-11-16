@@ -1,14 +1,16 @@
-﻿using SmartPacifier.Interface.Services;
+﻿using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
+using SmartPacifier.Interface.Services;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Diagnostics;
-using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
-using System.Threading.Tasks;
 
 namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 {
@@ -17,6 +19,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         private readonly string _campaignName;
         private readonly IDatabaseService _databaseService;
         private readonly PythonScriptEngine _pythonScriptEngine;
+
+        // Background processing for throttling
+        private readonly BlockingCollection<string> _dataQueue = new BlockingCollection<string>();
+        private CancellationTokenSource _cancellationTokenSource;
+        private Task _throttleTask;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -42,6 +49,23 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             {
                 _liveDataOutput = value;
                 OnPropertyChanged(nameof(LiveDataOutput));
+
+                // Automatically scroll the TextBox to the bottom
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    LiveDataOutputTextBox?.ScrollToEnd();
+                });
+            }
+        }
+
+        private int _throttleSpeedSeconds = 1; // Default throttle speed in seconds
+        public int ThrottleSpeedSeconds
+        {
+            get => _throttleSpeedSeconds;
+            set
+            {
+                _throttleSpeedSeconds = value;
+                OnPropertyChanged(nameof(ThrottleSpeedSeconds));
             }
         }
 
@@ -55,6 +79,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             DataContext = this;
             LoadAvailableScripts();
             SubscribeToBroker();
+            StartThrottledDataProcessing();
         }
 
         // Load available Python scripts into the ComboBox
@@ -101,9 +126,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 Data = e.ParsedData
             });
 
-            // Update the LiveDataOutput property to display the live data
-            LiveDataOutput = $"Received Data:\n{liveDataJson}";
-
             // Send data to the Python script for additional processing
             await SendDataToPythonScript(liveDataJson);
         }
@@ -124,8 +146,8 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 string result = await _pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, liveDataJson);
                 File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
 
-                // Update the UI with the Python script output if needed
-                LiveDataOutput += $"\n\nProcessed Output:\n{result}";
+                // Add the processed data to the queue
+                _dataQueue.Add(result);
             }
             catch (Exception ex)
             {
@@ -133,6 +155,40 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 File.AppendAllText(logPath, errorMsg + "\nDetails:\n" + ex.StackTrace);
                 MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void StartThrottledDataProcessing()
+        {
+            _cancellationTokenSource = new CancellationTokenSource();
+            _throttleTask = Task.Run(async () =>
+            {
+                while (!_cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        if (_dataQueue.TryTake(out var data, Timeout.Infinite, _cancellationTokenSource.Token))
+                        {
+                            // Update the UI with throttled data
+                            LiveDataOutput += $"\n\nProcessed Output:\n{data}";
+
+                            // Respect throttle speed (convert seconds to milliseconds)
+                            await Task.Delay(ThrottleSpeedSeconds * 1000, _cancellationTokenSource.Token);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break; // Exit the loop if cancellation is requested
+                    }
+                }
+            });
+        }
+
+        private void StopThrottledDataProcessing()
+        {
+            _cancellationTokenSource?.Cancel();
+            _throttleTask?.Wait();
+            _throttleTask?.Dispose();
+            _cancellationTokenSource?.Dispose();
         }
 
         // Start monitoring live data
@@ -145,6 +201,20 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
 
             LiveDataOutput = $"Monitoring live data using script: {SelectedScript}";
+        }
+
+        // Handle throttle slider value changes
+        private void ThrottleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            // Convert slider value into seconds (invert logic: higher slider = faster update)
+            ThrottleSpeedSeconds = 10 - (int)e.NewValue; // Example: Slider max = 10, min = 0
+            Debug.WriteLine($"Throttle speed updated to: {ThrottleSpeedSeconds} seconds");
+        }
+
+        // Handle cleanup when the control is unloaded
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            StopThrottledDataProcessing();
         }
 
         // Raise the PropertyChanged event to notify the UI about property updates
