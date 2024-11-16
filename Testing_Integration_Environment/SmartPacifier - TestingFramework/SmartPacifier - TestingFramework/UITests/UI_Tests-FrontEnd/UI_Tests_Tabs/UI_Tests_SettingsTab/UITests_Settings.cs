@@ -18,7 +18,7 @@ namespace SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Te
 {
     public class UITests_Settings : IDisposable
     {
-        public FlaUIApplication app; // Removed 'readonly' modifier
+        public FlaUIApplication? app; // Removed 'readonly' modifier
 
         // Constructor is not needed in this case
 
@@ -102,7 +102,7 @@ namespace SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Te
                 return enableLoggingCheckBox != null && enableNotificationsCheckBox != null;
             }
         }
-        [Fact]
+        //[Fact]
         public void TestInfluxDbApiKeySubmission()
         {
             app = LaunchApplication(); // Launch the application

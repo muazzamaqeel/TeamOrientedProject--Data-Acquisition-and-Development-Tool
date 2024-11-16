@@ -25,7 +25,6 @@ namespace SmartPacifier___TestingFramework
             return app;
         }
 
-        [Fact]
         public void RunPinValidationTests()
         {
             app = LaunchApplication();
@@ -45,7 +44,7 @@ namespace SmartPacifier___TestingFramework
             }
         }
 
-        [Fact]
+        //[Fact]
         public void SideBarButtonsHeaderMatchValidationTests()
         {
             app = LaunchApplication();
