@@ -21,7 +21,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         private readonly IManagerCampaign _managerCampaign; // 
         public List<Campaign> Campaigns { get; set; } = new List<Campaign>();
         public string SearchName { get; set; } = string.Empty;
-        public string ActualSearchName { get; set; } = string.Empty; // New property
+        public string ActualSearchName { get; set; } = string.Empty; // Newa property
         public DateTime? SearchDate { get; set; }
         public bool isLoaded = false;
         private Dictionary<string, Campaign> campaignDataMap = new Dictionary<string, Campaign>(); // Define campaignDataMap at class level

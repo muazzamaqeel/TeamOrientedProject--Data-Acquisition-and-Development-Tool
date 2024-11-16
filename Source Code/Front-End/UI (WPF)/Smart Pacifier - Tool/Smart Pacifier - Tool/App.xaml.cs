@@ -13,6 +13,7 @@ using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.CampaignsTab;
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using System.Configuration;
@@ -20,7 +21,7 @@ using System.IO;
 using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra;
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
@@ -100,7 +101,7 @@ namespace Smart_Pacifier___Tool
 
 
 
-
+            /*
             //ExecutePythonScript();
             var config = LoadDatabaseConfiguration();
             string scriptName = config.PythonScript?.FileName ?? "python1.py"; // Default to "python1.py" if not specified
@@ -114,6 +115,8 @@ namespace Smart_Pacifier___Tool
             {
                 MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+            */
         }
 
         /// <summary>
@@ -168,7 +171,9 @@ namespace Smart_Pacifier___Tool
             });
 
             //Register PythonScriptEngine as IAlgorithmLayer
-            services.AddSingleton<IAlgorithmLayer>(sp => PythonScriptEngine.GetInstance());
+            // Correct registration using the class constructor
+            //services.AddSingleton<IAlgorithmLayer, PythonScriptEngine>();
+
 
             // Register other necessary services
             services.AddSingleton<ILocalHost, LocalHostSetup>();
@@ -177,6 +182,8 @@ namespace Smart_Pacifier___Tool
             services.AddSingleton<IManagerSensors, ManagerSensors>();
             services.AddSingleton<MainWindow>();
             services.AddSingleton<DeveloperView>();
+            services.AddTransient<AlgorithmView>();
+            services.AddTransient<AlgoSelection>();
             services.AddSingleton<IBrokerMain, BrokerMain>();
 
             // UI component registration

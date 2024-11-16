@@ -17,6 +17,8 @@ namespace SmartPacifier.Interface.Services
         string BaseUrl { get; }
         Task<DataTable> GetSensorDataAsync();
         Task DeleteEntryFromDatabaseAsync(int entryId, string measurement);
+        Task<Dictionary<string, object>> GetCampaignDataAlgorithmLayerAsync(string campaignName);
+
 
     }
 

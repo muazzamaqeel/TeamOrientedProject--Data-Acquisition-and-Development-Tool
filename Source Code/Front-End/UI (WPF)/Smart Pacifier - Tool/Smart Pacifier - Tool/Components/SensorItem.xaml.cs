@@ -34,7 +34,7 @@ namespace Smart_Pacifier___Tool.Components
             DependencyProperty.Register("SensorGroups", typeof(ObservableCollection<string>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<string>()));
 
         public static readonly DependencyProperty MeasurementGroupProperty =
-    DependencyProperty.Register("MeasurementGroup", typeof(ObservableCollection<Dictionary<string, object>>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<Dictionary<string, object>>()));
+            DependencyProperty.Register("MeasurementGroup", typeof(ObservableCollection<Dictionary<string, object>>), typeof(SensorItem), new PropertyMetadata(new ObservableCollection<Dictionary<string, object>>()));
 
         // New DependencyProperty for graph data
         public static readonly DependencyProperty GraphDataProperty =
@@ -76,6 +76,12 @@ namespace Smart_Pacifier___Tool.Components
         }
 
         public ObservableCollection<Dictionary<string, object>> MeasurementGroup
+        {
+            get { return (ObservableCollection<Dictionary<string, object>>)GetValue(MeasurementGroupProperty); }
+            set { SetValue(MeasurementGroupProperty, value); }
+        }
+
+        public ObservableCollection<Dictionary<string, object>> EventMeasurementGroup
         {
             get { return (ObservableCollection<Dictionary<string, object>>)GetValue(MeasurementGroupProperty); }
             set { SetValue(MeasurementGroupProperty, value); }

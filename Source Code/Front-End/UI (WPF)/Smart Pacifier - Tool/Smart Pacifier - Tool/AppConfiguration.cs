@@ -1,24 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Text.Json;
 using Newtonsoft.Json;
-using System.Reflection;
-
 
 namespace Smart_Pacifier___Tool
-{ 
+{
     public class AppConfiguration
     {
         public bool? UseLocal { get; set; }
         public LocalConfig? Local { get; set; }
         public ServerConfig? Server { get; set; }
         public PythonScriptConfig? PythonScript { get; set; } // Add this property
-
 
         public AppConfiguration LoadDatabaseConfiguration()
         {
@@ -43,7 +36,7 @@ namespace Smart_Pacifier___Tool
 
                 return config;
             }
-            catch (System.Text.Json.JsonException ex)
+            catch (JsonException ex)
             {
                 MessageBox.Show($"Error parsing configuration file: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
@@ -55,12 +48,6 @@ namespace Smart_Pacifier___Tool
             }
         }
     }
-
-
-
-
-
-}
 
     public class LocalConfig
     {
@@ -79,5 +66,6 @@ namespace Smart_Pacifier___Tool
     public class PythonScriptConfig
     {
         public string? FileName { get; set; } // This will hold the name of the Python script
+        public List<string>? AvailableScripts { get; set; } // List of available scripts
     }
-
+}
