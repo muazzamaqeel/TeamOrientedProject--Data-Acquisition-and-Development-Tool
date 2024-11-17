@@ -64,34 +64,15 @@ namespace Smart_Pacifier___Tool.Components
         /// <param name="sensorItem"></param>
         /// <param name="interval"></param>
         /// <param name="groupName"></param>
-        public LineChartGraph(SensorItem sensorItem, string groupName)
+        public LineChartGraph(SensorItem sensorItem, string groupName, int interval)
         {
             InitializeComponent();
 
             // Default values
-            Interval = 10;
+            Interval = interval;
             GroupName = groupName;
-
-            // Initialize the PlotModel and LineSeriesCollection
             PlotModel = new PlotModel { Title = GroupName };
             LineSeriesCollection = new ObservableCollection<LineSeries>();
-
-
-            // Configure DateTimeAxis for the x-axis
-            var dateTimeAxis = new DateTimeAxis
-            {
-                Position = AxisPosition.Bottom,
-                StringFormat = "HH:mm:ss", // Customize the time format
-                Title = "Time"
-            };
-            PlotModel.Axes.Add(dateTimeAxis);
-
-
-            // Bind the ObservableCollection to the plot model
-            foreach (var series in LineSeriesCollection)
-            {
-                PlotModel.Series.Add(series);
-            }
 
             DataContext = this; // Enable data binding
         }
