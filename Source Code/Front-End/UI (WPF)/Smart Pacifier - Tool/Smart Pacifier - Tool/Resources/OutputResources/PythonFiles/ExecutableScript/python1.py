@@ -3,23 +3,28 @@ import sys
 import json
 
 def main(port):
-    host = '127.0.0.1'  # Localhost
-    buffer_size = 4096  # Buffer size for receiving data
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(("localhost", port))
+    server_socket.listen(1)
+    print(f"Listening on port {port}")
 
-    # Connect to the TCP server
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((host, port))
+    while True:
+        client_socket, _ = server_socket.accept()
+        data = client_socket.recv(1024).decode()
+        print(f"Received data: {data}")
 
-        # Read data sent from the server
-        data = s.recv(buffer_size).decode()
-        campaign_data = json.loads(data)
-        
-        # Process the data (customize this logic as needed)
-        response_data = json.dumps({"status": "processed", "data": campaign_data})
+        # Process data (example: echo back with an extra field)
+        payload = json.loads(data)
+        payload["processed"] = True
 
-        # Send response back to the server
-        s.sendall(response_data.encode())
+        response = json.dumps(payload)
+        client_socket.sendall(response.encode())
+        client_socket.close()
 
 if __name__ == "__main__":
-    port = int(sys.argv[1])  # Receive port as an argument
+    if len(sys.argv) != 2:
+        print("Usage: python python_processor.py <port>")
+        sys.exit(1)
+
+    port = int(sys.argv[1])
     main(port)

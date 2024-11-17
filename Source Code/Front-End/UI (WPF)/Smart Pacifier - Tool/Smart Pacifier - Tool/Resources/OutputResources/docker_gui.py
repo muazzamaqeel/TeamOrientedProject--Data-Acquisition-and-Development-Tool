@@ -1,31 +1,34 @@
-import tkinter as tk
-from tkinter import messagebox
-import subprocess
+import sys
+import json
 
-def start_docker():
+def main():
     try:
-        subprocess.run(["docker-compose", "up", "-d"], check=True)
-        messagebox.showinfo("Success", "Docker containers started successfully!")
-    except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"Failed to start containers: {e}")
+        # Read JSON data from STDIN
+        input_data = sys.stdin.read()
+        if not input_data:
+            raise ValueError("No input data received.")
 
-def stop_docker():
-    try:
-        subprocess.run(["docker-compose", "down"], check=True)
-        messagebox.showinfo("Success", "Docker containers stopped successfully!")
-    except subprocess.CalledProcessError as e:
-        messagebox.showerror("Error", f"Failed to stop containers: {e}")
+        campaign = json.loads(input_data)
 
-root = tk.Tk()
-root.title("Docker Compose GUI")
+        # Process the campaign data
+        # Example processing: Echo back the campaign name and number of pacifiers
+        campaign_name = campaign.get("CampaignName", "Unknown")
+        pacifiers = campaign.get("Pacifiers", [])
+        num_pacifiers = len(pacifiers)
 
-frame = tk.Frame(root, padx=20, pady=20)
-frame.pack(padx=10, pady=10)
+        output = {
+            "Status": "Success",
+            "CampaignName": campaign_name,
+            "NumberOfPacifiers": num_pacifiers,
+            "Details": pacifiers  # You can add more detailed processing here
+        }
 
-start_button = tk.Button(frame, text="Start Docker", command=start_docker, padx=20, pady=10)
-start_button.grid(row=0, column=0, padx=10, pady=10)
+        # Write the output as JSON to STDOUT
+        print(json.dumps(output))
+    except Exception as e:
+        # Write error message to STDERR
+        sys.stderr.write(f"Error: {str(e)}\n")
+        sys.exit(1)
 
-stop_button = tk.Button(frame, text="Stop Docker", command=stop_docker, padx=20, pady=10)
-stop_button.grid(row=0, column=1, padx=10, pady=10)
-
-root.mainloop()
+if __name__ == "__main__":
+    main()

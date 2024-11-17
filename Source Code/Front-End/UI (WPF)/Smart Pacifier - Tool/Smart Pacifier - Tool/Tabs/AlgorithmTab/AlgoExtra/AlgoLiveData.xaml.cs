@@ -1,14 +1,10 @@
 ﻿using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 using SmartPacifier.Interface.Services;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -18,28 +14,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
     {
         private readonly string _campaignName;
         private readonly IDatabaseService _databaseService;
-        private PythonScriptEngine _pythonScriptEngine; // Removed readonly
 
-        // Background processing for throttling
-        private BlockingCollection<string> _dataQueue = new BlockingCollection<string>(); // Removed 'readonly'
-        private CancellationTokenSource _cancellationTokenSource;
-        private Task _throttleTask; // Proper declaration of the _throttleTask variable
-        private bool _isDisposing = false; // Flag to indicate the application is closing
+        private bool _isMonitoring = false; // Monitoring state
+        private bool _isDisposing = false; // Disposal state
 
         public event PropertyChangedEventHandler PropertyChanged;
-
-        public ObservableCollection<string> PythonScripts { get; set; } = new ObservableCollection<string>();
-
-        private string _selectedScript;
-        public string SelectedScript
-        {
-            get => _selectedScript;
-            set
-            {
-                _selectedScript = value;
-                OnPropertyChanged(nameof(SelectedScript));
-            }
-        }
 
         private string _liveDataOutput;
         public string LiveDataOutput
@@ -50,7 +29,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 _liveDataOutput = value;
                 OnPropertyChanged(nameof(LiveDataOutput));
 
-                // Ensure auto-scroll works properly
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (!_isDisposing && LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
@@ -61,188 +39,81 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
         }
 
-        private int _throttleSpeedSeconds = 0; // Default to fastest speed
-        public int ThrottleSpeedSeconds
-        {
-            get => _throttleSpeedSeconds;
-            set
-            {
-                _throttleSpeedSeconds = value;
-                OnPropertyChanged(nameof(ThrottleSpeedSeconds));
-            }
-        }
-
         public AlgoLiveData(string campaignName, IDatabaseService databaseService)
         {
             InitializeComponent();
             _campaignName = campaignName;
             _databaseService = databaseService;
-            _pythonScriptEngine = new PythonScriptEngine();
 
             Loaded += OnControlLoaded;
-            Unloaded += OnControlUnloaded; // Hook for cleanup on application closure
+            Unloaded += OnControlUnloaded;
+
             DataContext = this;
-            LoadAvailableScripts();
         }
 
         private void OnControlLoaded(object sender, RoutedEventArgs e)
         {
-            LoadAvailableScripts();
+            Debug.WriteLine("AlgoLiveData: Resources initialized on load.");
         }
 
         private void OnControlUnloaded(object sender, RoutedEventArgs e)
         {
-            Dispose(); // Ensure resources are properly disposed
-        }
-
-        // Load available Python scripts into the ComboBox
-        private void LoadAvailableScripts()
-        {
-            var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string scriptsDirectory = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript");
-            scriptsDirectory = Path.GetFullPath(scriptsDirectory);
-
-            if (Directory.Exists(scriptsDirectory))
-            {
-                var scriptFiles = Directory.GetFiles(scriptsDirectory, "*.py");
-                foreach (var script in scriptFiles)
-                {
-                    if (!PythonScripts.Contains(Path.GetFileName(script)))
-                    {
-                        PythonScripts.Add(Path.GetFileName(script));
-                    }
-                }
-            }
-            else
-            {
-                MessageBox.Show($"Scripts directory not found at: {scriptsDirectory}", "Directory Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-
-            if (PythonScripts.Count > 0)
-            {
-                SelectedScript = PythonScripts[0];
-            }
+            Dispose(); // Dispose resources
         }
 
         private void StartMonitoringButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isMonitoring)
             {
-                Debug.WriteLine("Monitoring is already running. Ignoring start request.");
-                MessageBox.Show("Monitoring is already running.", "Start Monitoring", MessageBoxButton.OK, MessageBoxImage.Information);
+                Debug.WriteLine("Monitoring is already running.");
                 return;
             }
 
-            if (string.IsNullOrEmpty(SelectedScript))
-            {
-                MessageBox.Show("Please select a script to run.", "No Script Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            Debug.WriteLine("Starting monitoring...");
             _isMonitoring = true;
 
             try
             {
-                // Reinitialize resources for a fresh start
-                _dataQueue = new BlockingCollection<string>();
-                _isDataQueueCompleted = false;
-
-                SubscribeToBroker();
-                Debug.WriteLine("Subscribed to broker messages.");
-
-                StartThrottledDataProcessing();
-                Debug.WriteLine("Throttled data processing started.");
-
-                LiveDataOutput = $"Monitoring live data using script: {SelectedScript}";
+                SubscribeToBroker(); // Subscribe to broker
+                Debug.WriteLine("Monitoring started.");
+                LiveDataOutput += "\nMonitoring started successfully.";
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error during StartMonitoring: {ex.Message}");
-                MessageBox.Show($"Error while starting monitoring:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                _isMonitoring = false; // Revert state if something fails
+                Debug.WriteLine($"Error starting monitoring: {ex.Message}");
+                LiveDataOutput += $"\nError starting monitoring: {ex.Message}";
+                _isMonitoring = false;
             }
         }
 
-
-        private bool _isMonitoring = false; // Track monitoring state to avoid repeated stops
-
-        private void StopMonitoringButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!_isMonitoring)
-            {
-                Debug.WriteLine("Monitoring is already stopped. Ignoring stop request.");
-                MessageBox.Show("Monitoring is already stopped.", "Stop Monitoring", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            Debug.WriteLine("Stopping monitoring...");
-
-            try
-            {
-                StopThrottledDataProcessing();
-                Debug.WriteLine("Throttled data processing stopped.");
-
-                // Do NOT stop the broker if it's not related to the issue
-                UnsubscribeFromBroker();
-                Debug.WriteLine("Unsubscribed from broker messages.");
-
-                StopPythonScript(); // Ensure Python script stops
-                Debug.WriteLine("Python script execution stopped.");
-
-                LiveDataOutput += "\nMonitoring stopped.";
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error during StopMonitoring: {ex.Message}");
-                MessageBox.Show($"Error while stopping monitoring:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                _isMonitoring = false; // Ensure the state is updated
-            }
-        }
-        // Method to stop the Python script execution
-        private void StopPythonScript()
-        {
-            try
-            {
-                Debug.WriteLine("Attempting to stop Python script execution...");
-                _pythonScriptEngine?.StopExecution();
-                Debug.WriteLine("Python script execution stopped successfully.");
-
-                // Reinitialize for next use
-                _pythonScriptEngine = new PythonScriptEngine();
-                Debug.WriteLine("Python script engine reinitialized.");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error stopping Python script: {ex.Message}");
-            }
-        }
-
-
-        // Subscribe to the broker to receive real-time data
         private void SubscribeToBroker()
         {
             if (!_isDisposing)
             {
-                Broker.Instance.MessageReceived += OnMessageReceived;
-                Debug.WriteLine("AlgoLiveData: Subscribed to broker messages.");
+                Broker.Instance.MessageReceived += OnMessageReceived; // Hook up the event
+                Debug.WriteLine("Subscribed to broker messages.");
+                LiveDataOutput += "\nSubscribed to broker messages.";
             }
         }
 
-        // Unsubscribe from broker to prevent further data processing
         private void UnsubscribeFromBroker()
         {
-            Broker.Instance.MessageReceived -= OnMessageReceived;
-            Debug.WriteLine("AlgoLiveData: Unsubscribed from broker messages.");
+            if (Broker.Instance != null)
+            {
+                try
+                {
+                    Broker.Instance.MessageReceived -= OnMessageReceived;
+                    Debug.WriteLine("Unsubscribed from broker messages.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error unsubscribing from broker: {ex.Message}");
+                }
+            }
         }
 
-        // Handle incoming broker messages and send data to Python for processing
-        private async void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
+        private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
-            if (_isDisposing) return; // Prevent further processing if the application is closing
+            if (_isDisposing) return;
 
             var liveDataJson = JsonSerializer.Serialize(new
             {
@@ -251,165 +122,59 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 Data = e.ParsedData
             });
 
-            await SendDataToPythonScript(liveDataJson);
-        }
-
-        private async Task SendDataToPythonScript(string liveDataJson)
-        {
-            if (_isDisposing) return; // Prevent further processing if the application is closing
-
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "live_data_script_log.txt");
-
-            try
-            {
-                File.AppendAllText(logPath, "Sending live data to Python script\n");
-
-                var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Resources\OutputResources\PythonFiles\ExecutableScript", SelectedScript);
-                string result = await _pythonScriptEngine.ExecuteScriptWithTcpAsync(scriptPath, liveDataJson);
-                File.AppendAllText(logPath, $"Python script executed, result: {result}\n");
-
-                // Check if the data queue is still accepting additions
-                if (!_isDataQueueCompleted && !_dataQueue.IsAddingCompleted)
-                {
-                    _dataQueue.Add(result);
-                }
-                else
-                {
-                    Debug.WriteLine("Data queue is already completed. Skipping addition.");
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                Debug.WriteLine($"Invalid operation while adding to data queue: {ex.Message}");
-                MessageBox.Show($"An error occurred while processing live data:\n{ex.Message}", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            catch (Exception ex)
-            {
-                string errorMsg = $"Error executing Python script with live data: {ex.Message}";
-                File.AppendAllText(logPath, errorMsg + "\nDetails:\n" + ex.StackTrace);
-                if (!_isDisposing)
-                {
-                    MessageBox.Show(errorMsg, "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-
-
-        private void StartThrottledDataProcessing()
-        {
-            if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
-            {
-                Debug.WriteLine("Throttled data processing is already running. Skipping start.");
-                return;
-            }
-
-            _cancellationTokenSource = new CancellationTokenSource();
-            _throttleTask = Task.Run(async () =>
-            {
-                while (!_cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    try
-                    {
-                        if (_dataQueue.TryTake(out var data, Timeout.Infinite, _cancellationTokenSource.Token))
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                if (_isDisposing || LiveDataOutputTextBox == null) return;
-
-                                LiveDataOutput += $"\n\nProcessed Output:\n{data}";
-                                LiveDataOutputTextBox?.ScrollToEnd();
-                            });
-
-                            await Task.Delay(ThrottleSpeedSeconds * 1000, _cancellationTokenSource.Token);
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Debug.WriteLine("Throttled data processing task canceled.");
-                        break;
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        Debug.WriteLine($"Invalid operation in data processing: {ex.Message}");
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Error in throttled data processing: {ex.Message}");
-                    }
-                }
-            });
-        }
-
-
-
-
-        private bool _isDataQueueCompleted = false; // Track if CompleteAdding has been called
-        private void StopThrottledDataProcessing()
-        {
-            if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
-            {
-                Debug.WriteLine("Throttled data processing is already stopped or not started. Skipping...");
-                return;
-            }
-
-            try
-            {
-                Debug.WriteLine("Cancelling throttled data processing...");
-                _cancellationTokenSource.Cancel();
-
-                if (_throttleTask != null)
-                {
-                    Task.WaitAny(_throttleTask); // Wait for the task to finish
-                    Debug.WriteLine("Throttled data processing task completed.");
-                }
-            }
-            catch (AggregateException ex)
-            {
-                Debug.WriteLine($"Task cancellation exception: {ex.Message}");
-            }
-            finally
-            {
-                _throttleTask?.Dispose();
-                _throttleTask = null;
-
-                if (!_isDataQueueCompleted)
-                {
-                    _dataQueue.CompleteAdding(); // Mark queue as completed
-                    Debug.WriteLine("Data queue marked as complete.");
-                }
-
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = null;
-
-                _dataQueue = new BlockingCollection<string>(); // Reinitialize the data queue
-                _isDataQueueCompleted = false;
-                Debug.WriteLine("Data queue reinitialized.");
-            }
+            // Append received data to the UI output
+            LiveDataOutput += $"\nReceived Data: {liveDataJson}";
         }
 
 
         public void Dispose()
         {
-            _isDisposing = true; // Prevent further operations
-            StopThrottledDataProcessing();
+            _isDisposing = true;
+            _isMonitoring = false;
             UnsubscribeFromBroker();
-            _dataQueue?.Dispose();
             Debug.WriteLine("AlgoLiveData: Disposed all resources.");
         }
 
-        // Handle throttle slider value changes
-        private void ThrottleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            ThrottleSpeedSeconds = 10 - (int)e.NewValue;
-            Debug.WriteLine($"Throttle speed updated to: {ThrottleSpeedSeconds} seconds");
-        }
-
-        // Raise the PropertyChanged event to notify the UI about property updates
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+
+        private double _scrollingSpeed = 5; // Default scrolling speed
+
+        private void ScrollingSpeedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            _scrollingSpeed = e.NewValue;
+
+            string speedText = _scrollingSpeed switch
+            {
+                <= 3 => "Slow",
+                <= 7 => "Normal",
+                _ => "Fast"
+            };
+
+            SpeedDisplay.Text = $"Speed: {speedText}";
+        }
+
+        // Automatically scroll the text box at the defined speed
+        private async void AutoScrollLiveDataOutput()
+        {
+            while (!_isDisposing)
+            {
+                await Task.Delay((int)(1000 / _scrollingSpeed)); // Adjust scrolling speed
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
+                    {
+                        LiveDataOutputTextBox.ScrollToEnd();
+                    }
+                });
+            }
+        }
+
+
+
     }
 }
