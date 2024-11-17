@@ -177,6 +177,7 @@ namespace Smart_Pacifier___Tool
 
             // Register other necessary services
             services.AddSingleton<ILocalHost, LocalHostSetup>();
+            services.AddSingleton<IBrokerHealthService, BrokerHealth>();
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
             services.AddSingleton<IManagerCampaign, ManagerCampaign>();
             services.AddSingleton<IManagerSensors, ManagerSensors>();
@@ -191,8 +192,10 @@ namespace Smart_Pacifier___Tool
             services.AddTransient<Func<string, SettingsView>>(sp => (defaultView) =>
             {
                 var localHostService = sp.GetRequiredService<ILocalHost>();
-                return new SettingsView(localHostService, defaultView);
+                var brokerHealthService = sp.GetRequiredService<IBrokerHealthService>(); // Add this
+                return new SettingsView(localHostService, brokerHealthService, defaultView); // Pass both
             });
+
             services.AddSingleton<CampaignsView>();
         }
 
