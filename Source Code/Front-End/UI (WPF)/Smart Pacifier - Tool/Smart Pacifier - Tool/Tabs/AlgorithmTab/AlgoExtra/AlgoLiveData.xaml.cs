@@ -92,7 +92,14 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
             try
             {
+                // Reset CancellationTokenSource if it was disposed
+                if (_scrollCancellationTokenSource == null || _scrollCancellationTokenSource.IsCancellationRequested)
+                {
+                    _scrollCancellationTokenSource = new CancellationTokenSource();
+                }
+
                 SubscribeToBroker(); // Subscribe to broker
+                StartAutoScrolling(); // Start scrolling
                 Debug.WriteLine("Monitoring started.");
                 LiveDataOutput += "\nMonitoring started successfully.";
             }
@@ -103,7 +110,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 _isMonitoring = false;
             }
         }
-
         private void StopMonitoringButton_Click(object sender, RoutedEventArgs e)
         {
             if (!_isMonitoring)
@@ -113,9 +119,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
 
             _isMonitoring = false;
+
             StopAutoScrolling();
             SaveRemainingDataToFile();
             UnsubscribeFromBroker();
+
             LiveDataOutput += "\nMonitoring stopped successfully.";
         }
 
@@ -177,18 +185,22 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
         private void StartAutoScrolling()
         {
-            _scrollCancellationTokenSource = new CancellationTokenSource();
+            if (_scrollCancellationTokenSource == null)
+            {
+                _scrollCancellationTokenSource = new CancellationTokenSource();
+            }
+
             var token = _scrollCancellationTokenSource.Token;
 
             Task.Run(async () =>
             {
                 while (!token.IsCancellationRequested)
                 {
-                    await Task.Delay((int)(1000 / _scrollingSpeed), token); // Adjust scrolling speed
+                    await Task.Delay((int)(1000 / _scrollingSpeed), token);
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        LiveDataScrollViewer?.ScrollToEnd(); // Ensure the ScrollViewer always scrolls to the end
+                        LiveDataScrollViewer?.ScrollToEnd();
                     });
                 }
             }, token);
@@ -202,8 +214,16 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
         private void StopAutoScrolling()
         {
-            _scrollCancellationTokenSource?.Cancel();
-            _scrollCancellationTokenSource?.Dispose();
+            try
+            {
+                _scrollCancellationTokenSource?.Cancel();
+                _scrollCancellationTokenSource?.Dispose();
+                _scrollCancellationTokenSource = null; // Reset the CancellationTokenSource
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error stopping auto-scrolling: {ex.Message}");
+            }
         }
 
         private void SaveDataToFile(string data)
