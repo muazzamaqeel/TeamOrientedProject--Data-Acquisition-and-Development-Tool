@@ -123,7 +123,13 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             });
 
             // Append received data to the UI output
-            LiveDataOutput += $"\nReceived Data: {liveDataJson}";
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                LiveDataOutput += $"\nReceived Data: {liveDataJson}";
+
+                // Auto-scroll to the end of the ScrollViewer
+                LiveDataScrollViewer?.ScrollToEnd();
+            });
         }
 
 

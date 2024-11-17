@@ -45,19 +45,19 @@
             </StackPanel>
 
             <!-- Right Side: Real-Time Data Display -->
-            <StackPanel Grid.Column="1" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+            <StackPanel Grid.Column="1" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <TextBlock Text="Real-Time Data Output:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="LiveDataScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" VerticalAlignment="Stretch" Height="300">
                     <TextBox x:Name="LiveDataOutputTextBox"
-                     Text="{Binding LiveDataOutput, UpdateSourceTrigger=PropertyChanged}"
-                     IsReadOnly="True"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     Background="{StaticResource MainViewSecondaryBackgroundColor}"
-                     Foreground="{StaticResource MainViewForegroundColor}"
-                     FontSize="14" Padding="10"
-                     BorderBrush="{StaticResource AccentColor}" BorderThickness="2" />
-
+                             Text="{Binding LiveDataOutput, UpdateSourceTrigger=PropertyChanged}"
+                             IsReadOnly="True"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Background="{StaticResource MainViewSecondaryBackgroundColor}"
+                             Foreground="{StaticResource MainViewForegroundColor}"
+                             FontSize="14" Padding="10"
+                             BorderBrush="{StaticResource AccentColor}" BorderThickness="2"
+                             VerticalScrollBarVisibility="Auto" />
                 </ScrollViewer>
             </StackPanel>
         </Grid>
