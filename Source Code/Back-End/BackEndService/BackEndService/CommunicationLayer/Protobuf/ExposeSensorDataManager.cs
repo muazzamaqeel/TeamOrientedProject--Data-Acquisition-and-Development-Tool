@@ -19,6 +19,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.Protobuf
         private readonly List<SensorData> _sensorDataList = new List<SensorData>();
         private readonly object _dataLock = new object();
 
+
+
         // Event to notify subscribers when sensor data is updated
         public event EventHandler? SensorDataUpdated;
 
