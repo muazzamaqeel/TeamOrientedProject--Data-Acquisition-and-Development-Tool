@@ -109,33 +109,33 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             try
             {
                 bool isReachable = await brokerHealthService.IsBrokerReachableAsync();
-                bool isReceiving = await brokerHealthService.IsReceivingDataAsync();
+                //bool isReceiving = await brokerHealthService.IsReceivingDataAsync();
 
                 double timestamp = DateTimeAxis.ToDouble(DateTime.Now);
 
                 var reachableSeries = brokerHealthModel.Series[0] as LineSeries;
-                var receivingSeries = brokerHealthModel.Series[1] as LineSeries;
+                //var receivingSeries = brokerHealthModel.Series[1] as LineSeries;
 
-                if (reachableSeries != null && receivingSeries != null)
+                if (reachableSeries != null)
                 {
                     // Update "Broker Reachable" series
                     reachableSeries.Points.Add(new DataPoint(timestamp, isReachable ? 1 : 0));
                     reachableSeries.Color = isReachable ? OxyColors.Green : OxyColors.Red;
 
                     // Update "Receiving Data" series
-                    receivingSeries.Points.Add(new DataPoint(timestamp, isReceiving ? 1 : 0));
-                    receivingSeries.Color = isReceiving ? OxyColors.Green : OxyColors.Red;
+                    //receivingSeries.Points.Add(new DataPoint(timestamp, isReceiving ? 1 : 0));
+                    //receivingSeries.Color = isReceiving ? OxyColors.Green : OxyColors.Red;
 
                     // Trim points to keep chart manageable
                     if (reachableSeries.Points.Count > 50) reachableSeries.Points.RemoveAt(0);
-                    if (receivingSeries.Points.Count > 50) receivingSeries.Points.RemoveAt(0);
+                    //if (receivingSeries.Points.Count > 50) receivingSeries.Points.RemoveAt(0);
                 }
 
                 // Refresh the chart
                 brokerHealthModel.InvalidatePlot(true);
 
                 // Update status text
-                BrokerHealthStatus.Text = $"Status: Broker Reachable - {isReachable}, Receiving Data - {isReceiving}";
+                BrokerHealthStatus.Text = $"Status: Broker Reachable - {isReachable}";
             }
             catch (Exception ex)
             {
@@ -580,7 +580,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             {
                 // Check broker health statuses
                 bool isReachable = await brokerHealthService.IsBrokerReachableAsync();
-                bool isReceiving = await brokerHealthService.IsReceivingDataAsync();
+                //bool isReceiving = await brokerHealthService.IsReceivingDataAsync();
 
                 // Add data points to OxyPlot series
                 double timestamp = DateTimeAxis.ToDouble(DateTime.Now);
@@ -591,7 +591,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 if (reachableSeries != null && receivingSeries != null)
                 {
                     reachableSeries.Points.Add(new DataPoint(timestamp, isReachable ? 1 : 0));
-                    receivingSeries.Points.Add(new DataPoint(timestamp, isReceiving ? 1 : 0));
+                    //receivingSeries.Points.Add(new DataPoint(timestamp, isReceiving ? 1 : 0));
 
                     // Trim points to the last 50
                     if (reachableSeries.Points.Count > 50) reachableSeries.Points.RemoveAt(0);
@@ -602,7 +602,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 brokerHealthModel.InvalidatePlot(true);
 
                 // Update status
-                BrokerHealthStatus.Text = $"Status: Broker Reachable - {isReachable}, Receiving Data - {isReceiving}";
+                BrokerHealthStatus.Text = $"Status: Broker Reachable - {isReachable}";
             }
             catch (Exception ex)
             {
