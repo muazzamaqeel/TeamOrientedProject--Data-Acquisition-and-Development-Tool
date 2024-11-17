@@ -182,9 +182,9 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                     return;
                 }
 
-                // Use the Python script engine to execute the script
+                // Use the Python script engine to execute the script with database data
                 var pythonScriptEngine = new PythonScriptEngine();
-                string result = await pythonScriptEngine.ExecuteScriptAsync(scriptPath, campaignDataJson);
+                string result = await pythonScriptEngine.ExecuteScriptAsync(scriptPath, campaignDataJson, usePort: false);
 
                 // Display the result in the UI
                 AppendMessage($"Script executed successfully:\n{result}");
@@ -194,6 +194,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 AppendMessage($"Error running script: {ex.Message}");
             }
         }
+
 
 
 

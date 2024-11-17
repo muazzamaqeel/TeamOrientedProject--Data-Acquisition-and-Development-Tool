@@ -1,5 +1,5 @@
 {
-  "UseLocal": true,
+  "UseLocal": false,
   "Local": {
     "Host": "localhost:8086",
     "ApiKey": "ZTzjP4IyF7SrYZ8kGzfykhqx41SrrCZget5l6krFa_oET5SWWdyYXQbzgxdqHM8io4HFhYezmXS-h2C556xQcg=="
