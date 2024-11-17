@@ -16,10 +16,10 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
     {
         private readonly string _campaignName;
         private readonly IDatabaseService _databaseService;
-
-        private bool _isMonitoring = false; // Monitoring state
-        private bool _isDisposing = false; // Disposal state
+        private bool _isMonitoring = false;
+        private bool _isDisposing = false;
         private CancellationTokenSource _scrollCancellationTokenSource;
+        private readonly string _outputFilePath;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -65,6 +65,8 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
             DataContext = this;
 
+            _outputFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "PythonFiles", "ExecutableScript", "AlgoOutput.txt");
+
             StartAutoScrolling(); // Initialize auto-scrolling
         }
 
@@ -102,6 +104,21 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
         }
 
+        private void StopMonitoringButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isMonitoring)
+            {
+                Debug.WriteLine("Monitoring is not running.");
+                return;
+            }
+
+            _isMonitoring = false;
+            StopAutoScrolling();
+            SaveRemainingDataToFile();
+            UnsubscribeFromBroker();
+            LiveDataOutput += "\nMonitoring stopped successfully.";
+        }
+
         private void SubscribeToBroker()
         {
             if (!_isDisposing)
@@ -130,7 +147,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
         private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
-            if (_isDisposing) return;
+            if (_isDisposing || !_isMonitoring) return;
 
             var liveDataJson = JsonSerializer.Serialize(new
             {
@@ -139,11 +156,23 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 Data = e.ParsedData
             });
 
-            // Append received data to the UI output
+            // Append received data to the UI output and dynamically increase the height of the box
             Application.Current.Dispatcher.Invoke(() =>
             {
                 LiveDataOutput += $"\nReceived Data: {liveDataJson}";
+                AdjustTextBoxHeight(); // Adjust the TextBox height dynamically
             });
+        }
+
+        private void AdjustTextBoxHeight()
+        {
+            // Increase the height of the TextBox dynamically
+            if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
+            {
+                // Adjust height based on the scrolling speed slider
+                double newHeight = LiveDataOutputTextBox.ActualHeight + (10 / ScrollingSpeed);
+                LiveDataOutputTextBox.Height = newHeight > 600 ? 600 : newHeight; // Cap height at 600
+            }
         }
 
         private void StartAutoScrolling()
@@ -177,12 +206,38 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             _scrollCancellationTokenSource?.Dispose();
         }
 
+        private void SaveDataToFile(string data)
+        {
+            try
+            {
+                File.AppendAllText(_outputFilePath, data + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error saving data to file: {ex.Message}");
+            }
+        }
+
+        private void SaveRemainingDataToFile()
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(LiveDataOutput))
+                {
+                    File.AppendAllText(_outputFilePath, LiveDataOutput);
+                    LiveDataOutput = string.Empty; // Clear UI buffer
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error saving remaining data to file: {ex.Message}");
+            }
+        }
+
         public void Dispose()
         {
             _isDisposing = true;
-            _isMonitoring = false;
-            UnsubscribeFromBroker();
-            StopAutoScrolling(); // Stop auto-scrolling on disposal
+            StopMonitoringButton_Click(this, new RoutedEventArgs()); // Stop all monitoring processes
             Debug.WriteLine("AlgoLiveData: Disposed all resources.");
         }
 

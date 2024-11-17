@@ -34,6 +34,10 @@
                         HorizontalAlignment="Left" 
                         Click="StartMonitoringButton_Click"
                         Style="{StaticResource ModernButtonStyle}" />
+                <Button Content="Stop" Width="150" Height="40" Margin="0,5,0,10" 
+                        HorizontalAlignment="Left" 
+                        Click="StopMonitoringButton_Click"
+                        Style="{StaticResource ModernButtonStyle}" />
 
                 <!-- Scrolling Speed Control -->
                 <TextBlock Text="Adjust Scrolling Speed:" FontSize="16" FontWeight="Bold" Margin="0,20,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
@@ -47,7 +51,7 @@
             <!-- Right Side: Real-Time Data Display -->
             <StackPanel Grid.Column="1" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <TextBlock Text="Real-Time Data Output:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
-                <ScrollViewer x:Name="LiveDataScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" VerticalAlignment="Stretch" Height="300">
+                <ScrollViewer x:Name="LiveDataScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" VerticalAlignment="Stretch">
                     <TextBox x:Name="LiveDataOutputTextBox"
                              Text="{Binding LiveDataOutput, UpdateSourceTrigger=PropertyChanged}"
                              IsReadOnly="True"
@@ -57,7 +61,8 @@
                              Foreground="{StaticResource MainViewForegroundColor}"
                              FontSize="14" Padding="10"
                              BorderBrush="{StaticResource AccentColor}" BorderThickness="2"
-                             VerticalScrollBarVisibility="Auto" />
+                             VerticalScrollBarVisibility="Auto"
+                             MinHeight="300" />
                 </ScrollViewer>
             </StackPanel>
         </Grid>
