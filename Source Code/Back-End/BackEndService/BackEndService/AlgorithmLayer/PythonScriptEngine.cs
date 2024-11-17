@@ -13,7 +13,7 @@ public class PythonScriptEngine
 
     public async Task<string> ExecuteScriptAsync(string scriptPath, string dataJson)
     {
-        string response = "";
+        string response = string.Empty;
         TcpListener listener = null;
 
         try
@@ -58,9 +58,11 @@ public class PythonScriptEngine
             using (TcpClient client = await listener.AcceptTcpClientAsync())
             using (NetworkStream stream = client.GetStream())
             {
+                // Send data to Python script
                 byte[] dataBytes = Encoding.UTF8.GetBytes(dataJson);
                 await stream.WriteAsync(dataBytes, 0, dataBytes.Length);
 
+                // Receive response from Python script
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 {
                     response = await reader.ReadToEndAsync();

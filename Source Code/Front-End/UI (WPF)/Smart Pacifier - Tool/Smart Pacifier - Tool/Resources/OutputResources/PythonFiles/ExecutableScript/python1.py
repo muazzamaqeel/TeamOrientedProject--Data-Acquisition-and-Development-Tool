@@ -1,26 +1,30 @@
-﻿import sys
-import socket
+﻿import socket
+import sys
+import json
 
-def main():
-    if len(sys.argv) < 2:
-        print("Error: Port argument is missing.")
+def main(port):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(("localhost", port))
+    server_socket.listen(1)
+    print(f"Listening on port {port}")
+
+    while True:
+        client_socket, _ = server_socket.accept()
+        data = client_socket.recv(1024).decode()
+        print(f"Received data: {data}")
+
+        # Process data (example: echo back with an extra field)
+        payload = json.loads(data)
+        payload["processed"] = True
+
+        response = json.dumps(payload)
+        client_socket.sendall(response.encode())
+        client_socket.close()
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python python_processor.py <port>")
         sys.exit(1)
 
     port = int(sys.argv[1])
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        server_socket.bind(("127.0.0.1", port))
-        server_socket.listen(1)
-        print(f"Listening on port {port}...")
-
-        conn, addr = server_socket.accept()
-        with conn:
-            print(f"Connected by {addr}")
-            data = conn.recv(1024)
-            while data:
-                print(f"Received: {data.decode('utf-8')}")
-                conn.sendall(b"Batch processed successfully.")
-                data = conn.recv(1024)
-
-if __name__ == "__main__":
-    main()
+    main(port)

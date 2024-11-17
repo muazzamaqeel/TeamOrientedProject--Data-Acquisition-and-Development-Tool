@@ -122,8 +122,10 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 Data = e.ParsedData
             });
 
+            // Append received data to the UI output
             LiveDataOutput += $"\nReceived Data: {liveDataJson}";
         }
+
 
         public void Dispose()
         {
