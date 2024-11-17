@@ -28,16 +28,18 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private readonly ServerHandler serverHandler;
 
         private readonly IConfiguration configuration;
+        private readonly IBrokerHealthService brokerHealthService;
         private readonly string serverHost;
         private readonly string serverUsername;
         private readonly string serverApiKey;
         private readonly string serverPort;
 
 
-        public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
+        public SettingsView(ILocalHost localHost, IBrokerHealthService brokerHealthService, string defaultView = "ModeButtons")
         {
             InitializeComponent();
             localHostService = localHost;
+            this.brokerHealthService = brokerHealthService;
             serverHandler = new ServerHandler();
             serverHandler.TerminalOutputReceived += UpdateTerminalOutput;
 
@@ -133,6 +135,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             ModeButtonsPanel.Visibility = Visibility.Collapsed;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
             TerminalPanel.Visibility = Visibility.Collapsed;
+            BrokerHealthPanel.Visibility = Visibility.Collapsed;
 
             switch (panelName)
             {
@@ -145,11 +148,14 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 case "InfluxDbModePanel":
                     InfluxDbModePanel.Visibility = Visibility.Visible;
                     break;
-                case "None":
+                case "BrokerHealthPanel":
+                    BrokerHealthPanel.Visibility = Visibility.Visible;
+                    break;
                 default:
                     break;
             }
         }
+
 
         private void DockerInitialize(object sender, RoutedEventArgs e)
         {
@@ -455,7 +461,27 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         }
 
+        private async void CheckBrokerHealth_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Call the asynchronous method to check broker health
+                var brokerHealthStatus = await brokerHealthService.CheckBrokerHealthAsync();
+                BrokerHealthStatus.Text = $"Status: {brokerHealthStatus}";
+            }
+            catch (Exception ex)
+            {
+                BrokerHealthStatus.Text = $"Status: Error - {ex.Message}";
+            }
+        }
 
+
+        public string CheckBrokerHealth()
+        {
+            // Replace with actual logic to check the broker's health
+            // Example: Ping the broker or check a health endpoint
+            return "Healthy"; // Or "Unhealthy" based on the response
+        }
 
 
 

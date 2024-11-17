@@ -34,6 +34,9 @@
                 <Button x:Name="InfluxDBButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="InfluxDbModePanel">
                     <TextBlock Text="InfluxDB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
+                <Button x:Name="BrokerHealthButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="BrokerHealthPanel">
+                    <TextBlock Text="Broker Health" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
             </StackPanel>
 
             <!-- Main Content Panels -->
@@ -201,6 +204,16 @@
                         </StackPanel>
                     </Grid>
                 </Border>
+
+                <StackPanel x:Name="BrokerHealthPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Vertical" Margin="0,200,0,0" Visibility="Collapsed">
+                    <TextBlock Text="Broker Health Status" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20" Foreground="{StaticResource MainViewForegroundColor}"/>
+
+                    <Button x:Name="CheckBrokerHealthButton" Content="Check Health" Style="{StaticResource ModernButtonStyle}" Width="200" Height="50" Click="CheckBrokerHealth_Click" HorizontalAlignment="Center" Margin="0,20"/>
+
+                    <TextBlock x:Name="BrokerHealthStatus" Text="Status: Unknown" FontSize="16" HorizontalAlignment="Center" Margin="0,20,0,0" Foreground="{StaticResource MainViewForegroundColor}"/>
+                </StackPanel>
+
+
             </Grid>
 
             <!-- Close Button on Top Right for WebView -->
