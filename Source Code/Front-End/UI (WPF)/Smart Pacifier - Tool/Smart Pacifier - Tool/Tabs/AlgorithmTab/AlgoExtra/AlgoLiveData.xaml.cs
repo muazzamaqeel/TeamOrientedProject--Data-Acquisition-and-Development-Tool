@@ -5,6 +5,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -17,6 +19,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
         private bool _isMonitoring = false; // Monitoring state
         private bool _isDisposing = false; // Disposal state
+        private CancellationTokenSource _scrollCancellationTokenSource;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -39,6 +42,18 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
         }
 
+        private double _scrollingSpeed = 5; // Default scrolling speed
+        public double ScrollingSpeed
+        {
+            get => _scrollingSpeed;
+            set
+            {
+                _scrollingSpeed = value;
+                OnPropertyChanged(nameof(ScrollingSpeed));
+                RestartAutoScrolling(); // Restart auto-scrolling with updated speed
+            }
+        }
+
         public AlgoLiveData(string campaignName, IDatabaseService databaseService)
         {
             InitializeComponent();
@@ -49,6 +64,8 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             Unloaded += OnControlUnloaded;
 
             DataContext = this;
+
+            StartAutoScrolling(); // Initialize auto-scrolling
         }
 
         private void OnControlLoaded(object sender, RoutedEventArgs e)
@@ -126,18 +143,46 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             Application.Current.Dispatcher.Invoke(() =>
             {
                 LiveDataOutput += $"\nReceived Data: {liveDataJson}";
-
-                // Auto-scroll to the end of the ScrollViewer
-                LiveDataScrollViewer?.ScrollToEnd();
             });
         }
 
+        private void StartAutoScrolling()
+        {
+            _scrollCancellationTokenSource = new CancellationTokenSource();
+            var token = _scrollCancellationTokenSource.Token;
+
+            Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    await Task.Delay((int)(1000 / _scrollingSpeed), token); // Adjust scrolling speed
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        LiveDataScrollViewer?.ScrollToEnd(); // Ensure the ScrollViewer always scrolls to the end
+                    });
+                }
+            }, token);
+        }
+
+        private void RestartAutoScrolling()
+        {
+            StopAutoScrolling();
+            StartAutoScrolling();
+        }
+
+        private void StopAutoScrolling()
+        {
+            _scrollCancellationTokenSource?.Cancel();
+            _scrollCancellationTokenSource?.Dispose();
+        }
 
         public void Dispose()
         {
             _isDisposing = true;
             _isMonitoring = false;
             UnsubscribeFromBroker();
+            StopAutoScrolling(); // Stop auto-scrolling on disposal
             Debug.WriteLine("AlgoLiveData: Disposed all resources.");
         }
 
@@ -146,14 +191,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-
-        private double _scrollingSpeed = 5; // Default scrolling speed
-
         private void ScrollingSpeedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            _scrollingSpeed = e.NewValue;
+            ScrollingSpeed = e.NewValue;
 
-            string speedText = _scrollingSpeed switch
+            string speedText = ScrollingSpeed switch
             {
                 <= 3 => "Slow",
                 <= 7 => "Normal",
@@ -162,25 +204,5 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
             SpeedDisplay.Text = $"Speed: {speedText}";
         }
-
-        // Automatically scroll the text box at the defined speed
-        private async void AutoScrollLiveDataOutput()
-        {
-            while (!_isDisposing)
-            {
-                await Task.Delay((int)(1000 / _scrollingSpeed)); // Adjust scrolling speed
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
-                    {
-                        LiveDataOutputTextBox.ScrollToEnd();
-                    }
-                });
-            }
-        }
-
-
-
     }
 }
