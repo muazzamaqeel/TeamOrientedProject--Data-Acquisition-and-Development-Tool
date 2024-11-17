@@ -12,90 +12,93 @@ namespace Smart_Pacifier___Tool.Components
 {
     public partial class IntervalSettingsDialog : Window
     {
-        public Dictionary<string, List<int>> SensorIntervals { get; private set; } = new Dictionary<string, List<int>>();
+        public Dictionary<string, int> SensorIntervals { get; private set; } = new Dictionary<string, int>();
         public List<PacifierItem> PacifierItems { get; private set; }
         public List<SensorItem> SensorItems { get; private set; }
 
-        public IntervalSettingsDialog(List<PacifierItem> pacifierItems, List<SensorItem> sensorItems)
+        public IntervalSettingsDialog(List<PacifierItem> pacifierItems, List<SensorItem> sensorItems, Dictionary<string, int> sensorIntervals)
         {
             PacifierItems = pacifierItems;  // Store the list of sensors
             SensorItems = sensorItems;
+            SensorIntervals = sensorIntervals;
             InitializeComponent();
-            PopulateSensorSettings(pacifierItems, sensorItems);
+            PopulateSensorSettings();
         }
 
-        private void PopulateSensorSettings(List<PacifierItem> pacifierItems, List<SensorItem> sensorItems)
+        private void PopulateSensorSettings()
         {
 
-                foreach (var sensorItem in sensorItems)
+            foreach (var sensorItem in SensorItems)
+            {
+                // Create a WrapPanel for each sensor
+                var sensorPanel = new WrapPanel
                 {
-                    // Create a WrapPanel for each sensor
-                    var sensorPanel = new WrapPanel
-                    {
-                        Margin = new Thickness(5),
-                        Background = (Brush)Application.Current.FindResource("MainViewSecondaryBackgroundColor")
-                    };
+                    Margin = new Thickness(5),
+                    Background = (Brush)Application.Current.FindResource("MainViewSecondaryBackgroundColor")
+                };
 
-                    // Create a Grid for each sensor
-                    var sensorGrid = new Grid();
-                    sensorGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Row 1 for SensorId
-                    sensorGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Row 2 for SensorGroups and MeasurementGroups
+                // Create a Grid for each sensor
+                var sensorGrid = new Grid();
+                sensorGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Row 1 for SensorId
+                sensorGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Row 2 for SensorGroups and MeasurementGroups
 
-                    // Row 1: SensorId
-                    var sensorIdTextBlock = new TextBlock
+                // Row 1: SensorId
+                var sensorIdTextBlock = new TextBlock
+                {
+                    Text = $"Sensor: {sensorItem.SensorId}",
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    FontSize = 20,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = (Brush)Application.Current.FindResource("MainViewForegroundColor")
+
+                };
+                Grid.SetRow(sensorIdTextBlock, 0);
+                sensorGrid.Children.Add(sensorIdTextBlock);
+
+                // Row 2: MeasurementGroup and TextBox
+                var measurementGroupStackPanel = new StackPanel()
+                {
+
+                };
+
+                foreach (var measurementGroup in sensorItem.SensorGroups)
+                {
+                    // Create a StackPanel for each KeyValuePair in the MeasurementGroup
+                    var measurementStackPanel = new StackPanel { Orientation = Orientation.Horizontal };
+
+                    // Create a TextBlock for the measurement label (value)
+                    var valueTextBlock = new TextBlock
                     {
-                        Text = $"Sensor: {sensorItem.SensorId}",
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        FontSize = 20,
-                        FontWeight = FontWeights.Bold,
+                        Text = measurementGroup,
+                        Margin = new Thickness(5, 0, 5, 0),
+                        VerticalAlignment = VerticalAlignment.Center,
                         Foreground = (Brush)Application.Current.FindResource("MainViewForegroundColor")
-
-                    };
-                    Grid.SetRow(sensorIdTextBlock, 0);
-                    sensorGrid.Children.Add(sensorIdTextBlock);
-
-                    // Row 2: MeasurementGroup and TextBox
-                    var measurementGroupStackPanel = new StackPanel()
-                    {
-
                     };
 
-                    foreach (var measurementGroup in sensorItem.SensorGroups)
+                    // Create a TextBox for the interval input
+                    var textBox = new TextBox
                     {
-                        // Create a StackPanel for each KeyValuePair in the MeasurementGroup
-                        var measurementStackPanel = new StackPanel { Orientation = Orientation.Horizontal };
+                        Uid = measurementGroup,
+                        Text = SensorIntervals[measurementGroup].ToString() ?? "0", // Default to 0 if no graph exists
+                        Width = 50
+                    };
 
-                        // Create a TextBlock for the measurement label (value)
-                        var valueTextBlock = new TextBlock
-                        {
-                            Text = measurementGroup,
-                            Margin = new Thickness(5, 0, 5, 0),
-                            VerticalAlignment = VerticalAlignment.Center,
-                            Foreground = (Brush)Application.Current.FindResource("MainViewForegroundColor")
-                        };
+                    // Optionally, add input validation for numeric values
+                    textBox.PreviewTextInput += (sender, e) =>
+                    {
+                        // Allow only numeric input (digits, minus, and decimal point)
+                        e.Handled = !char.IsDigit(e.Text, 0) && e.Text != "-" && e.Text != ".";
+                    };
 
-                        // Create a TextBox for the interval input
-                        var textBox = new TextBox
-                        {
-                            Uid = measurementGroup,
-                            Text = sensorItem.SensorGraphs.FirstOrDefault(g => g.Name == $"{sensorItem.SensorId}_{measurementGroup}")?.Interval.ToString() ?? "0", // Default to 0 if no graph exists
-                            Width = 50
-                        };
+                    // Add the TextBlock and TextBox to the StackPanel
+                    measurementStackPanel.Children.Add(valueTextBlock);
+                    measurementStackPanel.Children.Add(textBox);
 
-                        // Optionally, add input validation for numeric values
-                        textBox.PreviewTextInput += (sender, e) =>
-                        {
-                            // Allow only numeric input (digits, minus, and decimal point)
-                            e.Handled = !char.IsDigit(e.Text, 0) && e.Text != "-" && e.Text != ".";
-                        };
+                    // Add the StackPanel to the main measurement group panel
+                    measurementGroupStackPanel.Children.Add(measurementStackPanel);
 
-                        // Add the TextBlock and TextBox to the StackPanel
-                        measurementStackPanel.Children.Add(valueTextBlock);
-                        measurementStackPanel.Children.Add(textBox);
 
-                        // Add the StackPanel to the main measurement group panel
-                        measurementGroupStackPanel.Children.Add(measurementStackPanel);
-                    }
+                }
 
 
                     // Add the measurement group section to the grid
@@ -108,8 +111,6 @@ namespace Smart_Pacifier___Tool.Components
                     // Add the sensor panel to the main container
                     SensorSettingsPanel.Children.Add(sensorPanel);
 
-                    // Initialize the dictionary with empty values
-                    SensorIntervals[sensorItem.SensorId] = new List<int>(new int[sensorItem.SensorGraphs.Count]);
                 }
         }
 
@@ -120,73 +121,57 @@ namespace Smart_Pacifier___Tool.Components
                 var sensorIdTextBlock = panel.Children.OfType<Grid>()
                     .FirstOrDefault()?.Children.OfType<TextBlock>().FirstOrDefault();
 
-                if (sensorIdTextBlock != null)
+                var measurementGroupStackPanel = panel.Children.OfType<Grid>()
+                    .FirstOrDefault()?.Children.OfType<StackPanel>().FirstOrDefault();
+
+                if (measurementGroupStackPanel != null)
                 {
-                    var sensorId = sensorIdTextBlock.Text.Replace("Sensor: ", string.Empty);
-                    var sensorItem = FindSensorById(sensorId);
-
-                    if (sensorItem != null)
+                    // Iterate through all StackPanels inside the measurementGroupStackPanel
+                    foreach (var measurementPanel in measurementGroupStackPanel.Children.OfType<StackPanel>())
                     {
-                        var measurementGroupStackPanel = panel.Children.OfType<Grid>()
-                            .FirstOrDefault()?.Children.OfType<StackPanel>().FirstOrDefault();
-
-                        if (measurementGroupStackPanel != null)
+                        // Find all TextBox controls within each measurementPanel (StackPanel)
+                        foreach (var textBox in measurementPanel.Children.OfType<TextBox>())
                         {
-                            // Iterate through all StackPanels inside the measurementGroupStackPanel
-                            foreach (var measurementPanel in measurementGroupStackPanel.Children.OfType<StackPanel>())
+                            // Extract the content from the TextBox
+                            string intervalText = textBox.Text;
+
+                            if (int.TryParse(intervalText, out int interval))
                             {
-                                // Find all TextBox controls within each measurementPanel (StackPanel)
-                                foreach (var textBox in measurementPanel.Children.OfType<TextBox>())
+                                Debug.WriteLine($"Interval: {textBox.Uid}: {interval}");
+
+                                // Update all linked pacifiers for this sensor
+
+                                //Debug.WriteLine($"Pacifier {pacifier.PacifierId}");
+                                foreach (var pacifierItem in PacifierItems)
                                 {
-                                    // Extract the content from the TextBox
-                                    string intervalText = textBox.Text;
-
-                                    if (int.TryParse(intervalText, out int interval))
+                                    foreach (var sensorItem in SensorItems)
                                     {
-                                        Debug.WriteLine($"Interval: {textBox.Uid}: {interval}");
-
                                         // Find the matching SensorGraph by TextBox.Uid
                                         var matchingGraph = sensorItem.SensorGraphs
-                                            .FirstOrDefault(g => g.Name == $"{sensorItem.SensorId}_{textBox.Uid}");
+                                            .FirstOrDefault(g => g.Uid == $"{sensorItem.SensorId}_{textBox.Uid}_{pacifierItem.PacifierId}");
 
                                         if (matchingGraph != null)
                                         {
+
+                                            Debug.WriteLine($"Update Interval for: Uid: {matchingGraph.Uid}, Name: {matchingGraph.Name}");
                                             // Update the interval for the current SensorItem's SensorGraph
                                             matchingGraph.Interval = interval;
 
-                                            // Update all linked pacifiers for this sensor
-                                            foreach (var pacifier in sensorItem.LinkedPacifiers)
-                                            {
-                                                Debug.WriteLine($"Pacifier {pacifier.PacifierId}");
-                                                foreach (var sensor in pacifier.Sensors)
-                                                {
-                                                    Debug.WriteLine($"Sensor {sensor.SensorId}");
-                                                    var linkedGraph = sensor.SensorGraphs.FirstOrDefault(g => g.Name == matchingGraph.Name);
-
-                                                    if (linkedGraph != null)
-                                                    {
-                                                        linkedGraph.Interval = interval;
-
-                                                        // Debug output to confirm propagation
-                                                        Debug.WriteLine($"Updated Interval: {interval} for SensorGraph {linkedGraph.Name} in Pacifier {pacifier.PacifierId}");
-                                                    }
-                                                }
-                                            }
-                                            
+                                            SensorIntervals[matchingGraph.Name] = interval;
                                         }
-                                    }
-                                    else
-                                    {
-                                        // Handle invalid input (optional)
-                                        MessageBox.Show("Please enter a valid numeric value.");
+
                                     }
                                 }
+                            }
+                            else
+                            {
+                                // Handle invalid input (optional)
+                                MessageBox.Show("Please enter a valid numeric value.");
                             }
                         }
                     }
                 }
             }
-
             this.DialogResult = true; // Indicate success
         }
 

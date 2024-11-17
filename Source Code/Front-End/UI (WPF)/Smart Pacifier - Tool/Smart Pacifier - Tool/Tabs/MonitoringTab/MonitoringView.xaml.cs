@@ -19,6 +19,8 @@ using System.Collections.Specialized;
 using static Smart_Pacifier___Tool.Components.PacifierItem;
 using DataPoint = OxyPlot.DataPoint;
 using Microsoft.Extensions.DependencyInjection;
+using OxyPlot.Axes;
+using OxyPlot.Legends;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -248,21 +250,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 Foreground = Brushes.White
             };
             Grid.SetRow(pacifierNameTextBox, 0);
-            Grid.SetColumn(pacifierNameTextBox, 0);
+            Grid.SetColumn(pacifierNameTextBox, 1);
             pacifierGrid.Children.Add(pacifierNameTextBox);
-
-            // Create the second TextBlock for additional input
-            TextBlock additionalTextBox = new()
-            {
-                Text = "Status",
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                VerticalAlignment = System.Windows.VerticalAlignment.Center,
-                FontSize = 16,
-                Foreground = Brushes.White,
-            };
-            Grid.SetRow(additionalTextBox, 0);
-            Grid.SetColumn(additionalTextBox, 1);
-            pacifierGrid.Children.Add(additionalTextBox);
 
             // Create the "Debug" button
             Button debugButton = new()
@@ -310,14 +299,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             string uniqueUid = $"{pacifierItem.PacifierId}_{sensorItem.SensorId}";
 
             // Ensure that the new row has the correct row index for the ScrollViewer
-            ScrollViewer graphScrollViewer = new ScrollViewer
-            {
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
-                VerticalAlignment = System.Windows.VerticalAlignment.Stretch,
-                Uid = uniqueUid
-            };
+            WrapPanel graphScrollViewer = CreateGraphForSensor(sensorItem);
+            graphScrollViewer.Uid = uniqueUid;
 
             // Set the new row index for the ScrollViewer
             int newRowIndex = pacifierGrid.RowDefinitions.Count;
@@ -325,8 +308,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             Grid.SetColumnSpan(graphScrollViewer, 3);
 
             pacifierGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
-
-            graphScrollViewer.Content = CreateGraphForSensor(sensorItem);
             pacifierGrid.Children.Add(graphScrollViewer);
 
             Debug.WriteLine($"Monitoring: Added SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId} at Row {newRowIndex}");
@@ -366,20 +347,23 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         }
 
         // Remove Graph Row for a Specific SensorItem in a PacifierItem Grid
+        // Remove Graph Row for a Specific SensorItem in a PacifierItem Grid
         private void RemoveSensorRow(PacifierItem pacifierItem, SensorItem sensorItem)
         {
             Grid? pacifierGrid = FindPacifierGrid(pacifierItem.PacifierId);
             if (pacifierGrid == null) return;
 
-            var scrollViewerToRemove = pacifierGrid.Children
-                .OfType<ScrollViewer>()
-                .FirstOrDefault(s => s.Uid == $"{pacifierItem.PacifierId}_{sensorItem.SensorId}");
+            // Find the WrapPanel for this sensor using its Uid
+            var wrapPanelToRemove = pacifierGrid.Children
+                .OfType<WrapPanel>()
+                .FirstOrDefault(wp => wp.Uid == $"{pacifierItem.PacifierId}_{sensorItem.SensorId}");
 
-            if (scrollViewerToRemove != null)
+            if (wrapPanelToRemove != null)
             {
-                int rowIndex = Grid.GetRow(scrollViewerToRemove);
-                pacifierGrid.Children.Remove(scrollViewerToRemove);
+                int rowIndex = Grid.GetRow(wrapPanelToRemove);
+                pacifierGrid.Children.Remove(wrapPanelToRemove);
 
+                // Optionally, remove the corresponding row definition
                 if (rowIndex < pacifierGrid.RowDefinitions.Count)
                 {
                     pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
@@ -388,7 +372,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 Debug.WriteLine($"Monitoring: Removed SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId}");
             }
         }
-
 
         /// <summary>
         /// Removes the graph rows for the specified SensorItem from all PacifierItem grids.
@@ -414,15 +397,15 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                     {
                         var groupName = firstKvp.Value;
 
-                        // Find the ScrollViewer that contains the graph for this sensor group
-                        var scrollViewerToRemove = pacifierGrid.Children
-                            .OfType<ScrollViewer>()
-                            .FirstOrDefault(scrollViewer => scrollViewer.Uid == $"{pacifierItem.PacifierId}_{sensorItem.SensorId}");
+                        // Find the WrapPanel that contains the graph for this sensor group
+                        var wrapPanelToRemove = pacifierGrid.Children
+                            .OfType<WrapPanel>()
+                            .FirstOrDefault(wrapPanel => wrapPanel.Uid == $"{pacifierItem.PacifierId}_{sensorItem.SensorId}");
 
-                        if (scrollViewerToRemove != null)
+                        if (wrapPanelToRemove != null)
                         {
-                            int rowIndex = Grid.GetRow(scrollViewerToRemove);
-                            pacifierGrid.Children.Remove(scrollViewerToRemove);
+                            int rowIndex = Grid.GetRow(wrapPanelToRemove);
+                            pacifierGrid.Children.Remove(wrapPanelToRemove);
 
                             // Optionally, remove the corresponding row definition
                             if (rowIndex < pacifierGrid.RowDefinitions.Count)
@@ -463,11 +446,18 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
 
         // Create multiple Graphs for a SensorItem based on its SensorGroups
-        private UIElement CreateGraphForSensor(SensorItem sensorItem)
+        private WrapPanel CreateGraphForSensor(SensorItem sensorItem)
         {
+
+            // Create a unique identifier for the graph
+            string uniqueUid = $"{sensorItem.ParentPacifierItem.GetPacifierItem().PacifierId}_{sensorItem.SensorId}";
+
             WrapPanel graphPanel = new WrapPanel
             {
                 Orientation = Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
+                VerticalAlignment = System.Windows.VerticalAlignment.Top,
+                Uid = uniqueUid
             };
 
             Debug.WriteLine($"Monitoring: Created Container for graphs");
@@ -475,44 +465,68 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             // Iterate through each SensorGroup in the SensorItem
             foreach (var sensorGroup in sensorItem.SensorGroups)
             {
-                // Create a unique identifier for each graph based on SensorId and groupName
-                string uniquePlotId = $"{sensorItem.SensorId}_{sensorGroup}";
 
-                LineChartGraph graph = new LineChartGraph(sensorItem, sensorGroup)
+                // Retrieve the saved interval for this SensorItem and SensorGroup from the dictionary
+                int interval = _viewModel.SensorIntervals[sensorGroup];
+                Debug.WriteLine($"Monitoring: Interval is {interval}");
+
+                // Create a unique identifier for each graph based on SensorId and groupName
+                string uniquePlotId = $"{sensorItem.SensorId}_{sensorGroup}_{sensorItem.ParentPacifierItem.GetPacifierItem().PacifierId}";
+
+                // Create an instance of the LineChartGraph with necessary properties
+                LineChartGraph graph = new LineChartGraph(sensorItem, sensorGroup, interval)
                 {
-                    Width = 350,
-                    Height = 200,
-                    Name = uniquePlotId,
+                    Height = 300,
+                    Uid = uniquePlotId,
+                    Name = sensorGroup,
                     PlotId = uniquePlotId,  // Ensure unique PlotId
                     HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
                     Margin = new Thickness(5)
                 };
 
+                // Additional configurations for the LineChartGraph
+                //graph.PlotModel.IsLegendVisible = true;
+
+                // Optionally set specific properties (like disabling zoom) if handled in the class
+                graph.PlotModel.Axes.Add(new DateTimeAxis
+                {
+                    Position = AxisPosition.Bottom,
+                    StringFormat = "HH:mm:ss",
+                    Title = "Time",
+                    IsZoomEnabled = false,
+                    IsPanEnabled = false,
+                    IntervalLength = interval
+                });
+
+                graph.PlotModel.Axes.Add(new LinearAxis
+                {
+                    Position = AxisPosition.Left,
+                    IsZoomEnabled = false,
+                    IsPanEnabled = false
+                });
+
+                // Add a legend to the plot model
+                graph.PlotModel.Legends.Add(new Legend
+                {
+                    LegendPosition = LegendPosition.TopRight,
+                    LegendPlacement = LegendPlacement.Outside,
+                    LegendOrientation = LegendOrientation.Horizontal,
+                    LegendBorderThickness = 0
+                });
+
+
+                // Add the graph to the SensorItem's collection for future reference
                 sensorItem.SensorGraphs.Add(graph);
 
+                // Add the graph to the WrapPanel for UI display
                 graphPanel.Children.Add(graph);
+
                 Debug.WriteLine($"Monitoring: Created Graph for Sensor Group {sensorGroup} with unique PlotId {uniquePlotId}");
             }
 
             return graphPanel;
         }
 
-        // ================ Graph Data Bind ===============
-
-
-
-        //private LineChartGraph FindGraphByPlotId(string plotId)
-        //{
-        //    // Search for the graph with the specific PlotId
-        //    foreach (var child in graphPanel.Children)
-        //    {
-        //        if (child is LineChartGraph graph && graph.PlotId == plotId)
-        //        {
-        //            return graph;
-        //        }
-        //    }
-        //    return null;
-        //}
 
         // ================ Buttons ===============
 
@@ -549,7 +563,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             if (_viewModel.CheckedSensorItems.Count > 0)
             {
 
-                var dialog = new IntervalSettingsDialog(new List<PacifierItem>(_viewModel.CheckedPacifierItems), new List<SensorItem>(_viewModel.CheckedSensorItems));
+                var dialog = new IntervalSettingsDialog(new List<PacifierItem>(_viewModel.CheckedPacifierItems), new List<SensorItem>(_viewModel.CheckedSensorItems), _viewModel.SensorIntervals);
                 if (dialog.ShowDialog() == true)
                 {
                     var intervals = dialog.SensorIntervals;

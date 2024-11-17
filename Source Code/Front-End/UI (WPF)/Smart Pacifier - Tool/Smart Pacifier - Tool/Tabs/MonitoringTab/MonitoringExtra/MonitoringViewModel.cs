@@ -31,6 +31,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         public ObservableCollection<PacifierItem> _checkedPacifierItems = new ObservableCollection<PacifierItem>();
         public ObservableCollection<SensorItem> _checkedSensorItems = new ObservableCollection<SensorItem>();
 
+        public Dictionary<string, int> SensorIntervals { get; private set; } = new Dictionary<string, int>();
+
         // Properties to expose ObservableCollections for Pacifier and Sensor items
         public ObservableCollection<PacifierItem> PacifierItems
         {
@@ -128,6 +130,12 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                 {
                                     if (dictionary.ContainsKey("sensorGroup"))
                                     {
+                                        if (!SensorIntervals.ContainsKey(dictionary["sensorGroup"].ToString()))
+                                        {
+                                            SensorIntervals.Add(dictionary["sensorGroup"].ToString(), 10);
+                                            Debug.WriteLine($"Added sensorGroup {dictionary["sensorGroup"]} with interval 10");
+
+                                        }
                                         // Check for uniqueness
                                         if (!sensorItem.SensorGroups.Contains(dictionary["sensorGroup"].ToString()))
                                         {
@@ -153,14 +161,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                     sensorItem.MeasurementGroup.Clear();
                                     sensorItem.MeasurementGroup = new ObservableCollection<Dictionary<string, object>>(e.ParsedData);
                                     AddLineSeries(sensorItem);
-                                    //foreach (var dictionary in sensorItem.MeasurementGroup)
-                                    //{
-                                    //    if (!sensorItem.SensorGroups.Contains(dictionary["sensorGroup"]))
-                                    //    {
-                                    //        sensorItem.SensorGroups.Add(dictionary["sensorGroup"]);
-                                    //    }
 
-                                    //}
                                     //Debug
                                     //DisplaySensorDetails(pacifierItem, sensorItem);
                                 }
@@ -204,7 +205,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             foreach (var sensorGroup in sensorItem.MeasurementGroup)
             {
                 var firstKvp = sensorGroup.FirstOrDefault();
-                string uniquePlotId = $"{sensorItem.SensorId}_{firstKvp.Value}";
+                string uniquePlotId = $"{sensorItem.SensorId}_{firstKvp.Value}_{sensorItem.ParentPacifierItem.GetPacifierItem().PacifierId}";
 
                 //Debug.WriteLine($"AddDataToGraphs Graph ID {measurementGraph.PlotId} is this {uniquePlotId}");
 
@@ -240,22 +241,27 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
                         existingSeries.Points.Add((new DataPoint(DateTimeAxis.ToDouble(xValue), yValue)));
 
-                        if (existingSeries.Points.Count > measurementGraph.Interval)
+                        if (existingSeries.Points.Count > SensorIntervals[measurementGraph.Name])
                         {
-                            var difference = existingSeries.Points.Count - measurementGraph.Interval;
+                            //Debug.WriteLine($"Update Graph Interval: {SensorIntervals[measurementGraph.Name]}");
+
+                            var difference = existingSeries.Points.Count - SensorIntervals[measurementGraph.Name];
                             for (int i = 0; i <= difference; i++)
                             {
                                 existingSeries.Points.RemoveAt(0);
                             }
                         }
-
+                        
                         //Debug.WriteLine($"AddDataToGraphs Add DataPoints {yValue}");
                     }
 
                 }
 
             }
+
+            measurementGraph.PlotModel.IsLegendVisible = true;
             measurementGraph.PlotModel.InvalidatePlot(true);
+
 
         }
 
