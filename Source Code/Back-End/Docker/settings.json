@@ -32,6 +32,27 @@
                     "MAX_STEP": 1
                 },
                 {
+                    "NAME": "led_1",
+                    "TYPE": "int",
+                    "MIN_VALUE": 100,
+                    "MAX_VALUE": 110,
+                    "MAX_STEP": 1
+                },
+                {
+                    "NAME": "led_2",
+                    "TYPE": "int",
+                    "MIN_VALUE": 100,
+                    "MAX_VALUE": 110,
+                    "MAX_STEP": 1
+                },
+                {
+                    "NAME": "led_3",
+                    "TYPE": "int",
+                    "MIN_VALUE": 100,
+                    "MAX_VALUE": 110,
+                    "MAX_STEP": 1
+                },
+                {
                     "NAME": "acc_x",
                     "TYPE": "float",
                     "MIN_VALUE": -0.03,
