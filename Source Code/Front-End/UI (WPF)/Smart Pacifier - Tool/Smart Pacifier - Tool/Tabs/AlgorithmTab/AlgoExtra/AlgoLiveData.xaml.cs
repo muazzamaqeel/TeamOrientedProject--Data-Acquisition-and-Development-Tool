@@ -164,12 +164,29 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 Data = e.ParsedData
             });
 
-            // Append received data to the UI output and dynamically increase the height of the box
+            // Append received data to the UI output and save it to the file
             Application.Current.Dispatcher.Invoke(() =>
             {
                 LiveDataOutput += $"\nReceived Data: {liveDataJson}";
-                AdjustTextBoxHeight(); // Adjust the TextBox height dynamically
+                SaveDataToFile($"Received Data: {liveDataJson}"); // Save to file immediately
             });
+        }
+
+        private void StopAutoScrolling()
+        {
+            try
+            {
+                if (_scrollCancellationTokenSource != null && !_scrollCancellationTokenSource.IsCancellationRequested)
+                {
+                    _scrollCancellationTokenSource.Cancel();
+                    _scrollCancellationTokenSource.Dispose();
+                }
+                _scrollCancellationTokenSource = null; // Reset for reuse
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error stopping auto-scrolling: {ex.Message}");
+            }
         }
 
         private void AdjustTextBoxHeight()
@@ -212,19 +229,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             StartAutoScrolling();
         }
 
-        private void StopAutoScrolling()
-        {
-            try
-            {
-                _scrollCancellationTokenSource?.Cancel();
-                _scrollCancellationTokenSource?.Dispose();
-                _scrollCancellationTokenSource = null; // Reset the CancellationTokenSource
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error stopping auto-scrolling: {ex.Message}");
-            }
-        }
 
         private void SaveDataToFile(string data)
         {

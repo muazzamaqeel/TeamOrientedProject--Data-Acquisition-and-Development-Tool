@@ -54,16 +54,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             LoadAvailableScripts();
         }
 
-        /// <summary>
-        /// Loads available Python scripts from the specified directory into the ComboBox.
-        /// </summary>
         private void LoadAvailableScripts()
         {
             try
             {
-                var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                string scriptsDirectory = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript");
-                scriptsDirectory = Path.GetFullPath(scriptsDirectory);
+                string scriptsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "PythonFiles", "ExecutableScript");
 
                 if (Directory.Exists(scriptsDirectory))
                 {
@@ -72,153 +67,70 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                     {
                         PythonScripts.Add(Path.GetFileName(script));
                     }
-                    AppendMessage("Available Python scripts loaded.");
+
+                    if (PythonScripts.Count > 0)
+                    {
+                        SelectedScript = PythonScripts[0];
+                    }
+
+                    AppendMessage("Python scripts loaded successfully.");
                 }
                 else
                 {
-                    string errorMsg = $"Scripts directory not found at: {scriptsDirectory}";
-                    Debug.WriteLine(errorMsg);
-                    AppendMessage($"Error: {errorMsg}");
-                }
-
-                if (PythonScripts.Count > 0)
-                {
-                    SelectedScript = PythonScripts[0];
-                    AppendMessage($"Selected script: {SelectedScript}");
+                    AppendMessage($"Error: Scripts directory not found at {scriptsDirectory}");
                 }
             }
             catch (Exception ex)
             {
-                string errorMsg = $"Error loading scripts: {ex.Message}";
-                Debug.WriteLine(errorMsg);
-                AppendMessage($"Error: {errorMsg}");
+                AppendMessage($"Error loading scripts: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Handles the Run Script button click event.
-        /// </summary>
         private async void RunScriptButton_Click(object sender, RoutedEventArgs e)
         {
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "algorithm_debug_log.txt");
-
             try
             {
-                await LogAsync(logPath, "RunScriptButton_Click started");
-
                 if (string.IsNullOrEmpty(SelectedScript))
                 {
-                    await LogAsync(logPath, "No script selected");
-                    AppendMessage("Please select a script to run.");
+                    AppendMessage("No script selected. Please select a script.");
                     return;
                 }
 
-                await LogAsync(logPath, $"Selected Script: {SelectedScript}");
-
-                // Retrieve the campaign data from the database
                 var campaignData = await _databaseService.GetCampaignDataAlgorithmLayerAsync(_campaignName);
-                await LogAsync(logPath, "Campaign data retrieved from database");
 
                 if (campaignData == null || campaignData.Count == 0)
                 {
-                    await LogAsync(logPath, "No data found for the selected campaign");
-                    AppendMessage("No data found for the selected campaign.");
+                    AppendMessage($"No data found for campaign {_campaignName}.");
                     return;
                 }
 
-                // Convert campaign data to JSON format
-                var campaignDataJson = JsonSerializer.Serialize(new
+                string campaignDataJson = JsonSerializer.Serialize(new
                 {
                     CampaignName = _campaignName,
                     Pacifiers = campaignData
                 });
-                await LogAsync(logPath, "Campaign data converted to JSON format");
 
-                // Construct the full path to the Python script
-                var baseDirectoryPath = AppDomain.CurrentDomain.BaseDirectory;
-                var scriptsDirectoryPath = Path.Combine(baseDirectoryPath, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript");
-                var scriptPath = Path.Combine(scriptsDirectoryPath, SelectedScript);
-                scriptPath = Path.GetFullPath(scriptPath); // Ensure full path
+                string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "PythonFiles", "ExecutableScript", SelectedScript);
 
                 if (!File.Exists(scriptPath))
                 {
-                    string errorMsg = $"Script file not found at path: {scriptPath}";
-                    await LogAsync(logPath, errorMsg);
-                    AppendMessage($"Error: {errorMsg}");
+                    AppendMessage($"Script file not found: {scriptPath}");
                     return;
                 }
 
-                await LogAsync(logPath, $"Script path confirmed: {scriptPath}");
-
-                // Create a new instance of PythonScriptEngine
                 var pythonScriptEngine = new PythonScriptEngine();
-
-                // Execute the Python script, passing the JSON data as an argument
                 string result = await pythonScriptEngine.ExecuteScriptAsync(scriptPath, campaignDataJson);
-                await LogAsync(logPath, $"Python script executed, result: {result}");
 
-                // Update the UI with the result
-                AppendMessage($"Script Output:\n{result}");
-            }
-            catch (TimeoutException tex)
-            {
-                string timeoutMsg = $"Script execution timed out: {tex.Message}";
-                Debug.WriteLine(timeoutMsg);
-                AppendMessage($"Error: {timeoutMsg}");
+                AppendMessage($"Script executed successfully:\n{result}");
             }
             catch (Exception ex)
             {
-                string errorMsg = $"Error executing Python script: {ex.Message}";
-                await LogAsync(logPath, $"{errorMsg}\nDetails:\n{ex.StackTrace}");
-                Debug.WriteLine(errorMsg);
-                AppendMessage($"Error: {errorMsg}");
+                AppendMessage($"Error running script: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Sends data to the Python script and retrieves the response.
-        /// </summary>
-        /// <param name="scriptPath">Full path to the Python script.</param>
-        /// <param name="campaignDataJson">JSON-formatted campaign data.</param>
-        /// <returns>Response from the Python script.</returns>
-        private async Task<string> SendDataToPythonScriptAsync(string scriptPath, string campaignDataJson)
-        {
-            var pythonScriptEngine = new PythonScriptEngine();
-            string response = await pythonScriptEngine.ExecuteScriptAsync(scriptPath, campaignDataJson);
-            return response;
-        }
-
-        /// <summary>
-        /// Logs messages to a specified log file asynchronously.
-        /// </summary>
-        /// <param name="logPath">Path to the log file.</param>
-        /// <param name="message">Message to log.</param>
-        /// <returns>A task that represents the asynchronous operation.</returns>
-        private async Task LogAsync(string logPath, string message)
-        {
-            try
-            {
-                using (StreamWriter writer = new StreamWriter(logPath, append: true))
-                {
-                    string logMessage = $"{DateTime.Now}: {message}";
-                    await writer.WriteLineAsync(logMessage);
-                }
-            }
-            catch (Exception ex)
-            {
-                string errorMsg = $"Error writing to log file: {ex.Message}";
-                Debug.WriteLine(errorMsg);
-                AppendMessage($"Logging Error: {errorMsg}");
-            }
-        }
-
-        /// <summary>
-        /// Appends a message to the ScriptOutput TextBox in a thread-safe manner.
-        /// </summary>
-        /// <param name="message">The message to append.</param>
         private void AppendMessage(string message)
         {
-            // Ensure UI updates are performed on the UI thread
             if (Dispatcher.CheckAccess())
             {
                 ScriptOutput += $"{DateTime.Now}: {message}\n";
@@ -229,13 +141,61 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             }
         }
 
-        /// <summary>
-        /// Raises the PropertyChanged event to notify the UI about property updates.
-        /// </summary>
-        /// <param name="propertyName">Name of the property that changed.</param>
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+
+        private async void RunScriptWithDatabaseButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(SelectedScript))
+                {
+                    AppendMessage("No script selected. Please select a script.");
+                    return;
+                }
+
+                // Fetch data from the database
+                var campaignData = await _databaseService.GetCampaignDataAlgorithmLayerAsync(_campaignName);
+
+                if (campaignData == null || campaignData.Count == 0)
+                {
+                    AppendMessage($"No data found for campaign {_campaignName}.");
+                    return;
+                }
+
+                // Serialize campaign data to JSON
+                string campaignDataJson = JsonSerializer.Serialize(new
+                {
+                    CampaignName = _campaignName,
+                    Pacifiers = campaignData
+                });
+
+                // Construct the script path
+                string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "PythonFiles", "ExecutableScript", SelectedScript);
+
+                if (!File.Exists(scriptPath))
+                {
+                    AppendMessage($"Script file not found: {scriptPath}");
+                    return;
+                }
+
+                // Use the Python script engine to execute the script
+                var pythonScriptEngine = new PythonScriptEngine();
+                string result = await pythonScriptEngine.ExecuteScriptAsync(scriptPath, campaignDataJson);
+
+                // Display the result in the UI
+                AppendMessage($"Script executed successfully:\n{result}");
+            }
+            catch (Exception ex)
+            {
+                AppendMessage($"Error running script: {ex.Message}");
+            }
+        }
+
+
+
     }
 }

@@ -21,13 +21,14 @@
 
             <!-- Left Side: Select Script and Controls -->
             <StackPanel Grid.Column="0" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top">
-                <!-- Script Selection -->
+                <!-- Script Selection 
                 <TextBlock Text="Select Script:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
                 <ComboBox x:Name="ScriptComboBox" Width="200" Margin="0,5,0,15" 
                           ItemsSource="{Binding PythonScripts}" 
                           SelectedItem="{Binding SelectedScript}" 
                           Background="White" 
                           Foreground="Black" />
+                -->
 
                 <!-- Monitoring Buttons -->
                 <Button Content="Execute" Width="150" Height="40" Margin="0,5,0,10" 
@@ -56,18 +57,18 @@
                 <TextBlock Text="Real-Time Data Output:" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{StaticResource MainViewForegroundColor}" />
                 <ScrollViewer x:Name="LiveDataScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                     <TextBox x:Name="LiveDataOutputTextBox"
-                             Text="{Binding LiveDataOutput, UpdateSourceTrigger=PropertyChanged}"
-                             IsReadOnly="True"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             Background="{StaticResource MainViewSecondaryBackgroundColor}"
-                             Foreground="{StaticResource MainViewForegroundColor}"
-                             FontSize="14" Padding="10"
-                             BorderBrush="{StaticResource AccentColor}" BorderThickness="2"
-                             MinHeight="300"
-                             MinWidth="400" />
+                 Text="{Binding LiveDataOutput, UpdateSourceTrigger=PropertyChanged}"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 Background="{StaticResource MainViewSecondaryBackgroundColor}"
+                 Foreground="{StaticResource MainViewForegroundColor}"
+                 FontSize="14" Padding="10"
+                 BorderBrush="{StaticResource AccentColor}" BorderThickness="2"
+                 Height="400" Width="600" />
                 </ScrollViewer>
             </Grid>
+
         </Grid>
     </Grid>
 </UserControl>

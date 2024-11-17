@@ -5,6 +5,7 @@ using SmartPacifier.Interface.Services;
 using Protos;
 using SmartPacifier.BackEnd.CommunicationLayer.Protobuf;
 using SmartPacifier.BackEnd.AlgorithmLayer;
+using System.Windows;
 
 
 namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
@@ -124,7 +125,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing message on topic '{e.Topic}': {ex.Message}");
+                MessageBox.Show($"Error processing message on topic '{e.Topic}': {ex.Message}");
             }
         }
 
