@@ -89,6 +89,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Resources\OutputResources\LiveDataFiles\" />
+  </ItemGroup>
+
 	<Target Name="PostBuildCopy" AfterTargets="PostBuildEvent">
 		<Copy SourceFiles="Resources\OutputResources\docker-compose.yml" DestinationFiles="$(OutputPath)docker-compose.yml" Condition="Exists('Resources\OutputResources\docker-compose.yml')" SkipUnchangedFiles="true" />
 		<Copy SourceFiles="Resources\OutputResources\mosquitto.conf" DestinationFiles="$(OutputPath)mosquitto.conf" Condition="Exists('Resources\OutputResources\mosquitto.conf')" SkipUnchangedFiles="true" />

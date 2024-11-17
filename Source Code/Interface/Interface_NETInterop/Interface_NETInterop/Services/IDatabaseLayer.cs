@@ -104,4 +104,10 @@ namespace SmartPacifier.Interface.Services
     }
 
 
+    public interface ILineProtocol
+    {
+        void CreateFileCamp(string campaignName, string entryTime);
+    }
+
+
 }
