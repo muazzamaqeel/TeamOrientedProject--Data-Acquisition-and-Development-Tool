@@ -108,6 +108,7 @@ namespace SmartPacifier.Interface.Services
     {
         void CreateFileCamp(string campaignName, string entryTime);
         void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime);
+        void UpdateStoppedEntryTime(string campaignName, string newEndTime);
 
     }
 

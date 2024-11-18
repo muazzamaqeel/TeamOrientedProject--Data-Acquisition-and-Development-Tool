@@ -88,17 +88,17 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         public void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime)
         {
 
-            MessageBox.Show(
-                $"Campaign Name: {campaignName}\n" +
-                $"Pacifier Count: {pacifierCount}\n" +
-                $"Pacifier Name: {pacifierName}\n" +
-                $"Sensor Type: {sensorType}\n" +
-                $"Parsed Data: {string.Join(", ", parsedData.Select(d => string.Join(", ", d.Select(kv => $"{kv.Key}: {kv.Value}"))))}\n" +
-                $"Entry Time: {entryTime}",
-                "Debug Information",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information
-            );
+            //MessageBox.Show(
+            //    $"Campaign Name: {campaignName}\n" +
+            //    $"Pacifier Count: {pacifierCount}\n" +
+            //    $"Pacifier Name: {pacifierName}\n" +
+            //    $"Sensor Type: {sensorType}\n" +
+            //    $"Parsed Data: {string.Join(", ", parsedData.Select(d => string.Join(", ", d.Select(kv => $"{kv.Key}: {kv.Value}"))))}\n" +
+            //    $"Entry Time: {entryTime}",
+            //    "Debug Information",
+            //    MessageBoxButton.OK,
+            //    MessageBoxImage.Information
+            //);
 
             string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
             if (!File.Exists(filePath))
@@ -180,6 +180,75 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             }
         }
 
+        public void UpdateStoppedEntryTime(string campaignName, string newEndTime)
+        {
+            string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
+
+            if (!File.Exists(filePath))
+            {
+                Debug.WriteLine($"Campaign file does not exist: {filePath}");
+                MessageBox.Show($"Campaign file does not exist: {campaignName}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!DateTime.TryParseExact(newEndTime, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEndTime))
+            {
+                Debug.WriteLine($"Invalid endTime format: {newEndTime}");
+                MessageBox.Show($"Invalid endTime format. Please use 'yyyy-MM-dd HH:mm:ss'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            long updatedTimestamp = ToUnixNanoseconds(parsedEndTime);
+
+            try
+            {
+                var lines = File.ReadAllLines(filePath).ToList();
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    if (lines[i].Contains("status=\"stopped\""))
+                    {
+                        var parts = lines[i].Split(' ');
+                        if (parts.Length >= 3)
+                        {
+                            // Update entry_time field
+                            string[] fields = parts[1].Split(',');
+                            for (int j = 0; j < fields.Length; j++)
+                            {
+                                if (fields[j].StartsWith("entry_time=", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    fields[j] = $"entry_time=\"{newEndTime}\"";
+                                    break;
+                                }
+                            }
+                            parts[1] = string.Join(",", fields);
+
+                            // Replace the primary timestamp (2nd field) with the updated timestamp
+                            parts[2] = updatedTimestamp.ToString();
+
+                            // Remove any additional timestamps
+                            if (parts.Length > 3)
+                            {
+                                parts = parts.Take(3).ToArray();
+                            }
+
+                            // Replace the line with updated content
+                            lines[i] = string.Join(" ", parts);
+                        }
+                        break;
+                    }
+                }
+
+                File.WriteAllLines(filePath, lines);
+                Debug.WriteLine($"Successfully updated 'stopped' entry in file: {filePath}");
+                MessageBox.Show("Campaign 'stopped' entry has been successfully updated.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating 'stopped' entry: {ex.Message}");
+                MessageBox.Show($"Failed to update 'stopped' entry. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private long ToUnixNanoseconds(DateTime dateTime)
         {
             DateTimeOffset dto = dateTime.Kind switch
@@ -194,6 +263,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             long nanoseconds = (dto.Ticks % TimeSpan.TicksPerSecond) * 100;
             return unixNanoseconds + nanoseconds;
         }
+
+
     }
 
 }
