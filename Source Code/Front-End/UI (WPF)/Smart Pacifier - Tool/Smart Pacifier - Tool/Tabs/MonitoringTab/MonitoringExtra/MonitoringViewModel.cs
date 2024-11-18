@@ -155,12 +155,14 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
                         // Find the PacifierItem in PacifierItems with a matching ItemId and also in checkedPacifiers
                         var pacifierItem = PacifierItems.FirstOrDefault(p => p.PacifierId == e.PacifierId);
+                        var pacifiercount = PacifierItems.Count;
 
                         if (pacifierItem != null)
                         {
                             // Convert ObservableCollection to List before passing to AppendToCampaignFile
                             _lineProtocol.AppendToCampaignFile(
                                 _currentCampaignName,
+                                pacifiercount,
                                 pacifierItem.ButtonText,
                                 e.SensorType,
                                 e.ParsedData.ToList(), // Convert to List here
@@ -248,7 +250,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             else
             {
                 // Debug log for skipped messages
-                 //Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in selected list or invalid data.");
+                //Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in selected list or invalid data.");
             }
         }
 
@@ -314,7 +316,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                 existingSeries.Points.RemoveAt(0);
                             }
                         }
-                        
+
                         //Debug.WriteLine($"AddDataToGraphs Add DataPoints {yValue}");
                     }
 

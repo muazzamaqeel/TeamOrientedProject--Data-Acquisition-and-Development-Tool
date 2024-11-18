@@ -665,11 +665,16 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 // Add a final "stopped" entry to the campaign file
                 _viewModel.LineProtocolService.AppendToCampaignFile(
                     _viewModel.CurrentCampaignName,
+                    0, // Assuming pacifierCount is 0 for campaign end
                     "system",
                     "campaign_end",
                     new List<Dictionary<string, object>>
                     {
-                new Dictionary<string, object> { { "status", "stopped" }, { "entry_time", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") } }
+                new Dictionary<string, object>
+                {
+                    { "status", "stopped" },
+                    { "entry_time", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") }
+                }
                     },
                     DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 );
@@ -694,6 +699,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 MessageBox.Show($"Failed to end campaign. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
 
 

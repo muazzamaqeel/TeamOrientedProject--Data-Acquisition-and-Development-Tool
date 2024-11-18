@@ -107,7 +107,7 @@ namespace SmartPacifier.Interface.Services
     public interface ILineProtocol
     {
         void CreateFileCamp(string campaignName, string entryTime);
-        void AppendToCampaignFile(string campaignName, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime);
+        void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime);
 
     }
 
