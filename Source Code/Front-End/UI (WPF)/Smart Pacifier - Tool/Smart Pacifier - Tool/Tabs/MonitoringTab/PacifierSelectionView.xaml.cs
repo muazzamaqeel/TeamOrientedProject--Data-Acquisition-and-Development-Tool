@@ -125,6 +125,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         private void CreateCampaign_Click(object sender, RoutedEventArgs e)
         {
             string campaignName = CampaignTextBox.Text;
+            int count = selectedPacifiers.Count;
 
             // Validate that at least one pacifier is selected and the campaign name is not empty
             if (selectedPacifiers.Count > 0 && !string.IsNullOrWhiteSpace(campaignName))
@@ -135,7 +136,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
                 // Access the ILineProtocol service and call CreateFileCamp
                 ILineProtocol lineProtocolService = new FileManager(); // Use dependency injection if available
-                lineProtocolService.CreateFileCamp(campaignName, entryTime);
+                lineProtocolService.CreateFileCamp(campaignName, count, entryTime);
 
                 ILineProtocol lineProtocol = new FileManager(); // Use DI if possible
 

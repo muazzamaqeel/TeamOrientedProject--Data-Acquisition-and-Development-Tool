@@ -629,6 +629,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
+        /// <param name="e"></param>
         private void EndCampaign_Button(object sender, RoutedEventArgs e)
         {
             // Show a confirmation dialog
@@ -642,8 +643,11 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             // Check the user's response
             if (result == MessageBoxResult.Yes)
             {
+                // Get the current time as the campaign end time
+                string endTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
                 // User confirmed, proceed with ending the campaign
-                EndCampaign();
+                EndCampaign(endTime);
             }
             else
             {
@@ -655,24 +659,12 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// <summary>
         /// Ends the campaign.
         /// </summary>
-        /// <summary>
-        /// Ends the campaign.
-        /// </summary>
-        public void EndCampaign()
+        /// <param name="endTime">The end time of the campaign in "yyyy-MM-dd HH:mm:ss" format.</param>
+        public void EndCampaign(string endTime)
         {
             try
             {
-                // Add a final "stopped" entry to the campaign file
-                _viewModel.LineProtocolService.AppendToCampaignFile(
-                    _viewModel.CurrentCampaignName,
-                    "system",
-                    "campaign_end",
-                    new List<Dictionary<string, object>>
-                    {
-                new Dictionary<string, object> { { "status", "stopped" }, { "entry_time", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") } }
-                    },
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                );
+                _viewModel.LineProtocolService.UpdateStoppedEntryTime(_viewModel.CurrentCampaignName, endTime);
 
                 // Show a success message
                 MessageBox.Show("Campaign has been successfully ended.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -689,13 +681,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             }
             catch (Exception ex)
             {
-                // Handle errors gracefully
                 Debug.WriteLine($"Error ending campaign: {ex.Message}");
                 MessageBox.Show($"Failed to end campaign. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-
 
     }
 }
