@@ -33,6 +33,8 @@ namespace Smart_Pacifier___Tool.Components
             set;
         }
 
+        public ObservableCollection<byte[]> RawData { get; private set; } = new ObservableCollection<byte[]>();
+
         public string ButtonText
         {
             get { return (string)GetValue(ButtonTextProperty); }

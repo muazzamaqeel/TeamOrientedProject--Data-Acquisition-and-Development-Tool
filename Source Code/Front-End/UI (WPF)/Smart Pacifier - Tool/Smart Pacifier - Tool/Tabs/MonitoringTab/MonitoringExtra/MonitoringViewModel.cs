@@ -207,8 +207,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                     sensorItem.dateTime = dateTime;
                                     if (sensorItem.SensorIsChecked)
                                     {
-                                        //pacifierItem.RawData.Clear();
-                                        //if (e.Payload != null) pacifierItem.RawData.Add(e.Payload);
+                                        pacifierItem.RawData.Clear();
+                                        if (e.Payload != null) pacifierItem.RawData.Add(e.Payload);
 
                                         //Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
                                         if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))

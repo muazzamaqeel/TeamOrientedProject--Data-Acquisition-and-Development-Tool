@@ -662,15 +662,20 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             var button = sender as Button;
             if (button != null && button.Tag is string pacifierName)
             {
+                var pacifierItem = _viewModel.PacifierItems.FirstOrDefault(p => p.PacifierId == pacifierName);
                 // Create an instance of RawDataView with the properties and a reference to this view
-                var rawDataView = new RawDataView(pacifierName, this, false);
-
-                // Replace the current view with RawDataView
-                var parent = this.Parent as ContentControl;
-                if (parent != null)
+                if (pacifierItem != null)
                 {
-                    parent.Content = rawDataView;
+                    var rawDataView = new RawDataView(pacifierItem, this, false);
+
+                    // Replace the current view with RawDataView
+                    var parent = this.Parent as ContentControl;
+                    if (parent != null)
+                    {
+                        parent.Content = rawDataView;
+                    }
                 }
+
             }
         }
 
