@@ -58,18 +58,18 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             var campaigns = await _managerCampaign.GetCampaignsDataAsync();
             foreach (var campaign in campaigns)
             {
-                var parts = campaign.Split(new[] { "Campaign: ", ", PacifierCount: " }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length == 2)
+                var parts = campaign.Split(new[] { "Campaign: ", ", PacifierCount: ", ", StartTime: ", ", EndTime: " }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 4)
                 {
                     var campaignName = parts[0];
-                    if (int.TryParse(parts[1], out int pacifierCount))
+                    if (int.TryParse(parts[1], out int pacifierCount) && DateTime.TryParse(parts[2], out DateTime startTime) && DateTime.TryParse(parts[3], out DateTime endTime))
                     {
                         Campaigns.Add(new Campaign
                         {
                             CampaignName = campaignName,
                             PacifierCount = pacifierCount,
-                            //Date = DateTime.Now.ToString("MM/dd/yyyy"), // Placeholder date
-                            //TimeRange = $"{DateTime.Now.ToString("hh:mm tt")} - {DateTime.Now.AddHours(1).ToString("hh:mm tt")}" // Placeholder time range
+                            Date = startTime.ToString("MM/dd/yyyy"),
+                            TimeRange = $"{startTime.ToString("HH:mm")} - {endTime.ToString("HH:mm")}"
                         });
                     }
                 }
@@ -78,7 +78,6 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             FilteredCampaigns.Refresh();
             LoadingSpinner.Visibility = Visibility.Collapsed; // Hide the spinner
         }
-
 
         private bool FilterCampaigns(object item)
         {
