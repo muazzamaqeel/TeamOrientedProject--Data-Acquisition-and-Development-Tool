@@ -30,7 +30,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
     public partial class MonitoringView : UserControl, INotifyCollectionChanged
     {
         private readonly MonitoringViewModel _viewModel;
-
         public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
         /// <summary>
@@ -611,15 +610,47 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// <summary>
         /// Ends the campaign.
         /// </summary>
-        private void EndCampaign()
+        /// <summary>
+        /// Ends the campaign.
+        /// </summary>
+        public void EndCampaign()
         {
-            // Logic to end the campaign goes here
-            MessageBox.Show("Campaign has been successfully ended.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                // Add a final "stopped" entry to the campaign file
+                _viewModel.LineProtocolService.AppendToCampaignFile(
+                    _viewModel.CurrentCampaignName,
+                    "system",
+                    "campaign_end",
+                    new List<Dictionary<string, object>>
+                    {
+                new Dictionary<string, object> { { "status", "stopped" }, { "entry_time", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") } }
+                    },
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                );
 
-            // Retrieve PacifierSelectionView from the DI container
-            var pacifierSelectionView = ((App)Application.Current).ServiceProvider.GetRequiredService<PacifierSelectionView>();
-            ((MainWindow)Application.Current.MainWindow).NavigateTo(pacifierSelectionView);
+                // Show a success message
+                MessageBox.Show("Campaign has been successfully ended.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Unsubscribe from real-time updates to stop file writing
+                Broker.Instance.MessageReceived -= _viewModel.OnMessageReceived;
+
+                // Retrieve PacifierSelectionView from the DI container and navigate to it
+                var pacifierSelectionView = ((App)Application.Current).ServiceProvider.GetRequiredService<PacifierSelectionView>();
+                ((MainWindow)Application.Current.MainWindow).NavigateTo(pacifierSelectionView);
+
+                // Reset the current campaign name
+                _viewModel.CurrentCampaignName = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                // Handle errors gracefully
+                Debug.WriteLine($"Error ending campaign: {ex.Message}");
+                MessageBox.Show($"Failed to end campaign. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
+
 
     }
 }

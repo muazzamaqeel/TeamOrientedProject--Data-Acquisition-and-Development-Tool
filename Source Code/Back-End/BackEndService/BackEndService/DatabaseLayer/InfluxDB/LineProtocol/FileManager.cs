@@ -70,12 +70,6 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string filePath = Path.Combine(baseDirectory, relativePath, $"{campaignName}.txt");
 
-            // Debugging information to visualize data being appended
-            //MessageBox.Show($"Pacifier Name: {pacifierName}\nSensor Type: {sensorType}\nParsed Data: {string.Join("\n", parsedData.Select(dict => string.Join("; ", dict.Select(kv => $"{kv.Key}={kv.Value}"))))}",
-            //                "Data Details",
-            //                MessageBoxButton.OK,
-            //                MessageBoxImage.Information);
-
             try
             {
                 // Ensure the directory exists
@@ -88,15 +82,12 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                 var contentBuilder = new StringBuilder();
                 foreach (var dictionary in parsedData)
                 {
-                    // Initialize the base format
                     contentBuilder.Append($"campaign_metadata,campaign_name={campaignName},pacifier_name={pacifierName},sensor_type={sensorType} ");
 
-                    // Add each key-value pair dynamically, skipping the "sensorGroup" if it's present
                     foreach (var kvp in dictionary)
                     {
                         if (kvp.Key != "sensorGroup")
                         {
-                            // Append key-value pairs, converting integers with "i" suffix for InfluxDB
                             if (kvp.Value is int)
                             {
                                 contentBuilder.Append($"{kvp.Key}={kvp.Value}i,");
@@ -108,7 +99,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                         }
                     }
 
-                    // Add the entry time at the end, trimming the last comma
+                    // Append entry_time at the end
                     contentBuilder.AppendLine($"entry_time=\"{entryTime}\"");
                 }
 
@@ -118,11 +109,11 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             }
             catch (Exception ex)
             {
-                // Log the error
                 Debug.WriteLine($"Error appending to campaign file: {ex.Message}");
                 MessageBox.Show($"Failed to append data to campaign file. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
 
         public int GetNextEntryId(string filePath)

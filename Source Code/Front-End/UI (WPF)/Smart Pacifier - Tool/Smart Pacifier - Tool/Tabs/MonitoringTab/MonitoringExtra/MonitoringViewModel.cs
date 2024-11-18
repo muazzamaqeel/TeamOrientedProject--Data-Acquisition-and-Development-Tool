@@ -36,6 +36,30 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
         private readonly ILineProtocol _lineProtocol;
         private string _currentCampaignName;
+        private bool _isCampaignActive = true;
+
+
+        public string CurrentCampaignName
+        {
+            get => _currentCampaignName;
+            set
+            {
+                _currentCampaignName = value;
+                OnPropertyChanged(nameof(CurrentCampaignName));
+            }
+        }
+
+        public ILineProtocol LineProtocolService => _lineProtocol;
+
+        public bool IsCampaignActive
+        {
+            get => _isCampaignActive;
+            set
+            {
+                _isCampaignActive = value;
+                OnPropertyChanged(nameof(IsCampaignActive));
+            }
+        }
 
 
         // Properties to expose ObservableCollections for Pacifier and Sensor items
@@ -107,8 +131,16 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         /// <summary>
         /// Handle incoming messages from the broker
         /// </summary>
-        private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
+        public void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
+
+            if (!IsCampaignActive)
+            {
+                Debug.WriteLine("Campaign has ended. Ignoring incoming messages.");
+                return;
+            }
+
+            // Get the current date and time
             DateTime dateTime = DateTime.Now;
             string entryTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
 
@@ -345,7 +377,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
     }
+
+
     public class SensorDetailsWindow : Window
     {
         public SensorDetailsWindow(string details)
