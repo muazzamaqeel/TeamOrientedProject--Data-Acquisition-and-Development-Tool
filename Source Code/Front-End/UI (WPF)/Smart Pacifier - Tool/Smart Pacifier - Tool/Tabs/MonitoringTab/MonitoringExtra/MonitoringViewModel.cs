@@ -221,7 +221,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                         // Add the entire list of dictionaries to the SensorItem
                                         sensorItem.MeasurementGroup.Clear();
                                         sensorItem.MeasurementGroup = new ObservableCollection<Dictionary<string, object>>(e.ParsedData);
-                                        AddLineSeries(sensorItem);
+                                        AddLineSeries(pacifierItem, sensorItem);
 
                                         //Debug
                                         //DisplaySensorDetails(pacifierItem, sensorItem);
@@ -253,22 +253,22 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         }
 
 
-        private void AddLineSeries(SensorItem sensorItem)
+        private void AddLineSeries(PacifierItem pacifierItem, SensorItem sensorItem)
         {
 
             foreach (var measurementGraph in sensorItem.SensorGraphs)
             {
                 //Debug.WriteLine($"AddLineSeries for Sensor {sensorItem.SensorId} to Graph {measurementGraph.Uid}");
-                AddDataToGraphs(measurementGraph, sensorItem);
+                AddDataToGraphs(measurementGraph, sensorItem, pacifierItem);
             }
         }
 
-        private void AddDataToGraphs(LineChartGraph measurementGraph, SensorItem sensorItem)
+        private void AddDataToGraphs(LineChartGraph measurementGraph, SensorItem sensorItem, PacifierItem pacifierItem)
         {
             foreach (var sensorGroup in sensorItem.MeasurementGroup)
             {
                 var firstKvp = sensorGroup.FirstOrDefault();
-                string uniquePlotId = $"{sensorItem.SensorId}_{firstKvp.Value}_{sensorItem.ParentPacifierItem.GetPacifierItem().PacifierId}";
+                string uniquePlotId = $"{sensorItem.SensorId}_{firstKvp.Value}_{pacifierItem.PacifierId}";
 
                 //Debug.WriteLine($"AddDataToGraphs Graph ID {measurementGraph.PlotId} is this {uniquePlotId}");
 
