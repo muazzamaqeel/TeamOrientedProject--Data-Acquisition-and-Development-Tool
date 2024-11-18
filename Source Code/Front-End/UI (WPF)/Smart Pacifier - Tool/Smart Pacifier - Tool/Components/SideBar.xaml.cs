@@ -13,7 +13,7 @@ namespace Smart_Pacifier___Tool
     /// </summary>
     public partial class Sidebar : UserControl
     {
-        private const string DeveloperTabVisibleKey = "DeveloperTabVisible";
+        public const string DeveloperTabVisibleKey = "DeveloperTabVisible";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Sidebar"/> class.
