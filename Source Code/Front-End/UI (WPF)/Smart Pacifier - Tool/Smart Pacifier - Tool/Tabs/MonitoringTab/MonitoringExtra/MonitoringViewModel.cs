@@ -18,6 +18,7 @@ using System.IO.Packaging;
 using OxyPlot.Series;
 using OxyPlot;
 using OxyPlot.Axes;
+using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 {
@@ -32,6 +33,34 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         public ObservableCollection<SensorItem> _checkedSensorItems = new ObservableCollection<SensorItem>();
 
         public Dictionary<string, int> SensorIntervals { get; private set; } = new Dictionary<string, int>();
+
+        private readonly ILineProtocol _lineProtocol;
+        private string _currentCampaignName;
+        private bool _isCampaignActive = true;
+
+
+        public string CurrentCampaignName
+        {
+            get => _currentCampaignName;
+            set
+            {
+                _currentCampaignName = value;
+                OnPropertyChanged(nameof(CurrentCampaignName));
+            }
+        }
+
+        public ILineProtocol LineProtocolService => _lineProtocol;
+
+        public bool IsCampaignActive
+        {
+            get => _isCampaignActive;
+            set
+            {
+                _isCampaignActive = value;
+                OnPropertyChanged(nameof(IsCampaignActive));
+            }
+        }
+
 
         // Properties to expose ObservableCollections for Pacifier and Sensor items
         public ObservableCollection<PacifierItem> PacifierItems
@@ -76,8 +105,13 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
 
         // Constructor initializing empty ObservableCollections
-        public MonitoringViewModel()
+        public MonitoringViewModel(ILineProtocol lineProtocol, string currentCampaignName)
         {
+
+
+            _lineProtocol = lineProtocol ?? throw new ArgumentNullException(nameof(lineProtocol));
+            _currentCampaignName = currentCampaignName;
+
             PacifierItems = new ObservableCollection<PacifierItem>();
             SensorItems = new ObservableCollection<SensorItem>();
 
@@ -97,9 +131,19 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         /// <summary>
         /// Handle incoming messages from the broker
         /// </summary>
-        private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
+        public void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
+
+            if (!IsCampaignActive)
+            {
+                Debug.WriteLine("Campaign has ended. Ignoring incoming messages.");
+                return;
+            }
+
+            // Get the current date and time
             DateTime dateTime = DateTime.Now;
+            string entryTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+
             // Only proceed if the pacifier ID is in the checkedPacifiers list and data is valid
             if (PacifierItems.Any(p => p.PacifierId == e.PacifierId) && e.SensorType != null && e.ParsedData != null)
             {
@@ -112,67 +156,86 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                         // Find the PacifierItem in PacifierItems with a matching ItemId and also in checkedPacifiers
                         var pacifierItem = PacifierItems.FirstOrDefault(p => p.PacifierId == e.PacifierId);
 
-                        if (pacifierItem != null && pacifierItem.IsChecked)
+                        if (pacifierItem != null)
                         {
-                            //Debug.WriteLine($"FirstOrDefault Pacifier_{pacifierItem.PacifierId}");
-                            // Find or create the SensorItem for the given sensor type
-                            var sensorItem = SensorItems.FirstOrDefault(s => s.SensorId == e.SensorType);
+                            // Convert ObservableCollection to List before passing to AppendToCampaignFile
+                            _lineProtocol.AppendToCampaignFile(
+                                _currentCampaignName,
+                                pacifierItem.ButtonText,
+                                e.SensorType,
+                                e.ParsedData.ToList(), // Convert to List here
+                                entryTime);
+                            //MessageBox.Show($"Data appended to campaign file for Pacifier: {pacifierItem.PacifierId}, Sensor: {e.SensorType}");
 
-                            if (sensorItem == null)
+
+                            if (pacifierItem.IsChecked)
                             {
-                                //Debug.WriteLine($"Add Sensor_{e.SensorType}");
-                                // Add a new sensor item if it doesn't exist
-                                sensorItem = new SensorItem(e.SensorType, pacifierItem);
-                                sensorItem.dateTime = dateTime;
-                                pacifierItem.Sensors.Add(sensorItem);
+                                //Debug.WriteLine($"FirstOrDefault Pacifier_{pacifierItem.PacifierId}");
+                                // Find or create the SensorItem for the given sensor type
+                                var sensorItem = SensorItems.FirstOrDefault(s => s.SensorId == e.SensorType);
 
-                                foreach (var dictionary in e.ParsedData)
+                                if (sensorItem == null)
                                 {
-                                    if (dictionary.ContainsKey("sensorGroup"))
-                                    {
-                                        if (!SensorIntervals.ContainsKey(dictionary["sensorGroup"].ToString()))
-                                        {
-                                            SensorIntervals.Add(dictionary["sensorGroup"].ToString(), 10);
-                                            Debug.WriteLine($"Added sensorGroup {dictionary["sensorGroup"]} with interval 10");
+                                    //Debug.WriteLine($"Add Sensor_{e.SensorType}");
+                                    // Add a new sensor item if it doesn't exist
+                                    sensorItem = new SensorItem(e.SensorType, pacifierItem);
+                                    sensorItem.dateTime = dateTime;
+                                    pacifierItem.Sensors.Add(sensorItem);
 
-                                        }
-                                        // Check for uniqueness
-                                        if (!sensorItem.SensorGroups.Contains(dictionary["sensorGroup"].ToString()))
+                                    foreach (var dictionary in e.ParsedData)
+                                    {
+                                        if (dictionary.ContainsKey("sensorGroup"))
                                         {
-                                            sensorItem.SensorGroups.Add(dictionary["sensorGroup"].ToString());
+                                            if (!SensorIntervals.ContainsKey(dictionary["sensorGroup"].ToString()))
+                                            {
+                                                SensorIntervals.Add(dictionary["sensorGroup"].ToString(), 10);
+                                                Debug.WriteLine($"Added sensorGroup {dictionary["sensorGroup"]} with interval 10");
+
+                                            }
+                                            // Check for uniqueness
+                                            if (!sensorItem.SensorGroups.Contains(dictionary["sensorGroup"].ToString()))
+                                            {
+                                                sensorItem.SensorGroups.Add(dictionary["sensorGroup"].ToString());
+                                            }
                                         }
                                     }
+
+
                                 }
+                                else
+                                {
+                                    sensorItem.dateTime = dateTime;
+                                    if (sensorItem.SensorIsChecked)
+                                    {
+                                        //pacifierItem.RawData.Clear();
+                                        //if (e.Payload != null) pacifierItem.RawData.Add(e.Payload);
+
+                                        //Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
+                                        if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))
+                                        {
+                                            //Debug.WriteLine($"Linked Pacifier_{pacifierItem.PacifierId} to Sensor_{sensorItem.SensorId}");
+                                            sensorItem.LinkedPacifiers.Add(pacifierItem);
+                                        }
+                                        //Debug.WriteLine($"Selected Sensor_{e.SensorType}");
+
+                                        // Add the entire list of dictionaries to the SensorItem
+                                        sensorItem.MeasurementGroup.Clear();
+                                        sensorItem.MeasurementGroup = new ObservableCollection<Dictionary<string, object>>(e.ParsedData);
+                                        AddLineSeries(sensorItem);
+
+                                        //Debug
+                                        //DisplaySensorDetails(pacifierItem, sensorItem);
+                                    }
+
+                                }
+
+
                             }
                             else
                             {
-                                sensorItem.dateTime = dateTime;
-                                if (sensorItem.SensorIsChecked)
-                                {
-                                    //Debug.WriteLine($"Exists Sensor_{sensorItem.SensorId}");
-                                    if (!sensorItem.LinkedPacifiers.Contains(pacifierItem))
-                                    {
-                                        //Debug.WriteLine($"Linked Pacifier_{pacifierItem.PacifierId} to Sensor_{sensorItem.SensorId}");
-                                        sensorItem.LinkedPacifiers.Add(pacifierItem);
-                                    }
-                                    //Debug.WriteLine($"Selected Sensor_{e.SensorType}");
-
-                                    // Add the entire list of dictionaries to the SensorItem
-                                    sensorItem.MeasurementGroup.Clear();
-                                    sensorItem.MeasurementGroup = new ObservableCollection<Dictionary<string, object>>(e.ParsedData);
-                                    AddLineSeries(sensorItem);
-
-                                    //Debug
-                                    //DisplaySensorDetails(pacifierItem, sensorItem);
-                                }
-
+                                // Optionally log if the pacifier item was not found or is not checked
+                                //Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found or not checked.");
                             }
-
-                        }
-                        else
-                        {
-                            // Optionally log if the pacifier item was not found or is not checked
-                             //Debug.WriteLine($"PacifierItem with ItemId {e.PacifierId} not found or not checked.");
                         }
                     });
                 }
@@ -322,7 +385,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
     }
+
+
     public class SensorDetailsWindow : Window
     {
         public SensorDetailsWindow(string details)
