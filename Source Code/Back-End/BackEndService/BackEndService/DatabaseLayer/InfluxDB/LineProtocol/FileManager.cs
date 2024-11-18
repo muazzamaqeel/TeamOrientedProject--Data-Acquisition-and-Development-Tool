@@ -103,10 +103,6 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         /// <param name="entryTime">Entry time in "yyyy-MM-dd HH:mm:ss" format.</param>
         public void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime)
         {
-
-
-
-
             try
             {
                 string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
@@ -151,11 +147,10 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                     {
                         if (kvp.Value is int intValue)
                         {
-                            fieldSet.Add($"{kvp.Key}={intValue}i");
+                            fieldSet.Add($"{kvp.Key}={intValue}"); // Removed the 'i' suffix
                         }
                         else if (kvp.Value is float || kvp.Value is double || kvp.Value is decimal)
                         {
-                            // Round float/double values to 3 decimal places
                             string formattedValue = Math.Round(Convert.ToDouble(kvp.Value), 3).ToString(CultureInfo.InvariantCulture);
                             fieldSet.Add($"{kvp.Key}={formattedValue}");
                         }
