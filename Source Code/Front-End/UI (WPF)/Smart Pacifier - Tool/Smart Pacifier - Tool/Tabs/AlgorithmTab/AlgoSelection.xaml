@@ -19,16 +19,12 @@
                 <!-- Live Data Button -->
                 <Button Width="200" Height="100" Margin="10,0,10,0" 
                         Style="{StaticResource ModernButtonStyle}" 
-                        Background="{StaticResource MainViewSecondaryBackgroundColor}" 
-                        Foreground="{StaticResource MainViewForegroundColor}" 
                         Content="Live Data" 
                         Click="LiveDataButton_Click"/>
 
                 <!-- Database Button -->
                 <Button Width="200" Height="100" Margin="10,0,10,0" 
                         Style="{StaticResource ModernButtonStyle}" 
-                        Background="{StaticResource MainViewSecondaryBackgroundColor}" 
-                        Foreground="{StaticResource MainViewForegroundColor}" 
                         Content="Database" 
                         Click="DatabaseButton_Click"/>
             </StackPanel>

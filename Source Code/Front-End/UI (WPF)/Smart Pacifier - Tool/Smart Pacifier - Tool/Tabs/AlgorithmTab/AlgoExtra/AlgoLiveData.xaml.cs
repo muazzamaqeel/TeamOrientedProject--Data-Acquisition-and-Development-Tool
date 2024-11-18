@@ -124,7 +124,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             SaveRemainingDataToFile();
             UnsubscribeFromBroker();
 
-            LiveDataOutput += "\nMonitoring stopped successfully.";
+            LiveDataOutput += "Monitoring stopped successfully.";
         }
 
         private void SubscribeToBroker()
@@ -133,7 +133,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             {
                 Broker.Instance.MessageReceived += OnMessageReceived; // Hook up the event
                 Debug.WriteLine("Subscribed to broker messages.");
-                LiveDataOutput += "\nSubscribed to broker messages.";
+                LiveDataOutput += "Subscribed to broker messages.";
             }
         }
 
