@@ -333,7 +333,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             string uniqueUid = $"{pacifierItem.PacifierId}_{sensorItem.SensorId}";
 
             // Ensure that the new row has the correct row index for the ScrollViewer
-            WrapPanel graphScrollViewer = CreateGraphForSensor(sensorItem);
+            WrapPanel graphScrollViewer = CreateGraphForSensor(pacifierItem, sensorItem);
             graphScrollViewer.Uid = uniqueUid;
 
             // Set the new row index for the ScrollViewer
@@ -480,11 +480,11 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
 
         // Create multiple Graphs for a SensorItem based on its SensorGroups
-        private WrapPanel CreateGraphForSensor(SensorItem sensorItem)
+        private WrapPanel CreateGraphForSensor(PacifierItem pacifierItem,SensorItem sensorItem)
         {
 
             // Create a unique identifier for the graph
-            string uniqueUid = $"{sensorItem.ParentPacifierItem.GetPacifierItem().PacifierId}_{sensorItem.SensorId}";
+            string uniqueUid = $"{pacifierItem.PacifierId}_{sensorItem.SensorId}";
 
             WrapPanel graphPanel = new WrapPanel
             {
@@ -505,7 +505,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 Debug.WriteLine($"Monitoring: Interval is {interval}");
 
                 // Create a unique identifier for each graph based on SensorId and groupName
-                string uniquePlotId = $"{sensorItem.SensorId}_{sensorGroup}_{sensorItem.ParentPacifierItem.GetPacifierItem().PacifierId}";
+                string uniquePlotId = $"{sensorItem.SensorId}_{sensorGroup}_{pacifierItem.PacifierId}";
 
                 // Create an instance of the LineChartGraph with necessary properties
                 LineChartGraph graph = new LineChartGraph(sensorItem, sensorGroup, interval)
