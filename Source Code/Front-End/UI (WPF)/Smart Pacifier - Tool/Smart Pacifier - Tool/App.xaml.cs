@@ -22,6 +22,7 @@ using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol;
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
@@ -186,6 +187,8 @@ namespace Smart_Pacifier___Tool
             services.AddTransient<AlgorithmView>();
             services.AddTransient<AlgoSelection>();
             services.AddSingleton<IBrokerMain, BrokerMain>();
+            services.AddSingleton<ILineProtocol, FileManager>();
+
 
             // UI component registration
             services.AddTransient<PacifierSelectionView>();

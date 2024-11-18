@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Collections.ObjectModel;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol;
 using SmartPacifier.Interface.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -130,21 +131,15 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             // Validate that at least one pacifier is selected and the campaign name is not empty
             if (selectedPacifiers.Count > 0 && !string.IsNullOrWhiteSpace(campaignName))
             {
-
                 // Get the current system time as entryTime
                 string entryTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-                // Access the ILineProtocol service and call CreateFileCamp
-                ILineProtocol lineProtocolService = new FileManager(); // Use dependency injection if available
+                // Retrieve ILineProtocol service from DI
+                var lineProtocolService = ((App)Application.Current).ServiceProvider.GetRequiredService<ILineProtocol>();
                 lineProtocolService.CreateFileCamp(campaignName, count, entryTime);
 
-                ILineProtocol lineProtocol = new FileManager(); // Use DI if possible
-
-
-                var monitoringView = new MonitoringView(selectedPacifiers, lineProtocol, campaignName);
-
-                // Optionally pass selected pacifiers to the monitoring view
-                // monitoringView.SetSelectedPacifiers(selectedPacifiers);
+                // Create the MonitoringView and pass the required data
+                var monitoringView = new MonitoringView(selectedPacifiers, lineProtocolService, campaignName);
 
                 if (this.Parent is ContentControl parent)
                 {
@@ -156,5 +151,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 MessageBox.Show("Please make sure there is at least one connected pacifier and the campaign name is not empty.");
             }
         }
+
     }
 }

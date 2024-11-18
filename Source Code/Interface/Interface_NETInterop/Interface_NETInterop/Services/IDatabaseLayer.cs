@@ -18,6 +18,7 @@ namespace SmartPacifier.Interface.Services
         Task<DataTable> GetSensorDataAsync();
         Task DeleteEntryFromDatabaseAsync(int entryId, string measurement);
         Task<Dictionary<string, object>> GetCampaignDataAlgorithmLayerAsync(string campaignName);
+        Task UploadDataUsingLineProtocolAsync(IEnumerable<string> lineProtocolData);
 
 
     }
@@ -109,6 +110,8 @@ namespace SmartPacifier.Interface.Services
         void CreateFileCamp(string campaignName, int pacifierCount, string entryTime);
         void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime);
         void UpdateStoppedEntryTime(string campaignName, string newEndTime);
+        Task SendFileDataToDatabaseAsync(string campaignName); // Ensure this matches the FileManager method signature
+
 
     }
 

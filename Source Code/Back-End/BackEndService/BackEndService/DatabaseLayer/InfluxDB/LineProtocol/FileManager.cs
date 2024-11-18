@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
-
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Components;
 namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 {
     public class FileManager : ILineProtocol
@@ -16,11 +16,15 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         private readonly string relativePath = @"Resources\OutputResources\LiveDataFiles";
         private readonly string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
         private readonly string fullPath;
+        private readonly IDatabaseService _databaseService;
+        private readonly ProgressDialog progressDialog;
 
-        public FileManager()
+        public FileManager(IDatabaseService databaseService)
         {
             fullPath = Path.Combine(baseDirectory, relativePath);
             Directory.CreateDirectory(fullPath);
+            _databaseService = databaseService;
+
         }
 
         public int GetNextEntryId(string campaignName)
@@ -247,8 +251,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                 if (entryUpdated)
                 {
                     File.WriteAllLines(filePath, lines);
-                    Debug.WriteLine($"Successfully updated 'stopped' entry in file: {filePath}");
-                    MessageBox.Show("Campaign 'stopped' entry has been successfully updated.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    //Debug.WriteLine($"Successfully updated 'stopped' entry in file: {filePath}");
+                    //MessageBox.Show("Campaign 'stopped' entry has been successfully updated.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
@@ -264,14 +268,67 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         }
 
 
+        public async Task SendFileDataToDatabaseAsync(string campaignName)
+        {
+            string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
+
+            if (!File.Exists(filePath))
+            {
+                Debug.WriteLine($"Campaign file does not exist: {filePath}");
+                MessageBox.Show($"Campaign file does not exist: {campaignName}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var progressDialog = new ProgressDialog();
+            progressDialog.Show();
+
+            try
+            {
+                var lines = File.ReadAllLines(filePath);
+                if (lines.Length == 0)
+                {
+                    MessageBox.Show("No data found to send to the database.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (progressDialog.CancellationToken.IsCancellationRequested)
+                    {
+                        MessageBox.Show("Upload canceled by the user.", "Canceled", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        break;
+                    }
+
+                    // Send the data to the database
+                    await _databaseService.UploadDataUsingLineProtocolAsync(new[] { lines[i] });
+
+                    // Update the progress dialog
+                    int progress = (i + 1) * 100 / lines.Length;
+                    progressDialog.UpdateProgress(progress, $"Uploaded {i + 1}/{lines.Length} records...");
+                }
+
+                //MessageBox.Show("Data has been successfully uploaded to the database.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error sending data to database: {ex.Message}");
+                MessageBox.Show($"Failed to send data to database. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                progressDialog.Close();
+            }
+        }
+
+
+
+
         /// <summary>
         /// Converts a DateTime to Unix timestamp in nanoseconds.
         /// </summary>
         /// <param name="dateTime">The DateTime to convert.</param>
         /// <returns>Unix timestamp in nanoseconds.</returns>
         /// 
-
-
         private long ToUnixNanoseconds(DateTime dateTime)
         {
             DateTimeOffset dto = dateTime.Kind switch

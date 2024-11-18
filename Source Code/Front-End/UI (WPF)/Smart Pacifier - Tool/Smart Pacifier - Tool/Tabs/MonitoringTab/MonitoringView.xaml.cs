@@ -676,6 +676,21 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 var pacifierSelectionView = ((App)Application.Current).ServiceProvider.GetRequiredService<PacifierSelectionView>();
                 ((MainWindow)Application.Current.MainWindow).NavigateTo(pacifierSelectionView);
 
+                // Ask the user if they want to send data to the database
+                var result = MessageBox.Show(
+                    "Are you connected to the Internet and ready to send the data to the database?",
+                    "Confirmation",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question
+                );
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Retrieve FileManager (or its interface) from DI and send data to the database
+                    var lineProtocolService = ((App)Application.Current).ServiceProvider.GetRequiredService<ILineProtocol>();
+                    lineProtocolService.SendFileDataToDatabaseAsync(_viewModel.CurrentCampaignName);
+                }
+
                 // Reset the current campaign name
                 _viewModel.CurrentCampaignName = string.Empty;
             }
@@ -685,6 +700,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 MessageBox.Show($"Failed to end campaign. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+
 
     }
 }

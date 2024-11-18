@@ -147,11 +147,11 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         public async Task<DataTable> GetSensorDataAsync()
         {
             string fluxQuery = @"
-        from(bucket: ""SmartPacifier-Bucket1"")
-        |> range(start: 0)
-        |> filter(fn: (r) => r._measurement == ""campaigns"" or r._measurement == ""campaign_metadata"")
-        |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
-    ";
+                from(bucket: ""SmartPacifier-Bucket1"")
+                |> range(start: 0)
+                |> filter(fn: (r) => r._measurement == ""campaigns"" or r._measurement == ""campaign_metadata"")
+                |> pivot(rowKey: [""_time""], columnKey: [""_field""], valueColumn: ""_value"")
+            ";
 
             DataTable dataTable = new DataTable();
 
@@ -361,6 +361,41 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             return campaignData;
         }
 
+        public async Task UploadDataUsingLineProtocolAsync(IEnumerable<string> lineProtocolData)
+        {
+            try
+            {
+                if (lineProtocolData == null || !lineProtocolData.Any())
+                {
+                    MessageBox.Show("No data provided to upload to the database.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var writeApi = _client.GetWriteApiAsync();
+
+                foreach (var line in lineProtocolData)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    try
+                    {
+                        // Write each line to the database
+                        await writeApi.WriteRecordAsync(line, WritePrecision.Ns, _bucket, _org);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to upload line: {line}. Error: {ex.Message}");
+                    }
+                }
+
+                //MessageBox.Show("Data has been successfully uploaded to the database.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error uploading data to database: {ex.Message}");
+                MessageBox.Show($"Error uploading data to database. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
 
     }

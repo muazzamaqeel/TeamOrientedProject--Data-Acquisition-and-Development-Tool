@@ -1,8 +1,8 @@
 {
-  "UseLocal": false,
+  "UseLocal": true,
   "Local": {
     "Host": "localhost:8086",
-    "ApiKey": "ZTzjP4IyF7SrYZ8kGzfykhqx41SrrCZget5l6krFa_oET5SWWdyYXQbzgxdqHM8io4HFhYezmXS-h2C556xQcg=="
+    "ApiKey": "NL3XywhFo9MAUtLT2ECC9jj6qUTpULbDp-mf0XjdBPM9KkC6dLxmxyU0kc66JBCYLQA_4xrTOsqAJO5lv9sGFQ=="
   },
   "Server": {
     "Host": "18.195.167.238",
