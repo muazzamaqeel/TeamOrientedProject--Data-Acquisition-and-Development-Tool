@@ -124,7 +124,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             SaveRemainingDataToFile();
             UnsubscribeFromBroker();
 
-            LiveDataOutput += "\nMonitoring stopped successfully.";
+            LiveDataOutput += "Monitoring stopped successfully.";
         }
 
         private void SubscribeToBroker()
