@@ -21,6 +21,7 @@ using DataPoint = OxyPlot.DataPoint;
 using Microsoft.Extensions.DependencyInjection;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
+using Smart_Pacifier___Tool.Tabs.SettingsTab;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -29,6 +30,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
     /// </summary>
     public partial class MonitoringView : UserControl, INotifyCollectionChanged
     {
+
         private readonly MonitoringViewModel _viewModel;
         public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
@@ -264,6 +266,39 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 Style = (Style)Application.Current.FindResource("ModernButtonStyle"),
                 Tag = pacifierItem.PacifierId // Use Tag to hold the pacifier id
             };
+
+            var mainWindow = Application.Current.MainWindow as MainWindow;
+            if (mainWindow != null)
+            {
+                var sidebar = mainWindow.Sidebar; // Ensure SidebarInstance is accessible in MainWindow
+
+                if (sidebar != null && Application.Current.Properties.Contains(Sidebar.DeveloperTabVisibleKey))
+                {
+                    bool isDeveloperTabVisible = (bool)Application.Current.Properties[Sidebar.DeveloperTabVisibleKey];
+
+                    if (isDeveloperTabVisible)
+                    {
+                        debugButton.Visibility = Visibility.Visible;
+                        Debug.WriteLine("Monitoring: Developer Mode");
+                    }
+                    else
+                    {
+                        debugButton.Visibility = Visibility.Collapsed;
+                        Debug.WriteLine("Monitoring: User Mode");
+                    }
+                }
+                else
+                {
+                    debugButton.Visibility = Visibility.Collapsed;
+                    Debug.WriteLine("Monitoring: UserMode is null");
+                }
+            }
+            else
+            {
+                debugButton.Visibility = Visibility.Collapsed;
+                Debug.WriteLine("Monitoring: MainWindow is null");
+            }
+
             Grid.SetRow(debugButton, 0);
             Grid.SetColumn(debugButton, 2);
             debugButton.Click += OpenRawDataView_Click; // Directly attach the event handler
