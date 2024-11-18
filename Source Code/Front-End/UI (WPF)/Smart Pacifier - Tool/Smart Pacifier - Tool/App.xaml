@@ -13,6 +13,7 @@
                 <ResourceDictionary Source="Resources/ScrollBar.xaml"/>
                 <ResourceDictionary Source="Resources/TextBoxStyle.xaml"/>
                 <ResourceDictionary Source="Resources/DatePickerStyle.xaml"/>
+                <ResourceDictionary Source="Resources/TableStyle.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

@@ -6,6 +6,7 @@
     <UserControl.Resources>
         <conv:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </UserControl.Resources>
+
     <Grid Background="{StaticResource MainViewBackgroundColor}">
         <!-- Header Section -->
         <Grid Background="{StaticResource AccentColor}" Height="70" VerticalAlignment="Top">
@@ -24,12 +25,41 @@
                 <TextBlock Text="{Binding PacifierName}" Foreground="White" FontSize="14" HorizontalAlignment="Center"/>
             </StackPanel>
         </Grid>
+
         <!-- Content Section -->
         <Grid Margin="20,90,20,80">
             <Border Background="{StaticResource MainViewSecondaryBackgroundColor}" Padding="15" CornerRadius="8">
-                <local:TableUserControl ItemsSource="{Binding SensorEntries}" />
+                <!-- Data Table -->
+                <DataGrid x:Name="RawDataTable" ItemsSource="{Binding SensorEntries}" AutoGenerateColumns="False"
+                          Style="{StaticResource DataGrid}">
+                    <DataGrid.Resources>
+                        <!-- Apply the styles to DataGrid components -->
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCell}"/>
+                        <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeader}" />
+                        <Style TargetType="DataGridRowHeader" BasedOn="{StaticResource DataGridRowHeader}" />
+                        <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow}" />
+                    </DataGrid.Resources>
+
+                    <DataGrid.Columns>
+                        <!-- Timestamp Column -->
+                        <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp}" Width="*"/>
+
+                        <!-- Dynamic Sensor Data Columns -->
+                        <DataGridTemplateColumn Header="Sensor Data">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <!-- Render Dynamic Sensor Group Measurement Data -->
+                                        <TextBlock Text="{Binding SensorDataGroup}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
             </Border>
         </Grid>
+
         <!-- Navigation Buttons Section -->
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Height="60" Margin="0,0,0,15"
                     Visibility="{Binding ActiveMonitoring, Converter={StaticResource BooleanToVisibilityConverter}}">

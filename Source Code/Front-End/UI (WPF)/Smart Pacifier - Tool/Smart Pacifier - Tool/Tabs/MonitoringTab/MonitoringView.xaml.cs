@@ -257,12 +257,12 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             {
                 Content = "Debug",
                 Width = 50,
-                Height = 25,
+                Height = 30,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
                 Margin = new Thickness(5),
                 Style = (Style)Application.Current.FindResource("ModernButtonStyle"),
-                Tag = pacifierItem.ButtonText // Use Tag to hold the pacifier name
+                Tag = pacifierItem.PacifierId // Use Tag to hold the pacifier id
             };
             Grid.SetRow(debugButton, 0);
             Grid.SetColumn(debugButton, 2);
@@ -540,15 +540,25 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             var button = sender as Button;
             if (button != null && button.Tag is string pacifierName)
             {
-                // Create an instance of RawDataView with the properties and a reference to this view
-                var rawDataView = new RawDataView(pacifierName, this, true);
+                var pacifierItem = _viewModel.CheckedPacifierItems.FirstOrDefault(p => p.PacifierId == pacifierName);
 
-                // Replace the current view with RawDataView
-                var parent = this.Parent as ContentControl;
-                if (parent != null)
+                Debug.WriteLine($"Monitoring: Pacifier Item is null {pacifierName}");
+
+                // Create an instance of RawDataView with the properties and a reference to this view
+                if (pacifierItem != null)
                 {
-                    parent.Content = rawDataView;
+                    Debug.WriteLine($"Monitoring: Passing {pacifierItem.PacifierId}");
+
+                    var rawDataView = new RawDataView(pacifierItem, this, false);
+
+                    // Replace the current view with RawDataView
+                    var parent = this.Parent as ContentControl;
+                    if (parent != null)
+                    {
+                        parent.Content = rawDataView;
+                    }
                 }
+
             }
         }
 
