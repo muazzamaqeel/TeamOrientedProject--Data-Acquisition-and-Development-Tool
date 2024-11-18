@@ -37,12 +37,12 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// 
         /// </summary>
         /// <param name="selectedPacifiers"></param>
-        public MonitoringView(ObservableCollection<PacifierItem> selectedPacifiers)
+        public MonitoringView(ObservableCollection<PacifierItem> selectedPacifiers, ILineProtocol lineProtocol, string currentCampaignName)
         {
             InitializeComponent();
 
             // Initialize the ViewModel
-            _viewModel = new MonitoringViewModel();
+            _viewModel = new MonitoringViewModel(lineProtocol, currentCampaignName);
 
             // Bind the ViewModel to the DataContext
             this.DataContext = _viewModel;

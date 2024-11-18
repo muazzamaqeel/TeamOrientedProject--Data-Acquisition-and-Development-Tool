@@ -18,6 +18,7 @@ using System.IO.Packaging;
 using OxyPlot.Series;
 using OxyPlot;
 using OxyPlot.Axes;
+using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 {
@@ -32,6 +33,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         public ObservableCollection<SensorItem> _checkedSensorItems = new ObservableCollection<SensorItem>();
 
         public Dictionary<string, int> SensorIntervals { get; private set; } = new Dictionary<string, int>();
+
+        private readonly ILineProtocol _lineProtocol;
+        private string _currentCampaignName;
+
 
         // Properties to expose ObservableCollections for Pacifier and Sensor items
         public ObservableCollection<PacifierItem> PacifierItems
@@ -76,8 +81,13 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
 
         // Constructor initializing empty ObservableCollections
-        public MonitoringViewModel()
+        public MonitoringViewModel(ILineProtocol lineProtocol, string currentCampaignName)
         {
+
+
+            _lineProtocol = lineProtocol ?? throw new ArgumentNullException(nameof(lineProtocol));
+            _currentCampaignName = currentCampaignName;
+
             PacifierItems = new ObservableCollection<PacifierItem>();
             SensorItems = new ObservableCollection<SensorItem>();
 
@@ -100,6 +110,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         private void OnMessageReceived(object? sender, Broker.MessageReceivedEventArgs e)
         {
             DateTime dateTime = DateTime.Now;
+            string entryTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+
             // Only proceed if the pacifier ID is in the checkedPacifiers list and data is valid
             if (PacifierItems.Any(p => p.PacifierId == e.PacifierId) && e.SensorType != null && e.ParsedData != null)
             {
@@ -143,6 +155,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                         }
                                     }
                                 }
+
+
                             }
                             else
                             {
@@ -167,6 +181,15 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                 }
 
                             }
+                            // Convert ObservableCollection to List before passing to AppendToCampaignFile
+                            _lineProtocol.AppendToCampaignFile(
+                                _currentCampaignName,
+                                pacifierItem.ButtonText,
+                                e.SensorType,
+                                e.ParsedData.ToList(), // Convert to List here
+                                entryTime);
+                            //MessageBox.Show($"Data appended to campaign file for Pacifier: {pacifierItem.PacifierId}, Sensor: {e.SensorType}");
+
 
                         }
                         else

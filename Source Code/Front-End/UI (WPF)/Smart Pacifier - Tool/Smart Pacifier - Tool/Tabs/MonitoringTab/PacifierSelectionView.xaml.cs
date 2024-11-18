@@ -137,9 +137,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 ILineProtocol lineProtocolService = new FileManager(); // Use dependency injection if available
                 lineProtocolService.CreateFileCamp(campaignName, entryTime);
 
+                ILineProtocol lineProtocol = new FileManager(); // Use DI if possible
 
 
-                var monitoringView = new MonitoringView(selectedPacifiers);
+                var monitoringView = new MonitoringView(selectedPacifiers, lineProtocol, campaignName);
 
                 // Optionally pass selected pacifiers to the monitoring view
                 // monitoringView.SetSelectedPacifiers(selectedPacifiers);
