@@ -348,7 +348,8 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
                         $"|> range(start: 0) " +
                         $"|> filter(fn: (r) => r[\"campaign_name\"] == \"{campaignName}\") " +
-                        $"|> filter(fn: (r) => r[\"_field\"] != \"entry_id\") " + 
+                        $"|> filter(fn: (r) => r[\"_field\"] != \"entry_id\") " +
+                        $"|> filter(fn: (r) => r[\"_field\"] != \"entry_time\") " +
                         $"|> keep(columns: [\"_time\", \"_value\", \"_field\", \"pacifier_name\", \"sensor_type\"])";
 
             var campaignData = await _databaseService.ReadData(query);
