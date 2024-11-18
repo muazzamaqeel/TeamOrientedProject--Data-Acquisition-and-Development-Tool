@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Smart_Pacifier___Tool.Components">
 
-    <Grid Background="#1f1f1f">
+    <Grid Background="{StaticResource MainViewBackgroundColor}">
         <Grid.RowDefinitions>
             <RowDefinition Height="70" />
             <RowDefinition Height="Auto" />
