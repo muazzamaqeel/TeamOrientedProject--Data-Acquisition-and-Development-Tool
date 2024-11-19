@@ -81,9 +81,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             // Measurement: campaign_metadata
             // Tags: campaign_name, entry_id, pacifier_count
             // Fields: status, entry_time
-            content.AppendLine($"campaign_metadata,campaign_name={EscapeTagValue(campaignName)},entry_id=1,pacifier_count={pacifierCount} status=\"created\",entry_time=\"{entryTime}\"");
-            content.AppendLine($"campaign_metadata,campaign_name={EscapeTagValue(campaignName)},entry_id=2,pacifier_count={pacifierCount} status=\"started\",entry_time=\"{entryTime}\"");
-            content.AppendLine($"campaign_metadata,campaign_name={EscapeTagValue(campaignName)},entry_id=3,pacifier_count={pacifierCount} status=\"stopped\",entry_time=\"{entryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=1,pacifier_count={pacifierCount} status=\"created\",entry_time=\"{entryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=2,pacifier_count={pacifierCount} status=\"started\",entry_time=\"{entryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=3,pacifier_count={pacifierCount} status=\"stopped\",entry_time=\"{entryTime}\"");
 
             try
             {
@@ -134,9 +134,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                     // Generate tags
                     var tagSet = new List<string>
                     {
-                        $"campaign_name={EscapeTagValue(campaignName)}",
-                        $"pacifier_name={EscapeTagValue(pacifierName)}",
-                        $"sensor_type={EscapeTagValue(sensorType)}",
+                        $"campaign_name={SanitizeTagValue(campaignName)}",
+                        $"pacifier_name={SanitizeTagValue(pacifierName)}",
+                        $"sensor_type={SanitizeTagValue(sensorType)}",
                         $"entry_id={nextEntryId}"
                     };
                     string tags = string.Join(",", tagSet);
@@ -298,19 +298,6 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         }
 
         /// <summary>
-        /// Escapes special characters in tag values as per InfluxDB line protocol.
-        /// </summary>
-        /// <param name="value">The tag value to escape.</param>
-        /// <returns>The escaped tag value.</returns>
-        private string EscapeTagValue(string value)
-        {
-            return value.Replace("\\", "\\\\")
-                        .Replace(" ", "\\ ")
-                        .Replace(",", "\\,")
-                        .Replace("=", "\\=");
-        }
-
-        /// <summary>
         /// Escapes special characters in field keys as per InfluxDB line protocol.
         /// </summary>
         /// <param name="key">The field key to escape.</param>
@@ -334,6 +321,16 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                         .Replace("\"", "\\\"")
                         .Replace("\n", "\\n")
                         .Replace("\r", "\\r");
+        }
+
+        /// <summary>
+        /// Removes spaces from tag values.
+        /// </summary>
+        /// <param name="value">The tag value to sanitize.</param>
+        /// <returns>The sanitized tag value.</returns>
+        private string SanitizeTagValue(string value)
+        {
+            return value.Replace(" ", "");
         }
     }
 }
