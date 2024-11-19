@@ -1,4 +1,3 @@
-﻿using InfluxData.Net.Common.Helpers;
 using SmartPacifier.Interface.Services;
 using System;
 using System.Collections.Generic;
@@ -24,6 +23,11 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             Directory.CreateDirectory(fullPath);
         }
 
+        /// <summary>
+        /// Retrieves the next available entry ID for a given campaign.
+        /// </summary>
+        /// <param name="campaignName">Name of the campaign.</param>
+        /// <returns>Next entry ID as an integer.</returns>
         public int GetNextEntryId(string campaignName)
         {
             string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
@@ -57,28 +61,31 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         }
 
         /// <summary>
-        /// Creates a new campaign metadata file with initial entries.
+        /// Creates a new campaign metadata file with initial entries following InfluxDB Line Protocol.
         /// </summary>
         /// <param name="campaignName">Name of the campaign.</param>
         /// <param name="pacifierCount">Number of pacifiers in the campaign.</param>
-        /// <param name="entryTime">Entry time in "yyyy-MM-dd HH:mm:ss" format.</param>
+        /// <param name="entryTime">Entry time.</param>
         public void CreateFileCamp(string campaignName, int pacifierCount, string entryTime)
         {
             string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
 
-            if (!DateTime.TryParseExact(entryTime, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEntryTime))
+            if (!DateTime.TryParse(entryTime, out DateTime parsedEntryTime))
             {
                 Debug.WriteLine($"Invalid entryTime format: {entryTime}");
-                MessageBox.Show($"Invalid entryTime format. Please use 'yyyy-MM-dd HH:mm:ss'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Invalid entryTime format. Please use a valid date and time.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            long timestamp = ToUnixNanoseconds(parsedEntryTime);
+            string formattedEntryTime = parsedEntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
             var content = new StringBuilder();
-            content.AppendLine($"campaign_metadata,campaign_name={campaignName},pacifier_count={pacifierCount},entry_id=1 status=\"created\",entry_time=\"{entryTime}\" {timestamp}");
-            content.AppendLine($"campaign_metadata,campaign_name={campaignName},pacifier_count={pacifierCount},entry_id=2 status=\"started\",entry_time=\"{entryTime}\" {timestamp + 1}");
-            content.AppendLine($"campaign_metadata,campaign_name={campaignName},pacifier_count={pacifierCount},entry_id=3 status=\"stopped\",entry_time=\"{entryTime}\" {timestamp + 2}");
+            // Measurement: campaign_metadata
+            // Tags: campaign_name, entry_id, pacifier_count
+            // Fields: status, entry_time
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=1,pacifier_count={pacifierCount} status=\"created\",entry_time=\"{formattedEntryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=2,pacifier_count={pacifierCount} status=\"started\",entry_time=\"{formattedEntryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=3,pacifier_count={pacifierCount} status=\"stopped\",entry_time=\"{formattedEntryTime}\"");
 
             try
             {
@@ -92,16 +99,15 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             }
         }
 
-
         /// <summary>
-        /// Appends sensor data to the campaign file.
+        /// Appends sensor data to the campaign file following InfluxDB Line Protocol.
         /// </summary>
         /// <param name="campaignName">Name of the campaign.</param>
         /// <param name="pacifierCount">Number of pacifiers (not used here).</param>
         /// <param name="pacifierName">Name of the pacifier.</param>
         /// <param name="sensorType">Type of the sensor.</param>
         /// <param name="parsedData">List of dictionaries containing sensor data.</param>
-        /// <param name="entryTime">Entry time in "yyyy-MM-dd HH:mm:ss.fff" format.</param>
+        /// <param name="entryTime">Entry time.</param>
         public void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime)
         {
             try
@@ -116,17 +122,14 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 
                 int nextEntryId = GetNextEntryId(campaignName);
 
-                if (!DateTime.TryParseExact(entryTime, "yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEntryTime))
+                if (!DateTime.TryParse(entryTime, out DateTime parsedEntryTime))
                 {
                     Debug.WriteLine($"Invalid entryTime format: {entryTime}");
-                    MessageBox.Show($"Invalid entryTime format. Please use 'yyyy-MM-dd HH:mm:ss.fff'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Invalid entryTime format. Please use a valid date and time.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                long baseTimestamp = ToUnixNanoseconds(parsedEntryTime);
-
-                string sanitizedPacifierName = pacifierName.Replace(" ", "_");
-                string sanitizedSensorType = sensorType.Replace(" ", "_");
+                string formattedEntryTime = parsedEntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
                 var contentBuilder = new StringBuilder();
 
@@ -134,52 +137,81 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                 {
                     // Generate tags
                     var tagSet = new List<string>
-            {
-                    $"campaign_name={campaignName}",
-                    $"pacifier_name={sanitizedPacifierName}",
-                    $"sensor_type={sanitizedSensorType}",
-                    $"entry_id={nextEntryId}",
-                   // $"entry_time={entryTime}"
-            };
+                    {
+                        $"campaign_name={SanitizeTagValue(campaignName)}",
+                        $"pacifier_name={SanitizeTagValue(pacifierName)}",
+                        $"sensor_type={SanitizeTagValue(sensorType)}",
+                        $"entry_id={nextEntryId}"
+                    };
                     string tags = string.Join(",", tagSet);
 
                     // Generate fields
                     var fieldSet = new List<string>();
-                    bool skipFirst = true;
                     foreach (var kvp in sensorData)
                     {
+                        string key = kvp.Key;
+                        object value = kvp.Value;
 
-                        if (skipFirst)
-                        {
-                            skipFirst = false;
-                            continue;
-                        }
+                        // Escape field keys if necessary
+                        key = EscapeFieldKey(key);
 
-                        if (kvp.Value is int intValue)
+                        if (value is int intValue)
                         {
-                            fieldSet.Add($"{kvp.Key}={intValue}"); // Removed the 'i' suffix
+                            fieldSet.Add($"{key}={intValue}i"); // Integer fields with 'i' suffix
                         }
-                        else if (kvp.Value is float || kvp.Value is double || kvp.Value is decimal)
+                        else if (value is float floatValue)
                         {
-                            string formattedValue = Math.Round(Convert.ToDouble(kvp.Value), 3).ToString(CultureInfo.InvariantCulture);
-                            fieldSet.Add($"{kvp.Key}={formattedValue}");
+                            string formattedValue = Math.Round(floatValue, 3).ToString(CultureInfo.InvariantCulture);
+                            fieldSet.Add($"{key}={formattedValue}");
                         }
-                        else if (kvp.Value is string stringValue)
+                        else if (value is double doubleValue)
                         {
-                            fieldSet.Add($"{kvp.Key}=\"{stringValue}\"");
+                            string formattedValue = Math.Round(doubleValue, 3).ToString(CultureInfo.InvariantCulture);
+                            fieldSet.Add($"{key}={formattedValue}");
                         }
-                   
+                        else if (value is decimal decimalValue)
+                        {
+                            string formattedValue = Math.Round((double)decimalValue, 3).ToString(CultureInfo.InvariantCulture);
+                            fieldSet.Add($"{key}={formattedValue}");
+                        }
+                        else if (value is string stringValue)
+                        {
+                            // Try to parse the string to a number
+                            if (int.TryParse(stringValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out int intParsed))
+                            {
+                                fieldSet.Add($"{key}={intParsed}i"); // Integer fields with 'i' suffix
+                            }
+                            else if (double.TryParse(stringValue, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out double doubleParsed))
+                            {
+                                string formattedValue = Math.Round(doubleParsed, 3).ToString(CultureInfo.InvariantCulture);
+                                fieldSet.Add($"{key}={formattedValue}");
+                            }
+                            else
+                            {
+                                // Escape double quotes and backslashes in string values
+                                string escapedValue = EscapeFieldStringValue(stringValue);
+                                fieldSet.Add($"{key}=\"{escapedValue}\"");
+                            }
+                        }
+                        else
+                        {
+                            // For any other types, treat as string
+                            string valueAsString = value.ToString();
+                            string escapedValue = EscapeFieldStringValue(valueAsString);
+                            fieldSet.Add($"{key}=\"{escapedValue}\"");
+                        }
                     }
+
+                    // Add the entry_time field as a string
+                    fieldSet.Add($"entry_time=\"{formattedEntryTime}\"");
 
                     string fields = string.Join(",", fieldSet);
 
-                    // Construct line protocol entry
-                    long timestamp = baseTimestamp + nextEntryId;
-                    string lineProtocol = $"campaigns,{tags} {fields} {timestamp}";
+                    // Construct line protocol entry without timestamp
+                    string lineProtocol = $"campaigns,{tags} {fields}";
 
                     contentBuilder.AppendLine(lineProtocol);
                     nextEntryId++;
-
                 }
 
                 // Append to the file
@@ -194,10 +226,10 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         }
 
         /// <summary>
-        /// Updates the 'stopped' entry's end time in the campaign metadata.
+        /// Updates the 'stopped' entry's entry_time in the campaign metadata following InfluxDB Line Protocol.
         /// </summary>
         /// <param name="campaignName">Name of the campaign.</param>
-        /// <param name="newEndTime">New end time in "yyyy-MM-dd HH:mm:ss" format.</param>
+        /// <param name="newEndTime">New end time.</param>
         public void UpdateStoppedEntryTime(string campaignName, string newEndTime)
         {
             string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
@@ -209,14 +241,14 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                 return;
             }
 
-            if (!DateTime.TryParseExact(newEndTime, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEndTime))
+            if (!DateTime.TryParse(newEndTime, out DateTime parsedEndTime))
             {
                 Debug.WriteLine($"Invalid endTime format: {newEndTime}");
-                MessageBox.Show($"Invalid endTime format. Please use 'yyyy-MM-dd HH:mm:ss'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Invalid endTime format. Please use a valid date and time.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            long updatedTimestamp = ToUnixNanoseconds(parsedEndTime);
+            string formattedEndTime = parsedEndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
             try
             {
@@ -228,7 +260,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                     if (lines[i].Contains("status=\"stopped\""))
                     {
                         var parts = lines[i].Split(' ');
-                        if (parts.Length >= 3)
+                        if (parts.Length >= 2)
                         {
                             // Update entry_time field
                             string fieldPart = parts[1];
@@ -237,17 +269,14 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                             {
                                 if (fields[j].StartsWith("entry_time=", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    fields[j] = $"entry_time=\"{newEndTime}\"";
+                                    fields[j] = $"entry_time=\"{formattedEndTime}\"";
                                     break;
                                 }
                             }
                             string updatedFieldPart = string.Join(",", fields);
 
-                            // Replace the primary timestamp (third part)
-                            parts[2] = updatedTimestamp.ToString();
-
-                            // Reconstruct the line with updated fields and timestamp
-                            lines[i] = $"{parts[0]} {updatedFieldPart} {parts[2]}";
+                            // Reconstruct the line without timestamp
+                            lines[i] = $"{parts[0]} {updatedFieldPart}";
 
                             entryUpdated = true;
                             break; // Assuming only one 'stopped' entry exists
@@ -274,19 +303,40 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             }
         }
 
-
         /// <summary>
-        /// Converts a DateTime to Unix timestamp in nanoseconds.
+        /// Escapes special characters in field keys as per InfluxDB line protocol.
         /// </summary>
-        /// <param name="dateTime">The DateTime to convert.</param>
-        /// <returns>Unix timestamp in nanoseconds.</returns>
-        /// 
-
-        private long ToUnixNanoseconds(DateTime dateTime)
+        /// <param name="key">The field key to escape.</param>
+        /// <returns>The escaped field key.</returns>
+        private string EscapeFieldKey(string key)
         {
-            DateTime epochStart = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            return (dateTime - epochStart).Ticks * 100;
+            return key.Replace("\\", "\\\\")
+                      .Replace(" ", "\\ ")
+                      .Replace(",", "\\,")
+                      .Replace("=", "\\=");
         }
 
+        /// <summary>
+        /// Escapes special characters in field string values as per InfluxDB line protocol.
+        /// </summary>
+        /// <param name="value">The field string value to escape.</param>
+        /// <returns>The escaped field string value.</returns>
+        private string EscapeFieldStringValue(string value)
+        {
+            return value.Replace("\\", "\\\\")
+                        .Replace("\"", "\\\"")
+                        .Replace("\n", "\\n")
+                        .Replace("\r", "\\r");
+        }
+
+        /// <summary>
+        /// Removes spaces from tag values.
+        /// </summary>
+        /// <param name="value">The tag value to sanitize.</param>
+        /// <returns>The sanitized tag value.</returns>
+        private string SanitizeTagValue(string value)
+        {
+            return value.Replace(" ", "");
+        }
     }
 }
