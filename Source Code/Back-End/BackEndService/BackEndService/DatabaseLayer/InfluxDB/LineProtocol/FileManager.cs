@@ -23,6 +23,11 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             Directory.CreateDirectory(fullPath);
         }
 
+        /// <summary>
+        /// Retrieves the next available entry ID for a given campaign.
+        /// </summary>
+        /// <param name="campaignName">Name of the campaign.</param>
+        /// <returns>Next entry ID as an integer.</returns>
         public int GetNextEntryId(string campaignName)
         {
             string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
@@ -56,7 +61,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         }
 
         /// <summary>
-        /// Creates a new campaign metadata file with initial entries.
+        /// Creates a new campaign metadata file with initial entries following InfluxDB Line Protocol.
         /// </summary>
         /// <param name="campaignName">Name of the campaign.</param>
         /// <param name="pacifierCount">Number of pacifiers in the campaign.</param>
@@ -75,9 +80,12 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             long timestamp = ToUnixNanoseconds(parsedEntryTime);
 
             var content = new StringBuilder();
-            content.AppendLine($"campaign_metadata,campaign_name={campaignName},pacifier_count={pacifierCount},entry_id=1 status=\"created\",entry_time=\"{entryTime}\" {timestamp}");
-            content.AppendLine($"campaign_metadata,campaign_name={campaignName},pacifier_count={pacifierCount},entry_id=2 status=\"started\",entry_time=\"{entryTime}\" {timestamp + 1}");
-            content.AppendLine($"campaign_metadata,campaign_name={campaignName},pacifier_count={pacifierCount},entry_id=3 status=\"stopped\",entry_time=\"{entryTime}\" {timestamp + 2}");
+            // Measurement: campaign_metadata
+            // Tags: campaign_name, entry_id
+            // Fields: status, entry_time
+            content.AppendLine($"campaign_metadata,campaign_name={campaignName},entry_id=1 status=\"created\",entry_time=\"{entryTime}\" {timestamp}");
+            content.AppendLine($"campaign_metadata,campaign_name={campaignName},entry_id=2 status=\"started\",entry_time=\"{entryTime}\" {timestamp + 1}");
+            content.AppendLine($"campaign_metadata,campaign_name={campaignName},entry_id=3 status=\"stopped\",entry_time=\"{entryTime}\" {timestamp + 2}");
 
             try
             {
@@ -91,9 +99,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             }
         }
 
-
         /// <summary>
-        /// Appends sensor data to the campaign file.
+        /// Appends sensor data to the campaign file following InfluxDB Line Protocol.
         /// </summary>
         /// <param name="campaignName">Name of the campaign.</param>
         /// <param name="pacifierCount">Number of pacifiers (not used here).</param>
@@ -133,12 +140,12 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                 {
                     // Generate tags
                     var tagSet = new List<string>
-            {
-                $"campaign_name={campaignName}",
-                $"pacifier_name={sanitizedPacifierName}",
-                $"sensor_type={sanitizedSensorType}",
-                $"entry_id={nextEntryId}"
-            };
+                    {
+                        $"campaign_name={campaignName}",
+                        $"pacifier_name={sanitizedPacifierName}",
+                        $"sensor_type={sanitizedSensorType}",
+                        $"entry_id={nextEntryId}"
+                    };
                     string tags = string.Join(",", tagSet);
 
                     // Generate fields
@@ -147,7 +154,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                     {
                         if (kvp.Value is int intValue)
                         {
-                            fieldSet.Add($"{kvp.Key}={intValue}"); // Removed the 'i' suffix
+                            fieldSet.Add($"{kvp.Key}={intValue}"); // Integer fields without 'i' suffix
                         }
                         else if (kvp.Value is float || kvp.Value is double || kvp.Value is decimal)
                         {
@@ -156,7 +163,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                         }
                         else if (kvp.Value is string stringValue)
                         {
-                            fieldSet.Add($"{kvp.Key}=\"{stringValue}\"");
+                            // Escape double quotes and backslashes in string values
+                            string escapedValue = stringValue.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                            fieldSet.Add($"{kvp.Key}=\"{escapedValue}\"");
                         }
                     }
 
@@ -164,7 +173,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                     string fields = string.Join(",", fieldSet);
 
                     // Construct line protocol entry
-                    long timestamp = baseTimestamp + nextEntryId;
+                    long timestamp = baseTimestamp + nextEntryId; // Ensuring unique timestamp
                     string lineProtocol = $"campaigns,{tags} {fields} {timestamp}";
 
                     contentBuilder.AppendLine(lineProtocol);
@@ -183,7 +192,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         }
 
         /// <summary>
-        /// Updates the 'stopped' entry's end time in the campaign metadata.
+        /// Updates the 'stopped' entry's end time in the campaign metadata following InfluxDB Line Protocol.
         /// </summary>
         /// <param name="campaignName">Name of the campaign.</param>
         /// <param name="newEndTime">New end time in "yyyy-MM-dd HH:mm:ss" format.</param>
@@ -263,15 +272,11 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             }
         }
 
-
         /// <summary>
         /// Converts a DateTime to Unix timestamp in nanoseconds.
         /// </summary>
         /// <param name="dateTime">The DateTime to convert.</param>
         /// <returns>Unix timestamp in nanoseconds.</returns>
-        /// 
-
-
         private long ToUnixNanoseconds(DateTime dateTime)
         {
             DateTimeOffset dto = dateTime.Kind switch
@@ -286,6 +291,5 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
             long nanoseconds = (dto.Ticks % TimeSpan.TicksPerSecond) * 100;
             return unixNanoseconds + nanoseconds;
         }
-
     }
 }
