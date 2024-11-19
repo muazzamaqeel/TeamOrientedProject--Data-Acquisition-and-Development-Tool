@@ -1,4 +1,5 @@
-﻿using SmartPacifier.Interface.Services;
+﻿using InfluxData.Net.Common.Helpers;
+using SmartPacifier.Interface.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -100,7 +101,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         /// <param name="pacifierName">Name of the pacifier.</param>
         /// <param name="sensorType">Type of the sensor.</param>
         /// <param name="parsedData">List of dictionaries containing sensor data.</param>
-        /// <param name="entryTime">Entry time in "yyyy-MM-dd HH:mm:ss" format.</param>
+        /// <param name="entryTime">Entry time in "yyyy-MM-dd HH:mm:ss.fff" format.</param>
         public void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime)
         {
             try
@@ -115,10 +116,10 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 
                 int nextEntryId = GetNextEntryId(campaignName);
 
-                if (!DateTime.TryParseExact(entryTime, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEntryTime))
+                if (!DateTime.TryParseExact(entryTime, "yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEntryTime))
                 {
                     Debug.WriteLine($"Invalid entryTime format: {entryTime}");
-                    MessageBox.Show($"Invalid entryTime format. Please use 'yyyy-MM-dd HH:mm:ss'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Invalid entryTime format. Please use 'yyyy-MM-dd HH:mm:ss.fff'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -134,17 +135,26 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                     // Generate tags
                     var tagSet = new List<string>
             {
-                $"campaign_name={campaignName}",
-                $"pacifier_name={sanitizedPacifierName}",
-                $"sensor_type={sanitizedSensorType}",
-                $"entry_id={nextEntryId}"
+                    $"campaign_name={campaignName}",
+                    $"pacifier_name={sanitizedPacifierName}",
+                    $"sensor_type={sanitizedSensorType}",
+                    $"entry_id={nextEntryId}",
+                   // $"entry_time={entryTime}"
             };
                     string tags = string.Join(",", tagSet);
 
                     // Generate fields
                     var fieldSet = new List<string>();
+                    bool skipFirst = true;
                     foreach (var kvp in sensorData)
                     {
+
+                        if (skipFirst)
+                        {
+                            skipFirst = false;
+                            continue;
+                        }
+
                         if (kvp.Value is int intValue)
                         {
                             fieldSet.Add($"{kvp.Key}={intValue}"); // Removed the 'i' suffix
@@ -158,9 +168,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                         {
                             fieldSet.Add($"{kvp.Key}=\"{stringValue}\"");
                         }
+                   
                     }
 
-                    fieldSet.Add($"entry_time=\"{entryTime}\"");
                     string fields = string.Join(",", fieldSet);
 
                     // Construct line protocol entry
@@ -169,6 +179,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 
                     contentBuilder.AppendLine(lineProtocol);
                     nextEntryId++;
+
                 }
 
                 // Append to the file
@@ -271,20 +282,10 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         /// <returns>Unix timestamp in nanoseconds.</returns>
         /// 
 
-
         private long ToUnixNanoseconds(DateTime dateTime)
         {
-            DateTimeOffset dto = dateTime.Kind switch
-            {
-                DateTimeKind.Utc => new DateTimeOffset(dateTime, TimeSpan.Zero),
-                DateTimeKind.Local => new DateTimeOffset(dateTime),
-                _ => new DateTimeOffset(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc), TimeSpan.Zero),
-            };
-
-            long unixSeconds = dto.ToUnixTimeSeconds();
-            long unixNanoseconds = unixSeconds * 1_000_000_000;
-            long nanoseconds = (dto.Ticks % TimeSpan.TicksPerSecond) * 100;
-            return unixNanoseconds + nanoseconds;
+            DateTime epochStart = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return (dateTime - epochStart).Ticks * 100;
         }
 
     }
