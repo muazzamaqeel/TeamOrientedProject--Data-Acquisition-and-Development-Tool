@@ -79,13 +79,16 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 
             string formattedEntryTime = parsedEntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
+            // Calculate the timestamp in nanoseconds
+            long unixTimestamp = GetUnixTimestampNanoseconds(parsedEntryTime);
+
             var content = new StringBuilder();
             // Measurement: campaign_metadata
             // Tags: campaign_name, entry_id, pacifier_count
             // Fields: status, entry_time
-            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=1,pacifier_count={pacifierCount} status=\"created\",entry_time=\"{formattedEntryTime}\"");
-            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=2,pacifier_count={pacifierCount} status=\"started\",entry_time=\"{formattedEntryTime}\"");
-            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=3,pacifier_count={pacifierCount} status=\"stopped\",entry_time=\"{formattedEntryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=1,pacifier_count={pacifierCount} status=\"created\",entry_time=\"{formattedEntryTime}\" {unixTimestamp}");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=2,pacifier_count={pacifierCount} status=\"started\",entry_time=\"{formattedEntryTime}\" {unixTimestamp}");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=3,pacifier_count={pacifierCount} status=\"stopped\",entry_time=\"{formattedEntryTime}\" {unixTimestamp}");
 
             try
             {
@@ -130,6 +133,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                 }
 
                 string formattedEntryTime = parsedEntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+
+                // Calculate the timestamp in nanoseconds
+                long unixTimestamp = GetUnixTimestampNanoseconds(parsedEntryTime);
 
                 var contentBuilder = new StringBuilder();
 
@@ -207,8 +213,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 
                     string fields = string.Join(",", fieldSet);
 
-                    // Construct line protocol entry without timestamp
-                    string lineProtocol = $"campaigns,{tags} {fields}";
+                    // Construct line protocol entry with timestamp
+                    string lineProtocol = $"campaigns,{tags} {fields} {unixTimestamp}";
 
                     contentBuilder.AppendLine(lineProtocol);
                     nextEntryId++;
@@ -250,6 +256,9 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 
             string formattedEndTime = parsedEndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
+            // Calculate the timestamp in nanoseconds
+            long unixTimestamp = GetUnixTimestampNanoseconds(parsedEndTime);
+
             try
             {
                 var lines = File.ReadAllLines(filePath).ToList();
@@ -275,8 +284,8 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                             }
                             string updatedFieldPart = string.Join(",", fields);
 
-                            // Reconstruct the line without timestamp
-                            lines[i] = $"{parts[0]} {updatedFieldPart}";
+                            // Reconstruct the line with timestamp
+                            lines[i] = $"{parts[0]} {updatedFieldPart} {unixTimestamp}";
 
                             entryUpdated = true;
                             break; // Assuming only one 'stopped' entry exists
@@ -337,6 +346,18 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         private string SanitizeTagValue(string value)
         {
             return value.Replace(" ", "");
+        }
+
+        /// <summary>
+        /// Gets the Unix timestamp in nanoseconds for a given DateTime.
+        /// </summary>
+        /// <param name="dateTime">The DateTime to convert.</param>
+        /// <returns>The Unix timestamp in nanoseconds.</returns>
+        private long GetUnixTimestampNanoseconds(DateTime dateTime)
+        {
+            TimeSpan timeSinceEpoch = dateTime.ToUniversalTime() - new DateTime(1970, 1, 1);
+            long unixTimestamp = timeSinceEpoch.Ticks * 100; // Each tick is 100 nanoseconds
+            return unixTimestamp;
         }
     }
 }
