@@ -141,8 +141,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             }
 
             // Get the current date and time
-            DateTime dateTime = DateTime.Now;
-            string entryTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
+            DateTime dateTime = DateTime.UtcNow;
+            string entryTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
             // Only proceed if the pacifier ID is in the checkedPacifiers list and data is valid
             if (PacifierItems.Any(p => p.PacifierId == e.PacifierId) && e.SensorType != null && e.ParsedData != null)
