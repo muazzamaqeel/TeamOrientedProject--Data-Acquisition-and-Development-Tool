@@ -65,25 +65,27 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         /// </summary>
         /// <param name="campaignName">Name of the campaign.</param>
         /// <param name="pacifierCount">Number of pacifiers in the campaign.</param>
-        /// <param name="entryTime">Entry time in "yyyy-MM-dd HH:mm:ss" format.</param>
+        /// <param name="entryTime">Entry time.</param>
         public void CreateFileCamp(string campaignName, int pacifierCount, string entryTime)
         {
             string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
 
-            if (!DateTime.TryParseExact(entryTime, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEntryTime))
+            if (!DateTime.TryParse(entryTime, out DateTime parsedEntryTime))
             {
                 Debug.WriteLine($"Invalid entryTime format: {entryTime}");
-                MessageBox.Show($"Invalid entryTime format. Please use 'yyyy-MM-dd HH:mm:ss'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Invalid entryTime format. Please use a valid date and time.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+
+            string formattedEntryTime = parsedEntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
             var content = new StringBuilder();
             // Measurement: campaign_metadata
             // Tags: campaign_name, entry_id, pacifier_count
             // Fields: status, entry_time
-            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=1,pacifier_count={pacifierCount} status=\"created\",entry_time=\"{entryTime}\"");
-            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=2,pacifier_count={pacifierCount} status=\"started\",entry_time=\"{entryTime}\"");
-            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=3,pacifier_count={pacifierCount} status=\"stopped\",entry_time=\"{entryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=1,pacifier_count={pacifierCount} status=\"created\",entry_time=\"{formattedEntryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=2,pacifier_count={pacifierCount} status=\"started\",entry_time=\"{formattedEntryTime}\"");
+            content.AppendLine($"campaign_metadata,campaign_name={SanitizeTagValue(campaignName)},entry_id=3,pacifier_count={pacifierCount} status=\"stopped\",entry_time=\"{formattedEntryTime}\"");
 
             try
             {
@@ -105,7 +107,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         /// <param name="pacifierName">Name of the pacifier.</param>
         /// <param name="sensorType">Type of the sensor.</param>
         /// <param name="parsedData">List of dictionaries containing sensor data.</param>
-        /// <param name="entryTime">Entry time in "yyyy-MM-dd HH:mm:ss" format.</param>
+        /// <param name="entryTime">Entry time.</param>
         public void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime)
         {
             try
@@ -120,12 +122,14 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 
                 int nextEntryId = GetNextEntryId(campaignName);
 
-                if (!DateTime.TryParseExact(entryTime, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEntryTime))
+                if (!DateTime.TryParse(entryTime, out DateTime parsedEntryTime))
                 {
                     Debug.WriteLine($"Invalid entryTime format: {entryTime}");
-                    MessageBox.Show($"Invalid entryTime format. Please use 'yyyy-MM-dd HH:mm:ss'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Invalid entryTime format. Please use a valid date and time.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
+
+                string formattedEntryTime = parsedEntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
                 var contentBuilder = new StringBuilder();
 
@@ -199,7 +203,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                     }
 
                     // Add the entry_time field as a string
-                    fieldSet.Add($"entry_time=\"{entryTime}\"");
+                    fieldSet.Add($"entry_time=\"{formattedEntryTime}\"");
 
                     string fields = string.Join(",", fieldSet);
 
@@ -225,7 +229,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
         /// Updates the 'stopped' entry's entry_time in the campaign metadata following InfluxDB Line Protocol.
         /// </summary>
         /// <param name="campaignName">Name of the campaign.</param>
-        /// <param name="newEndTime">New end time in "yyyy-MM-dd HH:mm:ss" format.</param>
+        /// <param name="newEndTime">New end time.</param>
         public void UpdateStoppedEntryTime(string campaignName, string newEndTime)
         {
             string filePath = Path.Combine(fullPath, $"{campaignName}.txt");
@@ -237,12 +241,14 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                 return;
             }
 
-            if (!DateTime.TryParseExact(newEndTime, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime parsedEndTime))
+            if (!DateTime.TryParse(newEndTime, out DateTime parsedEndTime))
             {
                 Debug.WriteLine($"Invalid endTime format: {newEndTime}");
-                MessageBox.Show($"Invalid endTime format. Please use 'yyyy-MM-dd HH:mm:ss'.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Invalid endTime format. Please use a valid date and time.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+
+            string formattedEndTime = parsedEndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
             try
             {
@@ -263,7 +269,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                             {
                                 if (fields[j].StartsWith("entry_time=", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    fields[j] = $"entry_time=\"{newEndTime}\"";
+                                    fields[j] = $"entry_time=\"{formattedEndTime}\"";
                                     break;
                                 }
                             }
