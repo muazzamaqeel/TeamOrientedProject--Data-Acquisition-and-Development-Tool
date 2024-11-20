@@ -222,7 +222,7 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
 
                 // Append to the file
                 File.AppendAllText(filePath, contentBuilder.ToString());
-                Debug.WriteLine($"Data successfully appended to file: {filePath}");
+                //Debug.WriteLine($"Data successfully appended to file: {filePath}");
             }
             catch (Exception ex)
             {

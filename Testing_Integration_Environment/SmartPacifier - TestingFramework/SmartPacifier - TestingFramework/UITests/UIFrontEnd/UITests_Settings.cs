@@ -23,6 +23,10 @@ namespace SmartPacifier___TestingFramework.UITests.UIFrontEnd
         // Constructor is not needed in this case
 
         ////////****************************** BUTTONS ************************/////////////
+        /// <summary>
+        /// This test erifies that all required buttons in the Settings tab exist.
+        /// </summary>
+        /// <returns></returns>
         public bool CheckButtonsExistenceInSettingsTab()
         {
             try
@@ -49,6 +53,9 @@ namespace SmartPacifier___TestingFramework.UITests.UIFrontEnd
         }
 
         ////////****************************** TEXT BOXES ************************/////////////
+        /// <summary>
+        /// This test verifies that required text boxes exist in the Settings tab and observes their behavior
+        /// </summary>
         public void CheckTextBoxesExistenceInSettingsTab()
         {
             using (var automation = new UIA3Automation())
@@ -70,6 +77,10 @@ namespace SmartPacifier___TestingFramework.UITests.UIFrontEnd
         }
 
         ////////****************************** TEXT BLOCKS ************************/////////////
+        /// <summary>
+        /// This test verifies that required text blocks in the Settings tab exist and are functional.
+        /// </summary>
+        /// <returns></returns>
         public bool CheckTextBlocksExistenceAndBehaviorInSettingsTab()
         {
             using (var automation = new UIA3Automation())
@@ -87,6 +98,10 @@ namespace SmartPacifier___TestingFramework.UITests.UIFrontEnd
         }
 
         ////////****************************** CHECK BOXES ************************/////////////
+        /// <summary>
+        /// This test verifies that required checkboxes in the Settings tab exist.
+        /// </summary>
+        /// <returns></returns>
         public bool CheckCheckBoxesExistenceInSettingsTab()
         {
             using (var automation = new UIA3Automation())
@@ -103,6 +118,9 @@ namespace SmartPacifier___TestingFramework.UITests.UIFrontEnd
             }
         }
         //[Fact]
+        /// <summary>
+        /// This test verifies that the API key submission workflow for InfluxDB is functional.
+        /// </summary>
         public void TestInfluxDbApiKeySubmission()
         {
             app = LaunchApplication(); // Launch the application

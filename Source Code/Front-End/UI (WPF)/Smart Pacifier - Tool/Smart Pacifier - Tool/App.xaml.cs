@@ -22,6 +22,7 @@ using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol;
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
@@ -169,13 +170,9 @@ namespace Smart_Pacifier___Tool
                     org     // organization name
                 );
             });
-
-            //Register PythonScriptEngine as IAlgorithmLayer
-            // Correct registration using the class constructor
-            //services.AddSingleton<IAlgorithmLayer, PythonScriptEngine>();
-
-
+            
             // Register other necessary services
+            services.AddTransient<FileUpload>();
             services.AddSingleton<ILocalHost, LocalHostSetup>();
             services.AddSingleton<IBrokerHealthService, BrokerHealth>();
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();

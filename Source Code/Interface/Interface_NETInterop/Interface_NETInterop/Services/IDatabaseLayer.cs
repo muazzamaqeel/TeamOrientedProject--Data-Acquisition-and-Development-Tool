@@ -19,7 +19,9 @@ namespace SmartPacifier.Interface.Services
         Task DeleteEntryFromDatabaseAsync(int entryId, string measurement);
         Task<Dictionary<string, object>> GetCampaignDataAlgorithmLayerAsync(string campaignName);
 
-
+        Task<List<string>> GetUniqueCampaignNamesAsync();
+        Task<List<string>> GetUniquePacifierNamesAsync();
+        Task<List<string>> GetUniqueSensorTypesAsync();
     }
 
     public interface IDataManipulationHandler
