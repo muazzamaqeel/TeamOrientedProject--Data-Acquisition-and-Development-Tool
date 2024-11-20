@@ -17,6 +17,8 @@ namespace SmartPacifier.Interface.Services
         string BaseUrl { get; }
         Task<DataTable> GetSensorDataAsync();
         Task DeleteEntryFromDatabaseAsync(int entryId, string measurement);
+        Task<Dictionary<string, object>> GetCampaignDataAlgorithmLayerAsync(string campaignName);
+
 
     }
 
@@ -60,10 +62,10 @@ namespace SmartPacifier.Interface.Services
         Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags);
         Task<List<string>> ReadData(string query);
 
-        // Add the following methods
         Task<List<string>> GetPacifiersByCampaignNameAsync(string campaignName);
         Task<List<string>> GetSensorsByPacifierNameAsync(string pacifierName, string campaignName);
-
+        Task<List<string>> GetCampaignDataEntriesAsync(string campaignName);
+        Task<List<string>> GetCampaignsDataAsync();
     }
 
 
@@ -98,6 +100,15 @@ namespace SmartPacifier.Interface.Services
     public interface IInfluxDBParser
     {
 
+
+    }
+
+
+    public interface ILineProtocol
+    {
+        void CreateFileCamp(string campaignName, int pacifierCount, string entryTime);
+        void AppendToCampaignFile(string campaignName, int pacifierCount, string pacifierName, string sensorType, List<Dictionary<string, object>> parsedData, string entryTime);
+        void UpdateStoppedEntryTime(string campaignName, string newEndTime);
 
     }
 

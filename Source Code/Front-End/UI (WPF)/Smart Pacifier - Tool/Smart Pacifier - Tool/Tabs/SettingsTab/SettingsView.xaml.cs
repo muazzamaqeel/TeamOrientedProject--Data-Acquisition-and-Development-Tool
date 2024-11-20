@@ -14,6 +14,10 @@ using Microsoft.Extensions.Configuration.Json;
 using System.Windows.Media;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OxyPlot.Axes;
+using OxyPlot.Series;
+using OxyPlot;
+using System.Windows.Threading;
 
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
@@ -28,16 +32,20 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         private readonly ServerHandler serverHandler;
 
         private readonly IConfiguration configuration;
+        private readonly IBrokerHealthService brokerHealthService;
         private readonly string serverHost;
         private readonly string serverUsername;
         private readonly string serverApiKey;
         private readonly string serverPort;
+        private PlotModel brokerHealthModel;
 
 
-        public SettingsView(ILocalHost localHost, string defaultView = "ModeButtons")
+        public SettingsView(ILocalHost localHost, IBrokerHealthService brokerHealthService, string defaultView = "ModeButtons")
         {
             InitializeComponent();
+            InitializeBrokerHealthChart();
             localHostService = localHost;
+            this.brokerHealthService = brokerHealthService;
             serverHandler = new ServerHandler();
             serverHandler.TerminalOutputReceived += UpdateTerminalOutput;
 
@@ -85,7 +93,58 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             UpdateButtonStates();
             UpdateThemeStates();
             SetDefaultView(defaultView);
+
+            // Initialize and start the timer for updating broker health
+            var brokerHealthTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1) // Update every second
+            };
+            brokerHealthTimer.Tick += UpdateBrokerHealth; // Attach periodic update logic
+            brokerHealthTimer.Start(); // Start the timer
         }
+
+
+        private async void UpdateBrokerHealth(object sender, EventArgs e)
+        {
+            try
+            {
+                bool isReachable = await brokerHealthService.IsBrokerReachableAsync();
+                //bool isReceiving = await brokerHealthService.IsReceivingDataAsync();
+
+                double timestamp = DateTimeAxis.ToDouble(DateTime.Now);
+
+                var reachableSeries = brokerHealthModel.Series[0] as LineSeries;
+                //var receivingSeries = brokerHealthModel.Series[1] as LineSeries;
+
+                if (reachableSeries != null)
+                {
+                    // Update "Broker Reachable" series
+                    reachableSeries.Points.Add(new DataPoint(timestamp, isReachable ? 1 : 0));
+                    reachableSeries.Color = isReachable ? OxyColors.Green : OxyColors.Red;
+
+                    // Update "Receiving Data" series
+                    //receivingSeries.Points.Add(new DataPoint(timestamp, isReceiving ? 1 : 0));
+                    //receivingSeries.Color = isReceiving ? OxyColors.Green : OxyColors.Red;
+
+                    // Trim points to keep chart manageable
+                    if (reachableSeries.Points.Count > 50) reachableSeries.Points.RemoveAt(0);
+                    //if (receivingSeries.Points.Count > 50) receivingSeries.Points.RemoveAt(0);
+                }
+
+                // Refresh the chart
+                brokerHealthModel.InvalidatePlot(true);
+
+                // Update status text
+                BrokerHealthStatus.Text = $"Status: Broker Reachable - {isReachable}";
+            }
+            catch (Exception ex)
+            {
+                // Handle errors gracefully
+                BrokerHealthStatus.Text = $"Error: {ex.Message}";
+                MessageBox.Show($"An error occurred while updating broker health: {ex.Message}");
+            }
+        }
+
 
 
         private void SetDefaultView(string defaultView)
@@ -133,6 +192,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             ModeButtonsPanel.Visibility = Visibility.Collapsed;
             InfluxDbModePanel.Visibility = Visibility.Collapsed;
             TerminalPanel.Visibility = Visibility.Collapsed;
+            BrokerHealthPanel.Visibility = Visibility.Collapsed;
 
             switch (panelName)
             {
@@ -145,11 +205,14 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 case "InfluxDbModePanel":
                     InfluxDbModePanel.Visibility = Visibility.Visible;
                     break;
-                case "None":
+                case "BrokerHealthPanel":
+                    BrokerHealthPanel.Visibility = Visibility.Visible;
+                    break;
                 default:
                     break;
             }
         }
+
 
         private void DockerInitialize(object sender, RoutedEventArgs e)
         {
@@ -454,8 +517,110 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
             app.ReloadServices();
 
         }
+        private void InitializeBrokerHealthChart()
+        {
+            brokerHealthModel = new PlotModel { Title = "Broker Health Over Time" };
+
+            // Time Axis
+            brokerHealthModel.Axes.Add(new DateTimeAxis
+            {
+                Position = AxisPosition.Bottom,
+                StringFormat = "HH:mm:ss",
+                Title = "Time",
+                IntervalType = DateTimeIntervalType.Seconds,
+                MinorIntervalType = DateTimeIntervalType.Seconds,
+                IsZoomEnabled = true,
+                IsPanEnabled = true,
+            });
+
+            // Status Axis
+            brokerHealthModel.Axes.Add(new LinearAxis
+            {
+                Position = AxisPosition.Left,
+                Title = "Status",
+                Minimum = -0.5,
+                Maximum = 1.5,
+                MajorStep = 1,
+                MinorStep = 1,
+                IsZoomEnabled = false,
+                IsPanEnabled = false,
+                LabelFormatter = value => value switch
+                {
+                    1 => "True",
+                    0 => "False",
+                    _ => string.Empty,
+                }
+            });
+
+            // Line series for "Broker Reachable"
+            var brokerReachableSeries = new LineSeries
+            {
+                Title = "Broker Reachable",
+                MarkerType = MarkerType.Circle,
+                Color = OxyColors.Green,
+            };
+
+            // Line series for "Receiving Data"
+            var receivingDataSeries = new LineSeries
+            {
+                Title = "Receiving Data",
+                MarkerType = MarkerType.Circle,
+                Color = OxyColors.Green,
+            };
+
+            brokerHealthModel.Series.Add(brokerReachableSeries);
+            brokerHealthModel.Series.Add(receivingDataSeries);
+
+            BrokerHealthPlot.Model = brokerHealthModel;
+        }
+
+        private async void CheckBrokerHealth_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Check broker health statuses
+                bool isReachable = await brokerHealthService.IsBrokerReachableAsync();
+                //bool isReceiving = await brokerHealthService.IsReceivingDataAsync();
+
+                // Add data points to OxyPlot series
+                double timestamp = DateTimeAxis.ToDouble(DateTime.Now);
+
+                var reachableSeries = brokerHealthModel.Series[0] as LineSeries;
+                var receivingSeries = brokerHealthModel.Series[1] as LineSeries;
+
+                if (reachableSeries != null && receivingSeries != null)
+                {
+                    reachableSeries.Points.Add(new DataPoint(timestamp, isReachable ? 1 : 0));
+                    //receivingSeries.Points.Add(new DataPoint(timestamp, isReceiving ? 1 : 0));
+
+                    // Trim points to the last 50
+                    if (reachableSeries.Points.Count > 50) reachableSeries.Points.RemoveAt(0);
+                    if (receivingSeries.Points.Count > 50) receivingSeries.Points.RemoveAt(0);
+                }
+
+                // Refresh plot
+                brokerHealthModel.InvalidatePlot(true);
+
+                // Update status
+                BrokerHealthStatus.Text = $"Status: Broker Reachable - {isReachable}";
+            }
+            catch (Exception ex)
+            {
+                BrokerHealthStatus.Text = $"Error: {ex.Message}";
+                MessageBox.Show($"An error occurred while checking broker health: {ex.Message}");
+            }
+        }
 
 
+
+
+
+        public string CheckBrokerHealth()
+        {
+            // Replace with actual logic to check the broker's health
+            // Example: Ping the broker or check a health endpoint
+            return "Healthy"; // Or "Unhealthy" based on the response
+        }
 
 
 

@@ -17,6 +17,11 @@ using System.Windows.Data;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 using System.Collections.Specialized;
 using static Smart_Pacifier___Tool.Components.PacifierItem;
+using DataPoint = OxyPlot.DataPoint;
+using Microsoft.Extensions.DependencyInjection;
+using OxyPlot.Axes;
+using OxyPlot.Legends;
+using Smart_Pacifier___Tool.Tabs.SettingsTab;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -25,26 +30,25 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
     /// </summary>
     public partial class MonitoringView : UserControl, INotifyCollectionChanged
     {
-        private readonly MonitoringViewModel _viewModel;
 
+        private readonly MonitoringViewModel _viewModel;
         public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="selectedPacifiers"></param>
-        public MonitoringView(ObservableCollection<PacifierItem> selectedPacifiers)
+        public MonitoringView(ObservableCollection<PacifierItem> selectedPacifiers, ILineProtocol lineProtocol, string currentCampaignName)
         {
             InitializeComponent();
 
             // Initialize the ViewModel
-            _viewModel = new MonitoringViewModel();
+            _viewModel = new MonitoringViewModel(lineProtocol, currentCampaignName);
 
             // Bind the ViewModel to the DataContext
             this.DataContext = _viewModel;
 
             // Clear items
-            _viewModel.SensorTypes.Clear();
             _viewModel.PacifierItems.Clear();
 
             // Initialize the UI
@@ -81,7 +85,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 AddSensorItems(newSensors);
             }
         }
-
 
 
         // ================ Pacifier Items - DONE ===============
@@ -206,35 +209,23 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         // Add Grid for PacifierItem
         private void AddPacifierGrid(PacifierItem pacifierItem)
         {
-            if (!_viewModel.PacifierGridMap.ContainsKey(pacifierItem))
+            // Check if the grid already exists using the UID
+            Grid? existingGrid = FindPacifierGrid(pacifierItem.PacifierId);
+
+            if (existingGrid == null)
             {
                 // Create a new grid for this pacifier item
-                Grid grid = new Grid();
-                pacifierSectionsPanel.Children.Add(grid);
+                Grid newGrid = new Grid
+                {
+                    Uid = $"Grid_{pacifierItem.PacifierId}"
+                };
+                pacifierSectionsPanel.Children.Add(newGrid);
 
-                // Save the grid reference in the map
-                _viewModel.PacifierGridMap[pacifierItem] = grid;
-
-                // Add a row for the pacifier item (no graphs initially)
-                AddPacifierRow(grid, pacifierItem);
-
-                //Grid pacifierGrid = new()
-                //{
-                //    HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch, // Ensure the grid stretches
-                //    Uid = $"Grid{pacifierItem.ItemId}",
-
-                //};
-
-                //Debug.WriteLine($"Adding grid with Uid: {pacifierGrid.Uid}");  // Verify Uid
-
-                //pacifierGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) }); // First row for UI controls
-
-                //// Add the grid directly to the StackPanel
-                //pacifierSectionsPanel.Children.Add(pacifierGrid);
-
-                //return pacifierGrid;
+                AddPacifierRow(newGrid, pacifierItem);
+                Debug.WriteLine($"Monitoring: Created Grid for Pacifier {pacifierItem.PacifierId}");
             }
         }
+
 
         // Add Row for PacifierItem (No Graphs)
         private void AddPacifierRow(Grid pacifierGrid, PacifierItem pacifierItem)
@@ -260,34 +251,54 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 Foreground = Brushes.White
             };
             Grid.SetRow(pacifierNameTextBox, 0);
-            Grid.SetColumn(pacifierNameTextBox, 0);
+            Grid.SetColumn(pacifierNameTextBox, 1);
             pacifierGrid.Children.Add(pacifierNameTextBox);
-
-            // Create the second TextBlock for additional input
-            TextBlock additionalTextBox = new()
-            {
-                Text = "Status",
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                VerticalAlignment = System.Windows.VerticalAlignment.Center,
-                FontSize = 16,
-                Foreground = Brushes.White,
-            };
-            Grid.SetRow(additionalTextBox, 0);
-            Grid.SetColumn(additionalTextBox, 1);
-            pacifierGrid.Children.Add(additionalTextBox);
 
             // Create the "Debug" button
             Button debugButton = new()
             {
                 Content = "Debug",
                 Width = 50,
-                Height = 25,
+                Height = 30,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
                 Margin = new Thickness(5),
                 Style = (Style)Application.Current.FindResource("ModernButtonStyle"),
-                Tag = pacifierItem.ButtonText // Use Tag to hold the pacifier name
+                Tag = pacifierItem.PacifierId // Use Tag to hold the pacifier id
             };
+
+            var mainWindow = Application.Current.MainWindow as MainWindow;
+            if (mainWindow != null)
+            {
+                var sidebar = mainWindow.Sidebar; // Ensure SidebarInstance is accessible in MainWindow
+
+                if (sidebar != null && Application.Current.Properties.Contains(Sidebar.DeveloperTabVisibleKey))
+                {
+                    bool isDeveloperTabVisible = (bool)Application.Current.Properties[Sidebar.DeveloperTabVisibleKey];
+
+                    if (isDeveloperTabVisible)
+                    {
+                        debugButton.Visibility = Visibility.Visible;
+                        Debug.WriteLine("Monitoring: Developer Mode");
+                    }
+                    else
+                    {
+                        debugButton.Visibility = Visibility.Collapsed;
+                        Debug.WriteLine("Monitoring: User Mode");
+                    }
+                }
+                else
+                {
+                    debugButton.Visibility = Visibility.Collapsed;
+                    Debug.WriteLine("Monitoring: UserMode is null");
+                }
+            }
+            else
+            {
+                debugButton.Visibility = Visibility.Collapsed;
+                Debug.WriteLine("Monitoring: MainWindow is null");
+            }
+
             Grid.SetRow(debugButton, 0);
             Grid.SetColumn(debugButton, 2);
             debugButton.Click += OpenRawDataView_Click; // Directly attach the event handler
@@ -298,204 +309,151 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         // Add Graph Rows for all Toggled SensorItems in this PacifierItem Grid
         private void AddGraphRowsForToggledSensors(PacifierItem pacifierItem)
         {
-            Grid grid = _viewModel.PacifierGridMap[pacifierItem];
+            // First, remove any existing sensor rows (this ensures we don't have duplicates)
+            RemoveGraphRowsForSensorItemsForPacifier(pacifierItem);
 
+            // Now, add the rows again for each checked sensor
             foreach (var sensorItem in _viewModel.CheckedSensorItems)
             {
-                AddSensorRow(grid, sensorItem);
+                AddSensorRow(pacifierItem, sensorItem);
             }
         }
 
         // Add Graph Row for a Specific SensorItem in a PacifierItem Grid
-        private void AddSensorRow(Grid pacifierGrid, SensorItem sensorItem)
+        private void AddSensorRow(PacifierItem pacifierItem, SensorItem sensorItem)
         {
-            if (!_viewModel.SensorRowMap.ContainsKey(new Tuple<PacifierItem, SensorItem>(sensorItem.ParentPacifierItem.GetPacifierItem(), sensorItem)))
-            {
-                RowDefinition sensorRow = new RowDefinition();
-                pacifierGrid.RowDefinitions.Add(sensorRow);
+            Grid? pacifierGrid = FindPacifierGrid(pacifierItem.PacifierId);
+            if (pacifierGrid == null) return;
 
-                // Create the Graph or ScrollViewer for this SensorItem here
-                // You can create a row with a ScrollViewer to display the graphs
+            // Create a new row definition for this sensor's graphs
+            RowDefinition sensorRow = new RowDefinition();
+            pacifierGrid.RowDefinitions.Add(sensorRow);
 
-                // Example of adding a graph (adjust according to your graphing logic)
-                ScrollViewer graphScrollViewer = new ScrollViewer
-                {
-                    HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
-                    VerticalAlignment = System.Windows.VerticalAlignment.Stretch,
-                    Uid = sensorItem.SensorId
-                };
+            // Create a unique identifier for the graph
+            string uniqueUid = $"{pacifierItem.PacifierId}_{sensorItem.SensorId}";
 
-                graphScrollViewer.Content = CreateGraphForSensor(sensorItem);
+            // Ensure that the new row has the correct row index for the ScrollViewer
+            WrapPanel graphScrollViewer = CreateGraphForSensor(pacifierItem, sensorItem);
+            graphScrollViewer.Uid = uniqueUid;
 
-                pacifierGrid.Children.Add(graphScrollViewer);
+            // Set the new row index for the ScrollViewer
+            int newRowIndex = pacifierGrid.RowDefinitions.Count;
+            Grid.SetRow(graphScrollViewer, newRowIndex);
+            Grid.SetColumnSpan(graphScrollViewer, 3);
 
-                // Save the row reference in the map
-                _viewModel.SensorRowMap[new Tuple<PacifierItem, SensorItem>(sensorItem.ParentPacifierItem.GetPacifierItem(), sensorItem)] = sensorRow;
+            pacifierGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+            pacifierGrid.Children.Add(graphScrollViewer);
 
-                //    // Find the pacifier grid for the given sensor based on PacifierId
-                //    var pacifierGrid = FindPacifierGridForSensor(pacifierItem);
-
-                //    if (pacifierGrid == null && sensorItem.HasGraphs)
-                //    {
-                //        Debug.WriteLine($"Monitoring: Grid is NULL");
-                //        return;
-                //    }
-
-                //    sensorItem.HasGraphs = true;
-
-                //    ScrollViewer scrollViewer = new ScrollViewer
-                //    {
-                //        HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                //        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                //        HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
-                //        VerticalAlignment = System.Windows.VerticalAlignment.Stretch,
-                //        Uid = sensorItem.SensorId
-                //    };
-
-                //    WrapPanel graphPanel = new WrapPanel
-                //    {
-                //        Orientation = Orientation.Horizontal,
-                //    };
-
-                //    scrollViewer.Content = graphPanel;
-
-                //    // Safely get the row index (check if RowDefinitions exists)
-                //    int rowIndex = pacifierGrid.RowDefinitions.Count;
-
-                //    pacifierGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
-                //    Grid.SetRow(scrollViewer, rowIndex);
-                //    Grid.SetColumnSpan(scrollViewer, 3);
-                //    pacifierGrid.Children.Add(scrollViewer);
-
-                //    Debug.WriteLine($"Monitoring: Added Row for {sensorItem.SensorId} Pacifier {pacifierItem.ItemId}");
-
-                //    // Iterate to create multiple graphs
-                //    foreach (var sensorGroup in sensorItem.SensorGroups)
-                //    {
-                //        CreateGraphs(graphPanel, sensorGroup);
-                //    }
-
-            }
+            Debug.WriteLine($"Monitoring: Added SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId} at Row {newRowIndex}");
         }
 
-        // Add Graph Rows for all Toggled SensorItems for all Pacifiers
+
+
         private void AddGraphRowsForToggledSensorsForAllPacifiers(SensorItem sensorItem)
         {
             foreach (var pacifierItem in _viewModel.CheckedPacifierItems)
             {
-                AddGraphRowsForToggledSensors(pacifierItem);
+                AddSensorRow(pacifierItem, sensorItem);
             }
         }
 
         // Remove Grid for PacifierItem
         private void RemovePacifierGrid(PacifierItem pacifierItem)
         {
-            if (_viewModel.PacifierGridMap.ContainsKey(pacifierItem))
+            Grid? gridToRemove = FindPacifierGrid(pacifierItem.PacifierId);
+            if (gridToRemove != null)
             {
-                Grid grid = _viewModel.PacifierGridMap[pacifierItem];
-                pacifierSectionsPanel.Children.Remove(grid);
-
-                // Remove all rows associated with this pacifier
-                foreach (var row in grid.RowDefinitions)
-                {
-                    // Logic to remove row content, if necessary
-                }
-
-                // Remove this entry from the map
-                _viewModel.PacifierGridMap.Remove(pacifierItem);
-
-                // Remove associated sensor rows
-                RemoveGraphRowsForSensorItemsForPacifier(pacifierItem);
+                pacifierSectionsPanel.Children.Remove(gridToRemove);
+                Debug.WriteLine($"Monitoring: Removed Grid for Pacifier {pacifierItem.PacifierId}");
             }
         }
+
 
         // Remove Graph Rows for all SensorItems for a Specific PacifierItem
         private void RemoveGraphRowsForSensorItemsForPacifier(PacifierItem pacifierItem)
         {
-            if (_viewModel.PacifierGridMap.ContainsKey(pacifierItem))
-            {
-                Grid grid = _viewModel.PacifierGridMap[pacifierItem];
+            Debug.WriteLine($"Monitoring: RemoveGraphRowsForSensorItemsForPacifier");
 
-                foreach (var sensorItem in _viewModel.CheckedSensorItems)
-                {
-                    RemoveSensorRow(grid, sensorItem);
-                }
+            foreach (var sensorItem in _viewModel.CheckedSensorItems)
+            {
+                RemoveSensorRow(pacifierItem, sensorItem);
             }
         }
 
         // Remove Graph Row for a Specific SensorItem in a PacifierItem Grid
-        private void RemoveSensorRow(Grid grid, SensorItem sensorItem)
+        // Remove Graph Row for a Specific SensorItem in a PacifierItem Grid
+        private void RemoveSensorRow(PacifierItem pacifierItem, SensorItem sensorItem)
         {
-            if (_viewModel.SensorRowMap.ContainsKey(new Tuple<PacifierItem, SensorItem>(sensorItem.ParentPacifierItem.GetPacifierItem(), sensorItem)))
-            {
-                RowDefinition row = _viewModel.SensorRowMap[new Tuple<PacifierItem, SensorItem>(sensorItem.ParentPacifierItem.GetPacifierItem(), sensorItem)];
-                grid.RowDefinitions.Remove(row);
+            Grid? pacifierGrid = FindPacifierGrid(pacifierItem.PacifierId);
+            if (pacifierGrid == null) return;
 
-                // Logic to remove the row content (graph)
-                // Example: remove the ScrollViewer and its content
-                var scrollViewer = grid.Children.OfType<ScrollViewer>().FirstOrDefault(s => s.Content == CreateGraphForSensor(sensorItem));
-                if (scrollViewer != null)
+            // Find the WrapPanel for this sensor using its Uid
+            var wrapPanelToRemove = pacifierGrid.Children
+                .OfType<WrapPanel>()
+                .FirstOrDefault(wp => wp.Uid == $"{pacifierItem.PacifierId}_{sensorItem.SensorId}");
+
+            if (wrapPanelToRemove != null)
+            {
+                int rowIndex = Grid.GetRow(wrapPanelToRemove);
+                pacifierGrid.Children.Remove(wrapPanelToRemove);
+
+                // Optionally, remove the corresponding row definition
+                if (rowIndex < pacifierGrid.RowDefinitions.Count)
                 {
-                    grid.Children.Remove(scrollViewer);
+                    pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
                 }
 
-                // Remove from map
-                _viewModel.SensorRowMap.Remove(new Tuple<PacifierItem, SensorItem>(sensorItem.ParentPacifierItem.GetPacifierItem(), sensorItem));
+                Debug.WriteLine($"Monitoring: Removed SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId}");
             }
         }
 
         /// <summary>
-        /// Removes the graph rows for the specified SensorItem from the PacifierItem grid.
+        /// Removes the graph rows for the specified SensorItem from all PacifierItem grids.
         /// </summary>
-        /// <param name="pacifierItem">The PacifierItem that contains the grid to remove rows from.</param>
         /// <param name="sensorItem">The SensorItem whose graph rows should be removed.</param>
         private void RemoveGraphRowsForSensorItem(SensorItem sensorItem)
         {
-            var pacifierItem = sensorItem.ParentPacifierItem.GetPacifierItem();
-            // Find the grid associated with the pacifier item
-            var pacifierGrid = FindPacifierGridForSensor(pacifierItem);
-
-            if (pacifierGrid == null)
+            foreach (var pacifierItem in _viewModel.CheckedPacifierItems)
             {
-                Debug.WriteLine("Monitoring: Pacifier grid not found.");
-                return;
-            }
-
-            // Iterate through each sensor group in the sensor item
-            foreach (var sensorGroup in sensorItem.MeasurementGroup)
-            {
-                var firstKvp = sensorGroup.FirstOrDefault();
-
-                if (firstKvp.Key != null && firstKvp.Key == "sensorGroup") // Ensure there's at least one key-value pair
+                var pacifierGrid = FindPacifierGrid(pacifierItem.PacifierId);
+                if (pacifierGrid == null)
                 {
-                    var groupName = firstKvp.Value;
+                    Debug.WriteLine($"Monitoring: Grid not found for Pacifier {pacifierItem.PacifierId}.");
+                    continue;
+                }
 
-                    // Find the ScrollViewer that contains the graph for this sensor group
-                    var scrollViewerToRemove = pacifierGrid.Children
-                    .OfType<ScrollViewer>()
-                    .FirstOrDefault(scrollViewer => scrollViewer.Uid == $"{sensorItem.SensorId}_{groupName}");
+                // Iterate through each SensorGroup in the sensor item
+                foreach (var sensorGroup in sensorItem.MeasurementGroup)
+                {
+                    var firstKvp = sensorGroup.FirstOrDefault();
 
-                    if (scrollViewerToRemove != null)
+                    if (firstKvp.Key != null && firstKvp.Key == "sensorGroup") // Ensure there's at least one key-value pair
                     {
-                        // Get the row index of the ScrollViewer to remove
-                        int rowIndex = Grid.GetRow(scrollViewerToRemove);
+                        var groupName = firstKvp.Value;
 
-                        // Remove the ScrollViewer from the grid
-                        pacifierGrid.Children.Remove(scrollViewerToRemove);
+                        // Find the WrapPanel that contains the graph for this sensor group
+                        var wrapPanelToRemove = pacifierGrid.Children
+                            .OfType<WrapPanel>()
+                            .FirstOrDefault(wrapPanel => wrapPanel.Uid == $"{pacifierItem.PacifierId}_{sensorItem.SensorId}");
 
-                        // Optionally, remove the corresponding row definition
-                        if (rowIndex < pacifierGrid.RowDefinitions.Count)
+                        if (wrapPanelToRemove != null)
                         {
-                            pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
-                        }
+                            int rowIndex = Grid.GetRow(wrapPanelToRemove);
+                            pacifierGrid.Children.Remove(wrapPanelToRemove);
 
-                        Debug.WriteLine($"Monitoring: Removed graph row for {groupName} in Pacifier {pacifierItem.PacifierId}");
+                            // Optionally, remove the corresponding row definition
+                            if (rowIndex < pacifierGrid.RowDefinitions.Count)
+                            {
+                                pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
+                            }
+
+                            Debug.WriteLine($"Monitoring: Removed graph row for {groupName} in Pacifier {pacifierItem.PacifierId}");
+                        }
                     }
                 }
             }
         }
+
 
         /// <summary>
         /// 
@@ -507,49 +465,101 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
             var gridToFind = pacifierSectionsPanel.Children
                 .OfType<Grid>()
-                .FirstOrDefault(g => g.Uid == $"Grid{pacifierItem.PacifierId}");  // Adjust the Uid format if needed
+                .FirstOrDefault(g => g.Uid == $"Grid_{pacifierItem.PacifierId}");
 
             return gridToFind;
         }
 
-
-        // Create multiple Graphs for a SensorItem based on its SensorGroups
-        private UIElement CreateGraphForSensor(SensorItem sensorItem)
+        private Grid? FindPacifierGrid(string pacifierId)
         {
-            // Create a container for the graphs (could be a StackPanel, a Grid, etc.)
-            StackPanel graphContainer = new StackPanel();
-
-            // Iterate through each SensorGroup in the SensorItem
-            foreach (var sensorGroup in sensorItem.MeasurementGroup)
-            {
-                var firstKvp = sensorGroup.FirstOrDefault();
-
-                if (firstKvp.Key != null && firstKvp.Key == "sensorGroup") // Ensure there's at least one key-value pair
-                {
-                    var groupName = firstKvp.Value;
-
-                    // Create a graph for this SensorGroup and pass the required parameters
-                    LineChartGraph graph = new LineChartGraph(sensorItem, 15)
-                    {
-                        Width = 350,
-                        Height = 200,
-                        Name = groupName.ToString(),
-                        PlotId = $"{sensorItem.SensorId}_{groupName.ToString()}",
-                        HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
-                        Margin = new Thickness(5)
-                    };
-
-                    graphContainer.Children.Add(graph);  // Add the graph to the container
-                }
-
-                // Optionally, add some customization to each graph based on sensorGroup data
-
-            }
-
-            // Return the container with all graphs for the SensorItem
-            return graphContainer;
+            return pacifierSectionsPanel.Children
+                .OfType<Grid>()
+                .FirstOrDefault(g => g.Uid == $"Grid_{pacifierId}");
         }
 
+
+
+        // Create multiple Graphs for a SensorItem based on its SensorGroups
+        private WrapPanel CreateGraphForSensor(PacifierItem pacifierItem,SensorItem sensorItem)
+        {
+
+            // Create a unique identifier for the graph
+            string uniqueUid = $"{pacifierItem.PacifierId}_{sensorItem.SensorId}";
+
+            WrapPanel graphPanel = new WrapPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
+                VerticalAlignment = System.Windows.VerticalAlignment.Top,
+                Uid = uniqueUid
+            };
+
+            Debug.WriteLine($"Monitoring: Created Container for graphs");
+
+            // Iterate through each SensorGroup in the SensorItem
+            foreach (var sensorGroup in sensorItem.SensorGroups)
+            {
+
+                // Retrieve the saved interval for this SensorItem and SensorGroup from the dictionary
+                int interval = _viewModel.SensorIntervals[sensorGroup];
+                Debug.WriteLine($"Monitoring: Interval is {interval}");
+
+                // Create a unique identifier for each graph based on SensorId and groupName
+                string uniquePlotId = $"{sensorItem.SensorId}_{sensorGroup}_{pacifierItem.PacifierId}";
+
+                // Create an instance of the LineChartGraph with necessary properties
+                LineChartGraph graph = new LineChartGraph(sensorItem, sensorGroup, interval)
+                {
+                    Height = 300,
+                    Uid = uniquePlotId,
+                    Name = sensorGroup,
+                    PlotId = uniquePlotId,  // Ensure unique PlotId
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
+                    Margin = new Thickness(5)
+                };
+
+                // Additional configurations for the LineChartGraph
+                //graph.PlotModel.IsLegendVisible = true;
+
+                // Optionally set specific properties (like disabling zoom) if handled in the class
+                graph.PlotModel.Axes.Add(new DateTimeAxis
+                {
+                    Position = AxisPosition.Bottom,
+                    StringFormat = "HH:mm:ss",
+                    Title = "Time",
+                    IsZoomEnabled = false,
+                    IsPanEnabled = false,
+                    IntervalLength = interval
+                });
+
+                graph.PlotModel.Axes.Add(new LinearAxis
+                {
+                    Position = AxisPosition.Left,
+                    IsZoomEnabled = false,
+                    IsPanEnabled = false
+                });
+
+                // Add a legend to the plot model
+                graph.PlotModel.Legends.Add(new Legend
+                {
+                    LegendPosition = LegendPosition.TopRight,
+                    LegendPlacement = LegendPlacement.Outside,
+                    LegendOrientation = LegendOrientation.Horizontal,
+                    LegendBorderThickness = 0
+                });
+
+
+                // Add the graph to the SensorItem's collection for future reference
+                sensorItem.SensorGraphs.Add(graph);
+
+                // Add the graph to the WrapPanel for UI display
+                graphPanel.Children.Add(graph);
+
+                Debug.WriteLine($"Monitoring: Created Graph for Sensor Group {sensorGroup} with unique PlotId {uniquePlotId}");
+            }
+
+            return graphPanel;
+        }
 
 
         // ================ Buttons ===============
@@ -565,15 +575,25 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             var button = sender as Button;
             if (button != null && button.Tag is string pacifierName)
             {
-                // Create an instance of RawDataView with the properties and a reference to this view
-                var rawDataView = new RawDataView(pacifierName, this, true);
+                var pacifierItem = _viewModel.CheckedPacifierItems.FirstOrDefault(p => p.PacifierId == pacifierName);
 
-                // Replace the current view with RawDataView
-                var parent = this.Parent as ContentControl;
-                if (parent != null)
+                Debug.WriteLine($"Monitoring: Pacifier Item is null {pacifierName}");
+
+                // Create an instance of RawDataView with the properties and a reference to this view
+                if (pacifierItem != null)
                 {
-                    parent.Content = rawDataView;
+                    Debug.WriteLine($"Monitoring: Passing {pacifierItem.PacifierId}");
+
+                    var rawDataView = new RawDataView(pacifierItem, this, false);
+
+                    // Replace the current view with RawDataView
+                    var parent = this.Parent as ContentControl;
+                    if (parent != null)
+                    {
+                        parent.Content = rawDataView;
+                    }
                 }
+
             }
         }
 
@@ -584,48 +604,88 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// <param name="e"></param>
         private void Intervals_Button(object sender, RoutedEventArgs e)
         {
-            //var dialog = new IntervalSettingsDialog(new List<SensorItem>(_viewModel.checkedSensors));
-            //if (dialog.ShowDialog() == true)
-            //{
-            //    var intervals = dialog.SensorIntervals;
-            //    // Now you can use intervals for further processing
-            //    foreach (var sensor in intervals)
-            //    {
-            //        Console.WriteLine($"Sensor: {sensor.Key}, Intervals: {string.Join(", ", sensor.Value)}");
-            //    }
-            //}
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void AddPacifier_Button(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void EndCampaign_Button(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel.SensorTypes != null && _viewModel.SensorTypes.Any())
+            if (_viewModel.CheckedSensorItems.Count > 0)
             {
-                // Combine all sensor types into a single string with line breaks
-                string sensorTypesText = string.Join("\n", _viewModel.GroupedSensorMeasurements);
 
-                // Display the message box
-                MessageBox.Show(sensorTypesText, "Sensor Types");
+                var dialog = new IntervalSettingsDialog(new List<PacifierItem>(_viewModel.CheckedPacifierItems), new List<SensorItem>(_viewModel.CheckedSensorItems), _viewModel.SensorIntervals);
+                if (dialog.ShowDialog() == true)
+                {
+                    var intervals = dialog.SensorIntervals;
+                    // Now you can use intervals for further processing
+                    foreach (var sensor in intervals)
+                    {
+                        Console.WriteLine($"Sensor: {sensor.Key}, Intervals: {string.Join(", ", sensor.Value)}");
+                    }
+                }
             }
             else
             {
-                MessageBox.Show("No sensor types available.", "Sensor Types");
+                MessageBox.Show("Please Select at least 1 Sensor.");
             }
         }
+
+        /// <summary>
+        /// Handles the End Campaign button click.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <param name="e"></param>
+        private void EndCampaign_Button(object sender, RoutedEventArgs e)
+        {
+            // Show a confirmation dialog
+            MessageBoxResult result = MessageBox.Show(
+                "Are you sure you want to end the campaign? This action cannot be undone.",
+                "End Campaign Confirmation",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
+
+            // Check the user's response
+            if (result == MessageBoxResult.Yes)
+            {
+                // Get the current time as the campaign end time
+                string endTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                // User confirmed, proceed with ending the campaign
+                EndCampaign(endTime);
+            }
+            else
+            {
+                // User chose not to proceed
+                MessageBox.Show("Campaign not ended.", "Operation Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        /// <summary>
+        /// Ends the campaign.
+        /// </summary>
+        /// <param name="endTime">The end time of the campaign in "yyyy-MM-dd HH:mm:ss" format.</param>
+        public void EndCampaign(string endTime)
+        {
+            try
+            {
+                _viewModel.LineProtocolService.UpdateStoppedEntryTime(_viewModel.CurrentCampaignName, endTime);
+
+                // Show a success message
+                MessageBox.Show("Campaign has been successfully ended.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Unsubscribe from real-time updates to stop file writing
+                Broker.Instance.MessageReceived -= _viewModel.OnMessageReceived;
+
+                // Retrieve PacifierSelectionView from the DI container and navigate to it
+                var pacifierSelectionView = ((App)Application.Current).ServiceProvider.GetRequiredService<PacifierSelectionView>();
+                ((MainWindow)Application.Current.MainWindow).NavigateTo(pacifierSelectionView);
+
+                // Reset the current campaign name
+                _viewModel.CurrentCampaignName = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error ending campaign: {ex.Message}");
+                MessageBox.Show($"Failed to end campaign. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
     }
 }
 

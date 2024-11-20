@@ -1,0 +1,55 @@
+﻿<UserControl x:Class="Smart_Pacifier___Tool.Tabs.CampaignsTab.CampaignView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Smart_Pacifier___Tool.Components">
+
+    <Grid Background="{StaticResource MainViewBackgroundColor}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="70" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header Grid (Non-Scrollable) -->
+        <Grid  Background="{StaticResource AccentColor}" Grid.Row="0" Margin="0,0,0,0">
+            <TextBlock x:Name="headerTextBlock" Text="{Binding CampaignName}" 
+                       HorizontalAlignment="Center" VerticalAlignment="Center" 
+                       Foreground="White" FontSize="24" FontWeight="Bold"/>
+        </Grid>
+
+        <!-- Pacifier Filters Grid (Components) - Horizontal Scroll -->
+        <ScrollViewer Grid.Row="1" Style="{StaticResource LeftScrollViewer}" 
+                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" 
+                      Background="#FF383838" Margin="0" Padding="0">
+            <ItemsControl x:Name="pacifierFilterPanel" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Sensor Filters Grid (Components) - Horizontal Scroll -->
+        <ScrollViewer Grid.Row="2" Style="{StaticResource LeftScrollViewer}" 
+                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" 
+                      Background="#FF383838" Margin="0" Padding="0">
+            <ItemsControl x:Name="sensorFilterPanel" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Pacifier Sections Grid (Components) - Vertical Scroll -->
+        <ScrollViewer x:Name="PacifierSections" Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,5,0,0">
+            <StackPanel x:Name="pacifierSectionsPanel">
+                <!-- Use StackPanel to allow scrolling -->
+                <!-- Grids will be added here dynamically -->
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

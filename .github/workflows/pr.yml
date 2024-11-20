@@ -9,8 +9,8 @@ on:
   pull_request:
     branches: [ "Staging-Environment", "main-Production-Environment" ]
   schedule:
-    # Runs the workflow every day at 11:35 AM UTC
-    - cron: '48 11,11 * * *'
+    # Runs the workflow every day
+    - cron:  '45 11,11 * * *'
 jobs:
   build:
 

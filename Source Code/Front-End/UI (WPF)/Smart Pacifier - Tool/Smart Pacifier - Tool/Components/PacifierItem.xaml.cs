@@ -20,12 +20,6 @@ namespace Smart_Pacifier___Tool.Components
         public static readonly DependencyProperty IsCheckedProperty =
             DependencyProperty.Register("IsChecked", typeof(bool), typeof(PacifierItem), new PropertyMetadata(false));
 
-        // Only "Sensor" items have this graph
-        public LineChartGraph? LineChart
-        {
-            get;
-            set;
-        }
 
         public string PacifierId
         {
@@ -38,6 +32,8 @@ namespace Smart_Pacifier___Tool.Components
             get;
             set;
         }
+
+        public ObservableCollection<byte[]> RawData { get; private set; } = new ObservableCollection<byte[]>();
 
         public string ButtonText
         {
@@ -97,12 +93,6 @@ namespace Smart_Pacifier___Tool.Components
             }
         }
 
-        // DataPoint class to hold individual data points
-        public class DataPoint
-        {
-            public double X { get; set; }
-            public double Y { get; set; }
-        }
 
     }
 }

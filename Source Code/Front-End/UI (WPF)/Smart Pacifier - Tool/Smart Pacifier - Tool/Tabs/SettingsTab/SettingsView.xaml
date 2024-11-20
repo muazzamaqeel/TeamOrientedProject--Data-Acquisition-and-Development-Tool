@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
              xmlns:local="clr-namespace:Smart_Pacifier___Tool.Components"
+             xmlns:oxy="http://oxyplot.org/wpf"
              mc:Ignorable="mc">
 
     <Grid Background="{StaticResource MainViewBackgroundColor}">
@@ -33,6 +34,9 @@
                 </Button>
                 <Button x:Name="InfluxDBButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="InfluxDbModePanel">
                     <TextBlock Text="InfluxDB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+                <Button x:Name="BrokerHealthButton" Style="{StaticResource ModernButtonStyle}" Width="150" Height="50" Margin="15,0,15,0" Click="PanelButton_Click" CommandParameter="BrokerHealthPanel">
+                    <TextBlock Text="Broker Health" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
             </StackPanel>
 
@@ -201,6 +205,62 @@
                         </StackPanel>
                     </Grid>
                 </Border>
+
+                <StackPanel x:Name="BrokerHealthPanel" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Visibility="Collapsed">
+                    <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20" >
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <!-- For Title -->
+                            <RowDefinition Height="*"/>
+                            <!-- For Chart -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- For Button -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- For Status Text -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Broker Health Title -->
+                        <TextBlock Text="Broker Health Status"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,20"
+                               Foreground="{StaticResource MainViewForegroundColor}"
+                               Grid.Row="0" />
+
+                        <!-- Add OxyPlot Chart -->
+                        <oxy:PlotView x:Name="BrokerHealthPlot"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              Width="500"
+                              Height="300"
+                              Grid.Row="1" />
+
+
+                        <!-- Check Health Button -->
+                        <Button x:Name="CheckBrokerHealthButton"
+                            Content="Check Health"
+                            Style="{StaticResource ModernButtonStyle}"
+                            Width="200"
+                            Height="50"
+                            Click="CheckBrokerHealth_Click"
+                            HorizontalAlignment="Center"
+                            Margin="0,20"
+                            Grid.Row="2" />
+
+                        <!-- Broker Health Status Text -->
+                        <TextBlock x:Name="BrokerHealthStatus"
+                           Text="Status: Unknown"
+                           FontSize="16"
+                           HorizontalAlignment="Center"
+                           Margin="0,20,0,0"
+                           Foreground="{StaticResource MainViewForegroundColor}"
+                           Grid.Row="3" />
+                    </Grid>
+                </StackPanel>
+
+
+
             </Grid>
 
             <!-- Close Button on Top Right for WebView -->

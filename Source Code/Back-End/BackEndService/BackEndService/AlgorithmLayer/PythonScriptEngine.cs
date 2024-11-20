@@ -1,103 +1,127 @@
-﻿using SmartPacifier.Interface.Services;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Windows;
-using Newtonsoft.Json.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
 
-public class PythonScriptEngine : IAlgorithmLayer
+public class PythonScriptEngine
 {
-    private static PythonScriptEngine? _instance;
-    private static readonly object _lock = new object();
-
-    private PythonScriptEngine() { }
-
-    public static PythonScriptEngine GetInstance()
+    public async Task<string> ExecuteScriptAsync(string scriptPath, string dataJson, bool usePort = true)
     {
-        if (_instance == null)
+        if (usePort)
         {
-            lock (_lock)
-            {
-                if (_instance == null)
-                {
-                    _instance = new PythonScriptEngine();
-                }
-            }
+            return await ExecuteScriptWithPortAsync(scriptPath, dataJson);
         }
-        return _instance;
+        else
+        {
+            return await ExecuteScriptWithoutPortAsync(scriptPath, dataJson);
+        }
     }
 
-    public string ExecuteScript(string scriptNameOrCode)
+    private async Task<string> ExecuteScriptWithPortAsync(string scriptPath, string dataJson)
     {
+        string response = string.Empty;
+        TcpListener listener = null;
+
         try
         {
-            // Define the base directory once
-            var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            string? scriptPath = null;
+            listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int assignedPort = ((IPEndPoint)listener.LocalEndpoint).Port;
 
-            if (IsInlineCode(scriptNameOrCode))
-            {
-                // If it's inline code, we won't use a file path
-                scriptPath = null;
-            }
-            else
-            {
-                var scriptRelativePath = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\ExecutableScript", scriptNameOrCode);
-                scriptPath = Path.GetFullPath(scriptRelativePath);
+            Console.WriteLine($"TCP Listener started on port {assignedPort}");
 
-                // Check if the script file exists
-                if (!File.Exists(scriptPath))
-                {
-                    MessageBox.Show($"Python script not found at: {scriptPath}", "File Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
-                    throw new FileNotFoundException("Python script file not found.", scriptPath);
-                }
-            }
-
-            // Define the relative path for the output directory
-            var outputDirectory = Path.Combine(baseDirectory, @"..\..\..\Resources\OutputResources\PythonFiles\GeneratedData\");
-            Directory.CreateDirectory(outputDirectory); // Ensure the output directory exists
-            var outputFile = Path.Combine(outputDirectory, "script_output.txt");
-
-            var startInfo = new ProcessStartInfo
+            var processStartInfo = new ProcessStartInfo
             {
                 FileName = "python",
-                Arguments = scriptPath != null ? $"\"{scriptPath}\"" : $"-c \"{scriptNameOrCode}\"",
+                Arguments = $"\"{scriptPath}\" {assignedPort}",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
 
-            using (var process = Process.Start(startInfo))
+            var pythonProcess = new Process { StartInfo = processStartInfo };
+            pythonProcess.Start();
+
+            using (TcpClient client = await listener.AcceptTcpClientAsync())
+            using (NetworkStream stream = client.GetStream())
             {
-                if (process == null)
+                byte[] dataBytes = Encoding.UTF8.GetBytes(dataJson);
+                await stream.WriteAsync(dataBytes, 0, dataBytes.Length);
+
+                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 {
-                    throw new InvalidOperationException("Process failed to start.");
+                    response = await reader.ReadToEndAsync();
                 }
+            }
 
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-
-                if (!string.IsNullOrEmpty(error))
-                {
-                    throw new Exception($"Python Error: {error}");
-                }
-
-                // Write output to a file in the GeneratedData folder
-                File.WriteAllText(outputFile, output);
-
-                return output;
+            string errorOutput = await pythonProcess.StandardError.ReadToEndAsync();
+            if (!string.IsNullOrEmpty(errorOutput))
+            {
+                throw new Exception($"Python script error: {errorOutput}");
             }
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error executing Python script: {ex.Message}");
+            response = $"Error executing Python script with port: {ex.Message}";
         }
+        finally
+        {
+            listener?.Stop();
+            Console.WriteLine("TCP Listener stopped.");
+        }
+
+        return response;
     }
 
-    // Helper method to determine if the input is inline code or a file name
-    private bool IsInlineCode(string input)
+    private async Task<string> ExecuteScriptWithoutPortAsync(string scriptPath, string dataJson)
     {
-        // Check if the input contains any Python code keywords or characters that are not typical in file names
-        return input.Contains(" ") || input.Contains("\n") || input.Contains("=") || input.Contains("print");
+        string response = string.Empty;
+
+        try
+        {
+            var processStartInfo = new ProcessStartInfo
+            {
+                FileName = "python",
+                Arguments = $"\"{scriptPath}\"",
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            var pythonProcess = new Process { StartInfo = processStartInfo };
+            pythonProcess.Start();
+
+            using (StreamWriter writer = pythonProcess.StandardInput)
+            {
+                if (writer.BaseStream.CanWrite)
+                {
+                    await writer.WriteLineAsync(dataJson);
+                }
+            }
+
+            using (StreamReader reader = pythonProcess.StandardOutput)
+            {
+                response = await reader.ReadToEndAsync();
+            }
+
+            string errorOutput = await pythonProcess.StandardError.ReadToEndAsync();
+            if (!string.IsNullOrEmpty(errorOutput))
+            {
+                throw new Exception($"Python script error: {errorOutput}");
+            }
+        }
+        catch (Exception ex)
+        {
+            response = $"Error executing Python script without port: {ex.Message}";
+        }
+
+        return response;
     }
 }
+

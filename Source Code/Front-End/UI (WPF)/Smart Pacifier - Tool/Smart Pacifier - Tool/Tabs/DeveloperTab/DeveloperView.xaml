@@ -1,6 +1,8 @@
 ﻿<UserControl x:Class="Smart_Pacifier___Tool.Tabs.DeveloperTab.DeveloperView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:local="clr-namespace:Smart_Pacifier___Tool.Tabs.DeveloperTab"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:components="clr-namespace:Smart_Pacifier___Tool.Components"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:converters="clr-namespace:Smart_Pacifier___Tool.Resources.Converters"
@@ -9,7 +11,20 @@
 
     <!-- Define the resources -->
     <UserControl.Resources>
+        <!-- Converter for dynamic column width if needed -->
+        <!-- You can remove this if not used -->
         <converters:ColumnWidthConverter x:Key="ColumnWidthConverter"/>
+
+        <!-- DataTemplate for the checkbox in each row -->
+        <DataTemplate x:Key="CheckBoxCellTemplate">
+            <CheckBox IsChecked="{Binding Path=IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}" />
+        </DataTemplate>
+
+        <!-- Style for the white scrollbar -->
+        <Style TargetType="ScrollBar" x:Key="WhiteScrollBarStyle">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="10">
@@ -21,87 +36,44 @@
 
         <!-- Filter Controls with Headers -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,10" HorizontalAlignment="Center">
-            <StackPanel Margin="5" HorizontalAlignment="Center">
-                <Button Content="Apply" Width="80" Click="ApplyButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
-            </StackPanel>
-            <!--
-            <StackPanel Margin="5" HorizontalAlignment="Center">
-                <TextBlock Text="Data Source" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="DataSource" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBoxItem Content="Local-InfluxDB"/>
-                    <ComboBoxItem Content="Server-InfluxDB"/>
-                    <ComboBox.Style>
-                        <Style TargetType="ComboBox">
-                            <Style.Triggers>
-                                <Trigger Property="SelectedItem" Value="{x:Null}">
-                                    <Setter Property="Text" Value="Select Data Source"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ComboBox.Style>
-                </ComboBox>
-            </StackPanel>
-            -->
+
+            <!-- Time Range Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Time Range" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
                 <ComboBox x:Name="TimeRange" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBox.Style>
-                        <Style TargetType="ComboBox">
-                            <Style.Triggers>
-                                <Trigger Property="SelectedItem" Value="{x:Null}">
-                                    <Setter Property="Text" Value="Select Time Range"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ComboBox.Style>
+                    <ComboBoxItem Content="All" IsSelected="True"/>
+                    <!-- Items will be added dynamically in code-behind if needed -->
                 </ComboBox>
             </StackPanel>
 
+            <!-- Campaign Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Campaign" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
                 <ComboBox x:Name="Campaign" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBox.Style>
-                        <Style TargetType="ComboBox">
-                            <Style.Triggers>
-                                <Trigger Property="SelectedItem" Value="{x:Null}">
-                                    <Setter Property="Text" Value="Select Campaign"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ComboBox.Style>
+                    <ComboBoxItem Content="All" IsSelected="True"/>
+                    <!-- Items will be added dynamically in code-behind -->
                 </ComboBox>
             </StackPanel>
 
+            <!-- Pacifier Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Pacifier" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
                 <ComboBox x:Name="Pacifier" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBox.Style>
-                        <Style TargetType="ComboBox">
-                            <Style.Triggers>
-                                <Trigger Property="SelectedItem" Value="{x:Null}">
-                                    <Setter Property="Text" Value="Select Pacifier"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ComboBox.Style>
+                    <ComboBoxItem Content="All" IsSelected="True"/>
+                    <!-- Items will be added dynamically in code-behind -->
                 </ComboBox>
             </StackPanel>
 
+            <!-- Sensor Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Sensor" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
                 <ComboBox x:Name="Sensor" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBox.Style>
-                        <Style TargetType="ComboBox">
-                            <Style.Triggers>
-                                <Trigger Property="SelectedItem" Value="{x:Null}">
-                                    <Setter Property="Text" Value="Select Sensor"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ComboBox.Style>
+                    <ComboBoxItem Content="All" IsSelected="True"/>
+                    <!-- Items will be added dynamically in code-behind -->
                 </ComboBox>
             </StackPanel>
 
+            <!-- Action Buttons -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <Button Content="Add" Width="80" Click="AddButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
             </StackPanel>
@@ -113,89 +85,59 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- Enable horizontal scrolling by wrapping ListView in a ScrollViewer -->
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-            <ListView x:Name="DataListView" Margin="0,10,0,10" SelectionMode="Multiple"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
-                <ListView.View>
-                    <GridView>
-                        <!-- Header Checkbox for select/deselect all -->
-                        <GridViewColumn>
-                            <GridViewColumn.Header>
-                                <CheckBox Name="SelectAllCheckBox" Checked="SelectAllCheckBox_Checked" Unchecked="SelectAllCheckBox_Unchecked"/>
-                            </GridViewColumn.Header>
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Checked="RowCheckBox_Checked"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
+        <!-- Main Content Grid -->
+        <Grid Grid.Row="1">
+            <!-- Loading Spinner -->
+            <components:LoadingSpinner x:Name="LoadingSpinner" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" Width="100" Height="100"/>
 
-
-                        <!-- Additional columns with entry_id and entry_time -->
-                        <GridViewColumn Header="Entry ID" DisplayMemberBinding="{Binding Path=[entry_id]}" Width="Auto" />
-                        <GridViewColumn Header="Entry Time" DisplayMemberBinding="{Binding Path=[entry_time]}" Width="Auto" />
-
-
-                        <!-- Columns without extra spaces -->
-                        <GridViewColumn Header="Measurement" DisplayMemberBinding="{Binding Path=[Measurement]}" Width="Auto" />
-                        <GridViewColumn Header="Campaign Name" DisplayMemberBinding="{Binding Path=[Campaign Name]}" Width="Auto" />
-                        <GridViewColumn Header="Pacifier Name" DisplayMemberBinding="{Binding Path=[Pacifier Name]}" Width="Auto" />
-                        <GridViewColumn Header="Sensor Type" DisplayMemberBinding="{Binding Path=[Sensor Type]}" Width="Auto" />
-                        <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Path=[Status]}" Width="Auto" />
-                        <GridViewColumn Header="LED1" DisplayMemberBinding="{Binding Path=[LED1]}" Width="Auto" />
-                        <GridViewColumn Header="LED2" DisplayMemberBinding="{Binding Path=[LED2]}" Width="Auto" />
-                        <GridViewColumn Header="LED3" DisplayMemberBinding="{Binding Path=[LED3]}" Width="Auto" />
-                        <GridViewColumn Header="Temperature" DisplayMemberBinding="{Binding Path=[Temperature]}" Width="Auto" />
-                        <GridViewColumn Header="Acc X" DisplayMemberBinding="{Binding Path=[Acc X]}" Width="Auto" />
-                        <GridViewColumn Header="Acc Y" DisplayMemberBinding="{Binding Path=[Acc Y]}" Width="Auto" />
-                        <GridViewColumn Header="Acc Z" DisplayMemberBinding="{Binding Path=[Acc Z]}" Width="Auto" />
-                        <GridViewColumn Header="Gyro X" DisplayMemberBinding="{Binding Path=[Gyro X]}" Width="Auto" />
-                        <GridViewColumn Header="Gyro Y" DisplayMemberBinding="{Binding Path=[Gyro Y]}" Width="Auto" />
-                        <GridViewColumn Header="Gyro Z" DisplayMemberBinding="{Binding Path=[Gyro Z]}" Width="Auto" />
-                        <GridViewColumn Header="Mag X" DisplayMemberBinding="{Binding Path=[Mag X]}" Width="Auto" />
-                        <GridViewColumn Header="Mag Y" DisplayMemberBinding="{Binding Path=[Mag Y]}" Width="Auto" />
-                        <GridViewColumn Header="Mag Z" DisplayMemberBinding="{Binding Path=[Mag Z]}" Width="Auto" />
-                        <GridViewColumn Header="Creation" DisplayMemberBinding="{Binding Path=[Creation]}" Width="Auto" />
-                        <GridViewColumn Header="Start Time" DisplayMemberBinding="{Binding Path=[Start Time]}" Width="Auto" />
-                        <GridViewColumn Header="End Time" DisplayMemberBinding="{Binding Path=[End Time]}" Width="Auto" />
-                        <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Path=[Timestamp]}" Width="Auto" />
-                    </GridView>
-                </ListView.View>
-                <!-- Styling and ItemContainerStyle as before -->
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="FontFamily" Value="Segoe UI"/>
-                        <Setter Property="FontSize" Value="18"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="VerticalContentAlignment" Value="Center"/>
-                        <Setter Property="Padding" Value="10"/>
-                        <Setter Property="Margin" Value="5"/>
+            <!-- Enable horizontal scrolling by wrapping ListView in a ScrollViewer -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Resources>
+                    <!-- Apply the white scrollbar style -->
+                    <Style TargetType="ScrollBar">
                         <Setter Property="Background" Value="White"/>
-                        <Setter Property="Foreground" Value="Black"/>
-                        <Setter Property="BorderBrush" Value="Gray"/>
-                        <Setter Property="BorderThickness" Value="2"/>
-                        <Setter Property="SnapsToDevicePixels" Value="True"/>
-                        <Setter Property="UseLayoutRounding" Value="True"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#F0F0F0"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="#D0D0D0"/>
-                            </Trigger>
-                        </Style.Triggers>
+                        <Setter Property="Foreground" Value="White"/>
                     </Style>
-                </ListView.ItemContainerStyle>
-            </ListView>
-        </ScrollViewer>
+                </ScrollViewer.Resources>
+                <ListView x:Name="DataListView" Margin="0,10,0,10" SelectionMode="Extended"
+                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
+                    <ListView.View>
+                        <GridView x:Name="DataGridView">
+                            <!-- Columns will be added dynamically in code-behind -->
+                        </GridView>
+                    </ListView.View>
+                    <!-- Styling and ItemContainerStyle -->
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="FontFamily" Value="Segoe UI"/>
+                            <Setter Property="FontSize" Value="14"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="Margin" Value="2"/>
+                            <Setter Property="Background" Value="White"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="BorderBrush" Value="Gray"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="SnapsToDevicePixels" Value="True"/>
+                            <Setter Property="UseLayoutRounding" Value="True"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#F0F0F0"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#D0D0D0"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </ScrollViewer>
+        </Grid>
 
         <!-- Pagination Controls -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
-            <Button Content="Previous" Width="100" Margin="5" Click="PreviousButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
-            <TextBlock Text="Page 1 of 5" VerticalAlignment="Center" Margin="10,0"
-                       FontFamily="Segoe UI" FontSize="14" Foreground="White" />
-            <Button Content="Next" Width="100" Margin="5" Click="NextButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
+            <!-- Pagination buttons if needed -->
         </StackPanel>
     </Grid>
 </UserControl>

@@ -8,6 +8,8 @@ using System.Linq;
 using System;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol;
+using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -123,11 +125,23 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         private void CreateCampaign_Click(object sender, RoutedEventArgs e)
         {
             string campaignName = CampaignTextBox.Text;
+            int count = selectedPacifiers.Count;
 
             // Validate that at least one pacifier is selected and the campaign name is not empty
             if (selectedPacifiers.Count > 0 && !string.IsNullOrWhiteSpace(campaignName))
             {
-                var monitoringView = new MonitoringView(selectedPacifiers);
+
+                // Get the current system time as entryTime
+                string entryTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                // Access the ILineProtocol service and call CreateFileCamp
+                ILineProtocol lineProtocolService = new FileManager(); // Use dependency injection if available
+                lineProtocolService.CreateFileCamp(campaignName, count, entryTime);
+
+                ILineProtocol lineProtocol = new FileManager(); // Use DI if possible
+
+
+                var monitoringView = new MonitoringView(selectedPacifiers, lineProtocol, campaignName);
 
                 // Optionally pass selected pacifiers to the monitoring view
                 // monitoringView.SetSelectedPacifiers(selectedPacifiers);

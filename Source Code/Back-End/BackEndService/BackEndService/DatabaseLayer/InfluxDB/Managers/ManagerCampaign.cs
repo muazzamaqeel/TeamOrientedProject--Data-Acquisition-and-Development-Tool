@@ -298,10 +298,10 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
                         "|> range(start: -1y) " +
                         $"|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\" and r[\"campaign_name\"] == \"{campaignName}\") " +
-                        "|> keep(columns: [\"pacifier_name\"])";
+                        "|> keep(columns: [\"pacifier_name\"]) " +
+                        "|> distinct(column: \"pacifier_name\")";
 
             var pacifierData = await _databaseService.ReadData(query);
-            Debug.WriteLine($"Raw pacifier data for campaign '{campaignName}': {string.Join("\n", pacifierData)}");
 
             var pacifierIds = new List<string>();
 
@@ -314,7 +314,6 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
                 }
             }
 
-            Debug.WriteLine($"Parsed pacifier names for campaign '{campaignName}': {string.Join(", ", pacifierIds)}");
             return pacifierIds;
         }
 
@@ -325,10 +324,10 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
             var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
                         "|> range(start: -1y) " +
                         $"|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\" and r[\"pacifier_name\"] == \"{pacifierName}\" and r[\"campaign_name\"] == \"{campaignName}\") " +
-                        "|> keep(columns: [\"sensor_type\"])";
+                        "|> keep(columns: [\"sensor_type\"])" +
+                        "|> distinct(column: \"sensor_type\")"; ;
 
             var sensorData = await _databaseService.ReadData(query);
-            Debug.WriteLine($"Raw sensor data for pacifier '{pacifierName}' in campaign '{campaignName}': {string.Join("\n", sensorData)}");
 
             var sensorTypes = new List<string>();
 
@@ -341,10 +340,66 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
                 }
             }
 
-            Debug.WriteLine($"Parsed sensor types for pacifier '{pacifierName}': {string.Join(", ", sensorTypes)}");
             return sensorTypes;
         }
 
+        public async Task<List<string>> GetCampaignDataEntriesAsync(string campaignName)
+        {
+            var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
+                        $"|> range(start: 0) " +
+                        $"|> filter(fn: (r) => r[\"campaign_name\"] == \"{campaignName}\") " +
+                        $"|> filter(fn: (r) => r[\"_field\"] != \"entry_id\") " +
+                        $"|> filter(fn: (r) => r[\"_field\"] != \"entry_time\") " +
+                        $"|> keep(columns: [\"_time\", \"_value\", \"_field\", \"pacifier_name\", \"sensor_type\"])";
+
+            var campaignData = await _databaseService.ReadData(query);
+
+            return campaignData;
+        }
+
+        public async Task<List<string>> GetCampaignsDataAsync()
+        {
+            var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
+                        "|> range(start: 0) " +
+                        "|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\") " +
+                        "|> keep(columns: [\"campaign_name\", \"pacifier_name\", \"_time\"])" +
+                        "|> group(columns: [\"campaign_name\", \"pacifier_name\"])";
+
+            var campaignData = await _databaseService.ReadData(query);
+
+            var campaignPacifierCount = new Dictionary<string, HashSet<string>>();
+            var campaignTimes = new Dictionary<string, (DateTime Min, DateTime Max)>();
+
+            foreach (var data in campaignData)
+            {
+                var parsedData = JsonNode.Parse(data);
+                var campaignName = parsedData?["campaign_name"]?.ToString();
+                var pacifierName = parsedData?["pacifier_name"]?.ToString();
+                var time = parsedData?["_time"]?.ToString();
+
+                if (!string.IsNullOrEmpty(campaignName) && !string.IsNullOrEmpty(pacifierName) && DateTime.TryParse(time, out var dateTime))
+                {
+                    if (!campaignPacifierCount.ContainsKey(campaignName))
+                    {
+                        campaignPacifierCount[campaignName] = new HashSet<string>();
+                        campaignTimes[campaignName] = (dateTime, dateTime);
+                    }
+                    campaignPacifierCount[campaignName].Add(pacifierName);
+                    var (minTime, maxTime) = campaignTimes[campaignName];
+                    campaignTimes[campaignName] = (dateTime < minTime ? dateTime : minTime, dateTime > maxTime ? dateTime : maxTime);
+                }
+            }
+
+            var result = new List<string>();
+
+            foreach (var entry in campaignPacifierCount)
+            {
+                var (startTime, endTime) = campaignTimes[entry.Key];
+                result.Add($"Campaign: {entry.Key}, PacifierCount: {entry.Value.Count}, StartTime: {startTime}, EndTime: {endTime}");
+            }
+
+            return result;
+        }
 
 
 

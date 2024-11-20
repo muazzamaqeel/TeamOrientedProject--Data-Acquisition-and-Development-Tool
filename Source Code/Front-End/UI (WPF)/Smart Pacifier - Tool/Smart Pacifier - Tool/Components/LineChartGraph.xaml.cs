@@ -1,10 +1,11 @@
 ﻿using OxyPlot;
+using OxyPlot.Axes;
 using OxyPlot.Series;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using static Smart_Pacifier___Tool.Components.PacifierItem;
+using DataPoint = OxyPlot.DataPoint;
 
 namespace Smart_Pacifier___Tool.Components
 {
@@ -13,12 +14,15 @@ namespace Smart_Pacifier___Tool.Components
     /// </summary>
     public partial class LineChartGraph : UserControl
     {
-        private readonly LineSeries _series;
-
         /// <summary>
         /// Gets the PlotModel representing the plot data for OxyPlot.
         /// </summary>
         public PlotModel PlotModel { get; private set; }
+
+        /// <summary>
+        /// ObservableCollection of LineSeries for the plot.
+        /// </summary>
+        public ObservableCollection<LineSeries> LineSeriesCollection { get; private set; }
 
         /// <summary>
         /// Gets or sets the ID of the plot (can be used for identifying specific plots).
@@ -28,17 +32,12 @@ namespace Smart_Pacifier___Tool.Components
         /// <summary>
         /// Gets or sets the number of data points to display before removing the oldest.
         /// </summary>
-        public double Interval { get; set; }
+        public int Interval { get; set; }
 
         /// <summary>
         /// Gets or sets the label for the measurement group.
         /// </summary>
         public string GroupName { get; set; }
-
-        /// <summary>
-        /// Gets or sets the type of the sensor (e.g., temperature, humidity).
-        /// </summary>
-        public string? SensorId { get; set; }
 
         /// <summary>
         /// DependencyProperty to bind an ObservableCollection of DataPoints.
@@ -62,25 +61,19 @@ namespace Smart_Pacifier___Tool.Components
         /// <summary>
         /// Initializes a new instance of the <see cref="LineChartGraph"/> class.
         /// </summary>
-        /// <param name="plotId">The plot ID.</param>
-        /// <param name="interval">The interval for data points.</param>
-        public LineChartGraph(SensorItem sensorItem, double interval)
+        /// <param name="sensorItem"></param>
+        /// <param name="interval"></param>
+        /// <param name="groupName"></param>
+        public LineChartGraph(SensorItem sensorItem, string groupName, int interval)
         {
             InitializeComponent();
 
             // Default values
             Interval = interval;
-
-            // Initialize the PlotModel and LineSeries
+            GroupName = groupName;
             PlotModel = new PlotModel { Title = GroupName };
-            _series = new LineSeries
-            {
-                Title = SensorId,
-                MarkerType = MarkerType.Circle
-            };
+            LineSeriesCollection = new ObservableCollection<LineSeries>();
 
-            // Add the series to the PlotModel
-            PlotModel.Series.Add(_series);
             DataContext = this; // Enable data binding
         }
 
@@ -97,25 +90,64 @@ namespace Smart_Pacifier___Tool.Components
         }
 
         /// <summary>
-        /// Updates the graph with a new data point.
+        /// Updates the graph with a new data point for a specific series.
         /// </summary>
+        /// <param name="seriesIndex">Index of the series to update.</param>
         /// <param name="xValue">The X value of the data point.</param>
         /// <param name="yValue">The Y value of the data point.</param>
-        public void UpdateData(double xValue, double yValue)
+        public void UpdateData(int seriesIndex, double xValue, double yValue)
         {
-            Debug.WriteLine($"Updating data point: {xValue}, {yValue}");
-
-            // Update ObservableCollection directly
-            DataPoints.Add(new DataPoint(xValue, yValue));
-
-            // Limit number of data points to 'Interval'
-            if (DataPoints.Count > Interval)
+            if (seriesIndex >= 0 && seriesIndex < LineSeriesCollection.Count)
             {
-                DataPoints.RemoveAt(0);
+                var series = LineSeriesCollection[seriesIndex];
+                series.Points.Add(new DataPoint(xValue, yValue));
+
+                // Limit number of data points to 'Interval'
+                if (series.Points.Count > Interval)
+                {
+                    series.Points.RemoveAt(0);
+                }
+
+                // Refresh the plot
+                PlotModel.InvalidatePlot(true);
             }
+        }
+
+        /// <summary>
+        /// Adds a new LineSeries to the plot.
+        /// </summary>
+        /// <param name="sensorId">Sensor identifier for the new series.</param>
+        /// <param name="interval">The interval for the data points.</param>
+        public void AddLineSeries(string measurementGroup)
+        {
+            var newSeries = new LineSeries
+            {
+                Title = measurementGroup,
+                MarkerType = MarkerType.Square
+            };
+
+            LineSeriesCollection.Add(newSeries);
+            PlotModel.Series.Add(newSeries);
 
             // Refresh the plot
             PlotModel.InvalidatePlot(true);
+        }
+
+        /// <summary>
+        /// Removes a LineSeries from the plot by index.
+        /// </summary>
+        /// <param name="seriesIndex">Index of the series to remove.</param>
+        public void RemoveLineSeries(int seriesIndex)
+        {
+            if (seriesIndex >= 0 && seriesIndex < LineSeriesCollection.Count)
+            {
+                var series = LineSeriesCollection[seriesIndex];
+                LineSeriesCollection.RemoveAt(seriesIndex);
+                PlotModel.Series.Remove(series);
+
+                // Refresh the plot
+                PlotModel.InvalidatePlot(true);
+            }
         }
 
         /// <summary>
@@ -125,41 +157,22 @@ namespace Smart_Pacifier___Tool.Components
         public void UpdateDataPoints(ObservableCollection<DataPoint> graphData)
         {
             // Clear the existing points and add the new ones
-            _series.Points.Clear();
+            foreach (var series in LineSeriesCollection)
+            {
+                series.Points.Clear();
+            }
+
             foreach (var point in graphData)
             {
-                _series.Points.Add(new OxyPlot.DataPoint(point.X, point.Y));
+                // Add the points to all series, or customize per series
+                foreach (var series in LineSeriesCollection)
+                {
+                    series.Points.Add(new OxyPlot.DataPoint(point.X, point.Y));
+                }
             }
 
             // Refresh the plot
             PlotModel.InvalidatePlot(true);
-        }
-
-        /// <summary>
-        /// Simple class to represent a DataPoint with X and Y values.
-        /// </summary>
-        public class DataPoint
-        {
-            /// <summary>
-            /// Gets or sets the X value of the data point.
-            /// </summary>
-            public double X { get; set; }
-
-            /// <summary>
-            /// Gets or sets the Y value of the data point.
-            /// </summary>
-            public double Y { get; set; }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="DataPoint"/> class.
-            /// </summary>
-            /// <param name="x">The X value.</param>
-            /// <param name="y">The Y value.</param>
-            public DataPoint(double x, double y)
-            {
-                X = x;
-                Y = y;
-            }
         }
     }
 }

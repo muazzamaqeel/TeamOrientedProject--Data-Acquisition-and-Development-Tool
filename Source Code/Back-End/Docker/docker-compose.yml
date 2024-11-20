@@ -30,7 +30,7 @@ services:
       - MQTT_ALLOW_ANONYMOUS=true  # Allow anonymous connections (optional)
     
   mqttsimulator:
-    image: strivi01/mqttsim:0.1
+    image: strivi01/mqttsim:0.2
     container_name: mqttSimulator
     volumes:
       - ./settings.json:/usr/src/app/config/settings.json

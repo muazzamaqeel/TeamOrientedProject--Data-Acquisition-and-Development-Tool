@@ -19,8 +19,8 @@ namespace Smart_Pacifier___Tool.Temp
             try
             {
                 string pythonCode = PythonCodeInput.Text;
-                string output = _algorithmService.ExecuteScript(pythonCode);
-                OutputTextBox.Text = output;
+                //string output = _algorithmService.ExecuteScript(pythonCode);
+                //OutputTextBox.Text = output;
             }
             catch (Exception ex)
             {

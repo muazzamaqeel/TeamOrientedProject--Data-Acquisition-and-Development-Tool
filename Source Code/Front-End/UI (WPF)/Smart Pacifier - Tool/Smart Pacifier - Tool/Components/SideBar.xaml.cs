@@ -5,7 +5,7 @@ using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Microsoft.Extensions.DependencyInjection;
-
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab;
 namespace Smart_Pacifier___Tool
 {
     /// <summary>
@@ -13,7 +13,7 @@ namespace Smart_Pacifier___Tool
     /// </summary>
     public partial class Sidebar : UserControl
     {
-        private const string DeveloperTabVisibleKey = "DeveloperTabVisible";
+        public const string DeveloperTabVisibleKey = "DeveloperTabVisible";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Sidebar"/> class.
@@ -66,5 +66,12 @@ namespace Smart_Pacifier___Tool
             var developerView = ((App)Application.Current).ServiceProvider.GetRequiredService<DeveloperView>();
             ((MainWindow)Application.Current.MainWindow).NavigateTo(developerView);
         }
+        private void AlgorithmButton_Click(object sender, RoutedEventArgs e)
+        {
+            var algoselection = ((App)Application.Current).ServiceProvider.GetRequiredService<AlgoSelection>();
+            ((MainWindow)Application.Current.MainWindow).NavigateTo(algoselection);
+        }
+    
+
     }
 }

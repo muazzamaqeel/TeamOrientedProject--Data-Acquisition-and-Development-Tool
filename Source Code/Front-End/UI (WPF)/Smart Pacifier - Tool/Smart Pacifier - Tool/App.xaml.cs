@@ -13,6 +13,7 @@ using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 using Smart_Pacifier___Tool.Tabs.DeveloperTab;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using Smart_Pacifier___Tool.Tabs.CampaignsTab;
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab;
 using SmartPacifier.BackEnd.CommunicationLayer.MQTT;
 using Smart_Pacifier___Tool.Tabs.MonitoringTab;
 using System.Configuration;
@@ -20,7 +21,7 @@ using System.IO;
 using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
+using Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra;
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
@@ -100,7 +101,7 @@ namespace Smart_Pacifier___Tool
 
 
 
-
+            /*
             //ExecutePythonScript();
             var config = LoadDatabaseConfiguration();
             string scriptName = config.PythonScript?.FileName ?? "python1.py"; // Default to "python1.py" if not specified
@@ -114,6 +115,8 @@ namespace Smart_Pacifier___Tool
             {
                 MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+            */
         }
 
         /// <summary>
@@ -168,15 +171,20 @@ namespace Smart_Pacifier___Tool
             });
 
             //Register PythonScriptEngine as IAlgorithmLayer
-            services.AddSingleton<IAlgorithmLayer>(sp => PythonScriptEngine.GetInstance());
+            // Correct registration using the class constructor
+            //services.AddSingleton<IAlgorithmLayer, PythonScriptEngine>();
+
 
             // Register other necessary services
             services.AddSingleton<ILocalHost, LocalHostSetup>();
+            services.AddSingleton<IBrokerHealthService, BrokerHealth>();
             services.AddSingleton<IManagerPacifiers, ManagerPacifiers>();
             services.AddSingleton<IManagerCampaign, ManagerCampaign>();
             services.AddSingleton<IManagerSensors, ManagerSensors>();
             services.AddSingleton<MainWindow>();
             services.AddSingleton<DeveloperView>();
+            services.AddTransient<AlgorithmView>();
+            services.AddTransient<AlgoSelection>();
             services.AddSingleton<IBrokerMain, BrokerMain>();
 
             // UI component registration
@@ -184,9 +192,11 @@ namespace Smart_Pacifier___Tool
             services.AddTransient<Func<string, SettingsView>>(sp => (defaultView) =>
             {
                 var localHostService = sp.GetRequiredService<ILocalHost>();
-                return new SettingsView(localHostService, defaultView);
+                var brokerHealthService = sp.GetRequiredService<IBrokerHealthService>(); // Add this
+                return new SettingsView(localHostService, brokerHealthService, defaultView); // Pass both
             });
-            services.AddTransient<CampaignsView>();
+
+            services.AddSingleton<CampaignsView>();
         }
 
 
@@ -332,15 +342,82 @@ namespace Smart_Pacifier___Tool
 
 
 
-        /// <summary>
-        /// Cleanup when the application exits
-        /// </summary>
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
+            //PythonScriptEngine.Instance.StopExecution();
 
-            // Free the console when the application exits
+
+            // Free the console
             FreeConsole();
+
+            // Kill all locked processes
+            KillLockedProcesses("SmartPacifier.UI (WPF)");
+
+            // Dispose services
+            if (_serviceProvider is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            // Release Mutexes
+            appMutex?.ReleaseMutex();
+            brokerMutex?.ReleaseMutex();
         }
+
+
+        /// <summary>
+        /// Kill all child processes started by the application
+        /// </summary>
+        private void KillLockedProcesses(string processName)
+        {
+            try
+            {
+                var processes = System.Diagnostics.Process.GetProcessesByName(processName);
+                foreach (var process in processes)
+                {
+                    try
+                    {
+                        process.Kill();
+                        process.WaitForExit();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to kill process {process.ProcessName}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error while killing locked processes: {ex.Message}");
+            }
+        }
+
+
+
+        /// <summary>
+        /// Extension method to get the parent process ID
+        /// </summary>
+        private static int GetParentProcessId(System.Diagnostics.Process process)
+        {
+            try
+            {
+                using (var searcher = new System.Management.ManagementObjectSearcher(
+                    "SELECT ParentProcessId FROM Win32_Process WHERE ProcessId = " + process.Id))
+                {
+                    foreach (var obj in searcher.Get())
+                    {
+                        return Convert.ToInt32(obj["ParentProcessId"]);
+                    }
+                }
+            }
+            catch
+            {
+                // If unable to retrieve the parent process ID, return 0
+            }
+            return 0;
+        }
+
+
     }
 }
