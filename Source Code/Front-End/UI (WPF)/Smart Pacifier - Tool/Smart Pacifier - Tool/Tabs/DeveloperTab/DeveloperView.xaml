@@ -40,38 +40,27 @@
             <!-- Time Range Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Time Range" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="TimeRange" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBoxItem Content="All" IsSelected="True"/>
-                    <!-- Items will be added dynamically in code-behind if needed -->
-                </ComboBox>
+                <ComboBox x:Name="TimeRange" Width="150" SelectionChanged="ComboBox_SelectionChanged"/>
             </StackPanel>
 
             <!-- Campaign Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Campaign" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="Campaign" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBoxItem Content="All" IsSelected="True"/>
-                    <!-- Items will be added dynamically in code-behind -->
-                </ComboBox>
+                <ComboBox x:Name="Campaign" Width="150" SelectionChanged="ComboBox_SelectionChanged"/>
             </StackPanel>
 
             <!-- Pacifier Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Pacifier" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="Pacifier" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBoxItem Content="All" IsSelected="True"/>
-                    <!-- Items will be added dynamically in code-behind -->
-                </ComboBox>
+                <ComboBox x:Name="Pacifier" Width="150" SelectionChanged="ComboBox_SelectionChanged"/>
             </StackPanel>
 
             <!-- Sensor Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Sensor" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="Sensor" Width="150" SelectionChanged="ComboBox_SelectionChanged">
-                    <ComboBoxItem Content="All" IsSelected="True"/>
-                    <!-- Items will be added dynamically in code-behind -->
-                </ComboBox>
+                <ComboBox x:Name="Sensor" Width="150" SelectionChanged="ComboBox_SelectionChanged"/>
             </StackPanel>
+
 
             <!-- Action Buttons -->
             <StackPanel Margin="5" HorizontalAlignment="Center">

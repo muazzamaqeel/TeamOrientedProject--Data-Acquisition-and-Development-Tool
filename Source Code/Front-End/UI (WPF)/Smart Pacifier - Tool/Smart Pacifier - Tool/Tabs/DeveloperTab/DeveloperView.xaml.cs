@@ -47,8 +47,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 allData.Clear();
                 allData = await _databaseService.GetSensorDataAsync();
 
-                // Populate ComboBoxes with unique values
-                PopulateComboBoxes();
+                // Populate ComboBoxes with unique values from the database
+                await PopulateComboBoxesAsync();
 
                 // Display all data initially
                 DisplayData(allData);
@@ -63,6 +63,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
+
+
         private void ShowLoadingSpinner()
         {
             LoadingSpinner.Visibility = Visibility.Visible;
@@ -75,8 +77,13 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             DataListView.Visibility = Visibility.Visible;
         }
 
-        private void PopulateComboBoxes()
+        private async Task PopulateComboBoxesAsync()
         {
+            // Fetch unique values from the database
+            var campaigns = await _databaseService.GetUniqueCampaignNamesAsync();
+            var pacifiers = await _databaseService.GetUniquePacifierNamesAsync();
+            var sensors = await _databaseService.GetUniqueSensorTypesAsync();
+
             Dispatcher.Invoke(() =>
             {
                 // Clear existing items
@@ -89,38 +96,16 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 Pacifier.Items.Add("All");
                 Sensor.Items.Add("All");
 
-                // Extract unique values from the data
-                var uniqueCampaigns = allData.Columns.Contains("campaign_name") ? allData.AsEnumerable()
-                    .Select(row => row["campaign_name"].ToString())
-                    .Where(value => !string.IsNullOrEmpty(value))
-                    .Distinct()
-                    .OrderBy(value => value)
-                    .ToList() : new List<string>();
-
-                var uniquePacifiers = allData.Columns.Contains("pacifier_name") ? allData.AsEnumerable()
-                    .Select(row => row["pacifier_name"].ToString())
-                    .Where(value => !string.IsNullOrEmpty(value))
-                    .Distinct()
-                    .OrderBy(value => value)
-                    .ToList() : new List<string>();
-
-                var uniqueSensors = allData.Columns.Contains("sensor_type") ? allData.AsEnumerable()
-                    .Select(row => row["sensor_type"].ToString())
-                    .Where(value => !string.IsNullOrEmpty(value))
-                    .Distinct()
-                    .OrderBy(value => value)
-                    .ToList() : new List<string>();
-
                 // Add unique values to the ComboBoxes
-                foreach (var campaign in uniqueCampaigns)
+                foreach (var campaign in campaigns)
                 {
                     Campaign.Items.Add(campaign);
                 }
-                foreach (var pacifier in uniquePacifiers)
+                foreach (var pacifier in pacifiers)
                 {
                     Pacifier.Items.Add(pacifier);
                 }
-                foreach (var sensor in uniqueSensors)
+                foreach (var sensor in sensors)
                 {
                     Sensor.Items.Add(sensor);
                 }
@@ -132,6 +117,10 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             });
         }
 
+
+
+
+
         private void DisplayData(DataTable dataToDisplay)
         {
             Dispatcher.Invoke(() =>
@@ -142,6 +131,23 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                     MessageBox.Show("No data to display.");
                     return;
                 }
+
+                // **Add this block to print column names and sample data**
+                Console.WriteLine("Columns in dataToDisplay:");
+                foreach (DataColumn column in dataToDisplay.Columns)
+                {
+                    Console.WriteLine(column.ColumnName);
+                }
+
+                // Print first few rows as sample data
+                Console.WriteLine("Sample data from dataToDisplay:");
+                int maxRowsToPrint = Math.Min(5, dataToDisplay.Rows.Count);
+                for (int i = 0; i < maxRowsToPrint; i++)
+                {
+                    DataRow row = dataToDisplay.Rows[i];
+                    Console.WriteLine(string.Join(", ", row.ItemArray));
+                }
+                // **End of added block**
 
                 // Clear existing columns
                 DataGridView.Columns.Clear();
@@ -192,6 +198,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             });
         }
 
+
         private void AutoAdjustColumnWidths(DataTable dataTable)
         {
             GridView gridView = DataGridView;
@@ -232,9 +239,9 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            string selectedCampaign = Campaign.SelectedItem?.ToString();
-            string selectedPacifier = Pacifier.SelectedItem?.ToString();
-            string selectedSensorType = Sensor.SelectedItem?.ToString();
+            string selectedCampaign = Campaign.SelectedItem as string;
+            string selectedPacifier = Pacifier.SelectedItem as string;
+            string selectedSensorType = Sensor.SelectedItem as string;
 
             var filteredData = allData.AsEnumerable().Where(row =>
                 (selectedCampaign == "All" || (allData.Columns.Contains("campaign_name") && row["campaign_name"].ToString() == selectedCampaign)) &&
@@ -252,6 +259,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 MessageBox.Show("No data matches the selected filters.");
             }
         }
+
 
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
         {
@@ -273,7 +281,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Do nothing here; Apply button will handle filtering
+            ApplyFilters();
         }
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
@@ -370,5 +378,48 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 }
             }
         }
+
+        private void ApplyFilters()
+        {
+            // Safely retrieve and trim selected values from ComboBoxes
+            string selectedCampaign = (Campaign.SelectedItem as string)?.Trim() ?? "";
+            string selectedPacifier = (Pacifier.SelectedItem as string)?.Trim() ?? "";
+            string selectedSensorType = (Sensor.SelectedItem as string)?.Trim() ?? "";
+
+            // Use the actual column names from your DataTable
+            string campaignColumn = "Campaign Name";
+            string pacifierColumn = "Pacifier Name";
+            string sensorTypeColumn = "Sensor Type";
+
+            var filteredData = allData.AsEnumerable().Where(row =>
+            {
+                // Safely retrieve and trim values from the DataRow, handling DBNull.Value
+                string rowCampaignValue = row[campaignColumn] != DBNull.Value ? row[campaignColumn]?.ToString()?.Trim() ?? "" : "";
+                string rowPacifierValue = row[pacifierColumn] != DBNull.Value ? row[pacifierColumn]?.ToString()?.Trim() ?? "" : "";
+                string rowSensorTypeValue = row[sensorTypeColumn] != DBNull.Value ? row[sensorTypeColumn]?.ToString()?.Trim() ?? "" : "";
+
+                // Determine if each field matches the selected value or if "All" is selected
+                bool campaignMatch = selectedCampaign == "All" || string.Equals(rowCampaignValue, selectedCampaign, StringComparison.OrdinalIgnoreCase);
+                bool pacifierMatch = selectedPacifier == "All" || string.Equals(rowPacifierValue, selectedPacifier, StringComparison.OrdinalIgnoreCase);
+                bool sensorTypeMatch = selectedSensorType == "All" || string.Equals(rowSensorTypeValue, selectedSensorType, StringComparison.OrdinalIgnoreCase);
+
+                // Return true if all conditions are met
+                return campaignMatch && pacifierMatch && sensorTypeMatch;
+            });
+
+            if (filteredData.Any())
+            {
+                DataTable filteredTable = filteredData.CopyToDataTable();
+                DisplayData(filteredTable);
+            }
+            else
+            {
+                DataListView.ItemsSource = null;
+                MessageBox.Show("No data matches the selected filters.");
+            }
+        }
+
+
+
     }
 }

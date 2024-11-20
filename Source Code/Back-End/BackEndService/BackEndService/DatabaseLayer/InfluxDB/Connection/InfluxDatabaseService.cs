@@ -361,6 +361,73 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             return campaignData;
         }
 
+        public async Task<List<string>> GetUniqueCampaignNamesAsync()
+        {
+            string fluxQuery = @"
+                import ""influxdata/influxdb/v1""
+
+                v1.tagValues(
+                    bucket: ""SmartPacifier-Bucket1"",
+                    tag: ""campaign_name"",
+                    predicate: (r) => r._measurement == ""campaigns"" or r._measurement == ""campaign_metadata""
+                )
+            ";
+
+            return await ExecuteTagValueQueryAsync(fluxQuery);
+        }
+
+        public async Task<List<string>> GetUniquePacifierNamesAsync()
+        {
+            string fluxQuery = @"
+                import ""influxdata/influxdb/v1""
+
+                v1.tagValues(
+                    bucket: ""SmartPacifier-Bucket1"",
+                    tag: ""pacifier_name"",
+                    predicate: (r) => r._measurement == ""campaigns""
+                )
+            ";
+
+            return await ExecuteTagValueQueryAsync(fluxQuery);
+        }
+
+        public async Task<List<string>> GetUniqueSensorTypesAsync()
+        {
+            string fluxQuery = @"
+                import ""influxdata/influxdb/v1""
+
+                v1.tagValues(
+                    bucket: ""SmartPacifier-Bucket1"",
+                    tag: ""sensor_type"",
+                    predicate: (r) => r._measurement == ""campaigns""
+                )
+            ";
+
+            return await ExecuteTagValueQueryAsync(fluxQuery);
+        }
+
+        private async Task<List<string>> ExecuteTagValueQueryAsync(string fluxQuery)
+        {
+            var queryApi = _client.GetQueryApi();
+
+            List<string> results = new List<string>();
+
+            var fluxTables = await queryApi.QueryAsync(fluxQuery, _org);
+            foreach (var table in fluxTables)
+            {
+                foreach (var record in table.Records)
+                {
+                    string value = record.GetValue()?.ToString();
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        results.Add(value);
+                    }
+                }
+            }
+
+            return results.Distinct().OrderBy(x => x).ToList();
+        }
+
 
 
     }
