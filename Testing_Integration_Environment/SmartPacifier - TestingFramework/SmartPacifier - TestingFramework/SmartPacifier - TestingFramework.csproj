@@ -61,4 +61,10 @@
 	  <ProjectReference Include="..\..\..\Source Code\Interface\Interface_NETInterop\Interface_NETInterop\SmartPacifier.Interface.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="UnitTests\UTBackEnd\UTAlgorithmLayer\test_script.py">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>

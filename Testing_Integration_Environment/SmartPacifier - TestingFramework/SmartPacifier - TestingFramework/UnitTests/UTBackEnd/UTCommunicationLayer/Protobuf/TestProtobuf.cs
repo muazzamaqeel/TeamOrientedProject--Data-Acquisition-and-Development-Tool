@@ -7,6 +7,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
 {
     public class TestProtobuf
     {
+        /// <summary>
+        /// This test case is to check if the protobuf serialization and deserialization works correctly.
+        /// </summary>
+        /// 
+
         [Fact]
         public void Protobuf_SerializeDeserialize()
         {
@@ -30,6 +35,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTCommunicationLa
             Assert.True(deserializedData.DataMap.ContainsKey("gyro_x"));
             Assert.True(deserializedData.DataMap.ContainsKey("gyro_y"));
         }
+
+
+
+
+
         /// <summary>
         /// This test case is to check if the DataMap is empty when no data is added to it.
         /// </summary>

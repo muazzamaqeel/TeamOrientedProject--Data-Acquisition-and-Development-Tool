@@ -49,7 +49,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             return JsonConvert.DeserializeObject<AppConfiguration>(configJson);
         }
 
-
+        /// <summary>
+        /// This test verifies that a campaign can be successfully written to the database and retrieved using a query.
+        ///It writes a campaign with specific metadata, queries the database to find it, and asserts that the result contains at least one matching entry.
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task CampaignCycleTest()
         {
@@ -81,7 +85,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             Assert.True(result.Count > 0, "Expected the campaign to exist in the database.");
         }
 
-
+        /// <summary>
+        /// This test measures the performance of write, read, and delete operations on the database. It verifies that writing sample metadata and campaign data, querying it, and deleting it complete within acceptable time limits. 
+        /// It also checks that the data can be successfully retrieved and removed from the database.
+        /// </summary>
+        /// <returns></returns>
         [Fact]
 
         public async Task TestPerformance()
@@ -245,7 +253,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             Console.WriteLine($"Delete Duration: {deleteDuration}ms");
         }
 
-
+        /// <summary>
+        /// This test verifies that a pacifier entry with specific properties can be added to the database, queried, and confirmed to exist.
+        /// It ensures the correct linkage between pacifiers and campaigns and performs cleanup by deleting the entry after verification.
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task PacifierCycleTest()
         {
@@ -295,7 +307,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             }
         }
 
-
+        /// <summary>
+        /// This test validates that a sensor entry (e.g., PPG sensor) with specific properties can be written to the database, queried, and confirmed to exist. 
+        /// It checks that the sensor data is correctly associated with its campaign and pacifier. Like other tests, it deletes the entry after validation.
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task SensorCycleTest()
         {
@@ -347,6 +363,12 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             }
         }
 
+        /// <summary>
+        /// This test verifies the ability to establish a connection to the database. 
+        /// It runs a simple query to retrieve at least one record from the bucket and asserts that the database connection is functional.
+        /// </summary>
+        /// <returns></returns>
+        [Fact]
         public async Task TestConnection()
         {
             // Arrange
@@ -373,6 +395,11 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             }
         }
 
+        /// <summary>
+        /// This test ensures that the API token used for database operations is valid and has the necessary permissions. 
+        /// It writes a test data point to the database, queries it to confirm the write operation succeeded, and checks for at least one matching record in the results.
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task TestAPIToken()
         {
@@ -420,13 +447,6 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
 
             await _databaseService.DeleteEntryFromDatabaseAsync(entryId, measurement); // Assuming the method signature matches
         }
-
-
-
-
-
-
-
 
     }
 
