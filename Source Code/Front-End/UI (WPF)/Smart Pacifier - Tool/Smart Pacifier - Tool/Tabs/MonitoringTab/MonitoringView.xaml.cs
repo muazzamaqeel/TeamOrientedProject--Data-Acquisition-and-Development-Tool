@@ -22,6 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -660,7 +661,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
         /// Ends the campaign.
         /// </summary>
         /// <param name="endTime">The end time of the campaign in "yyyy-MM-dd HH:mm:ss" format.</param>
-        public void EndCampaign(string endTime)
+        public async Task EndCampaign(string endTime)
         {
             try
             {
@@ -672,12 +673,19 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 // Unsubscribe from real-time updates to stop file writing
                 Broker.Instance.MessageReceived -= _viewModel.OnMessageReceived;
 
-                // Retrieve PacifierSelectionView from the DI container and navigate to it
-                var pacifierSelectionView = ((App)Application.Current).ServiceProvider.GetRequiredService<PacifierSelectionView>();
-                ((MainWindow)Application.Current.MainWindow).NavigateTo(pacifierSelectionView);
+                // Store the campaign name before resetting
+                var campaignName = _viewModel.CurrentCampaignName;
 
                 // Reset the current campaign name
                 _viewModel.CurrentCampaignName = string.Empty;
+
+                // Get an instance of FileUpload from the DI container
+                var fileUpload = ((App)Application.Current).ServiceProvider.GetRequiredService<FileUpload>();
+                await fileUpload.UploadDataAsync(campaignName);
+
+                // Retrieve PacifierSelectionView from the DI container and navigate to it
+                var pacifierSelectionView = ((App)Application.Current).ServiceProvider.GetRequiredService<PacifierSelectionView>();
+                ((MainWindow)Application.Current.MainWindow).NavigateTo(pacifierSelectionView);
             }
             catch (Exception ex)
             {
@@ -685,6 +693,9 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 MessageBox.Show($"Failed to end campaign. Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+
+
 
     }
 }
