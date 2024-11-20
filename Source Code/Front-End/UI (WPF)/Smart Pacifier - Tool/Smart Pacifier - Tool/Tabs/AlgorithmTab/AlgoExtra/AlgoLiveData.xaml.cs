@@ -68,6 +68,8 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             _outputFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "PythonFiles", "ExecutableScript", "AlgoOutput.txt");
 
             StartAutoScrolling(); // Initialize auto-scrolling
+            ScrollingSpeedSlider.ValueChanged += ScrollingSpeedSlider_ValueChanged;
+
         }
 
         private void OnControlLoaded(object sender, RoutedEventArgs e)
@@ -281,7 +283,12 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 _ => "Fast"
             };
 
-            SpeedDisplay.Text = $"Speed: {speedText}";
+            if (SpeedDisplay != null)
+            {
+                SpeedDisplay.Text = $"Speed: {speedText}";
+            }
         }
+
+
     }
 }

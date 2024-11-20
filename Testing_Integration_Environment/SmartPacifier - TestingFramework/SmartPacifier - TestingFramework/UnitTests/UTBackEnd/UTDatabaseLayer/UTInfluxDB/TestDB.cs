@@ -448,13 +448,6 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             await _databaseService.DeleteEntryFromDatabaseAsync(entryId, measurement); // Assuming the method signature matches
         }
 
-
-
-
-
-
-
-
     }
 
     public class AppConfiguration
