@@ -11,7 +11,6 @@ on:
   schedule:
     # Runs the workflow every day
     - cron:  '45 11,11 * * *'
-
 jobs:
   build:
 
