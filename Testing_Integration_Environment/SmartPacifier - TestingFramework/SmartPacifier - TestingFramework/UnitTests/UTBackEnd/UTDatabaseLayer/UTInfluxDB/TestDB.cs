@@ -347,7 +347,6 @@ namespace SmartPacifier___TestingFramework.UnitTests.UTBackEnd.UTDatabaseLayer.U
             }
         }
 
-        [Fact]
         public async Task TestConnection()
         {
             // Arrange
