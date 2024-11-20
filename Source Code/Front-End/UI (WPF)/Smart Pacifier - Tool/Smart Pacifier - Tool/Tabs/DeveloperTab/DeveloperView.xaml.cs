@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.DataManipulation;
+using System.Windows.Data;
+using System.Windows.Threading;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
@@ -15,7 +19,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         private readonly IDatabaseService _databaseService;
         private readonly IManagerPacifiers _managerPacifiers;
         private readonly IManagerCampaign _managerCampaign;
-        private readonly IDataManipulationHandler _dataManipulationHandler; // Added field
+        private readonly IDataManipulationHandler _dataManipulationHandler;
 
         private DataTable allData = new DataTable();
         private int currentPage = 1;
@@ -28,60 +32,202 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             _managerPacifiers = managerPacifiers;
             _managerCampaign = managerCampaign;
 
-            _dataManipulationHandler = new DataManipulationHandler(_databaseService); // Initialize handler
+            _dataManipulationHandler = new DataManipulationHandler(_databaseService);
 
-            _ = LoadDataAsync();  // Call the async method but don't await, suppressing CS4014
+            _ = LoadDataAsync();
         }
 
         private async Task LoadDataAsync()
         {
             try
             {
-                // Load all sensor data from the database (without filtering by campaign)
+                ShowLoadingSpinner();
+
+                // Load all sensor data from the database
                 allData.Clear();
                 allData = await _databaseService.GetSensorDataAsync();
 
-                // Extract unique values for Campaign, Pacifier, and Sensor Type for combo boxes
-                var uniqueCampaigns = allData.AsEnumerable()
-                    .Select(row => row["Campaign Name"].ToString())
-                    .Distinct()
-                    .ToList();
-
-                var uniquePacifiers = allData.AsEnumerable()
-                    .Select(row => row["Pacifier Name"].ToString())
-                    .Distinct()
-                    .ToList();
-
-                var uniqueSensors = allData.AsEnumerable()
-                    .Select(row => row["Sensor Type"].ToString())
-                    .Distinct()
-                    .ToList();
-
-                // Populate the combo boxes with unique values
-                Campaign.ItemsSource = uniqueCampaigns;
-                Pacifier.ItemsSource = uniquePacifiers;
-                Sensor.ItemsSource = uniqueSensors;
+                // Populate ComboBoxes with unique values
+                PopulateComboBoxes();
 
                 // Display all data initially
-                DisplayData();
+                DisplayData(allData);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error loading data: {ex.Message}");
             }
+            finally
+            {
+                HideLoadingSpinner();
+            }
         }
 
-
-        private void DisplayData()
+        private void ShowLoadingSpinner()
         {
-            if (allData.Rows.Count == 0)
-            {
-                MessageBox.Show("No data to display.");
-                return;
-            }
+            LoadingSpinner.Visibility = Visibility.Visible;
+            DataListView.Visibility = Visibility.Collapsed;
+        }
 
-            // Display all data in the DataListView without pagination
-            DataListView.ItemsSource = allData.DefaultView;
+        private void HideLoadingSpinner()
+        {
+            LoadingSpinner.Visibility = Visibility.Collapsed;
+            DataListView.Visibility = Visibility.Visible;
+        }
+
+        private void PopulateComboBoxes()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                // Clear existing items
+                Campaign.Items.Clear();
+                Pacifier.Items.Clear();
+                Sensor.Items.Clear();
+
+                // Add "All" as default option
+                Campaign.Items.Add("All");
+                Pacifier.Items.Add("All");
+                Sensor.Items.Add("All");
+
+                // Extract unique values from the data
+                var uniqueCampaigns = allData.Columns.Contains("campaign_name") ? allData.AsEnumerable()
+                    .Select(row => row["campaign_name"].ToString())
+                    .Where(value => !string.IsNullOrEmpty(value))
+                    .Distinct()
+                    .OrderBy(value => value)
+                    .ToList() : new List<string>();
+
+                var uniquePacifiers = allData.Columns.Contains("pacifier_name") ? allData.AsEnumerable()
+                    .Select(row => row["pacifier_name"].ToString())
+                    .Where(value => !string.IsNullOrEmpty(value))
+                    .Distinct()
+                    .OrderBy(value => value)
+                    .ToList() : new List<string>();
+
+                var uniqueSensors = allData.Columns.Contains("sensor_type") ? allData.AsEnumerable()
+                    .Select(row => row["sensor_type"].ToString())
+                    .Where(value => !string.IsNullOrEmpty(value))
+                    .Distinct()
+                    .OrderBy(value => value)
+                    .ToList() : new List<string>();
+
+                // Add unique values to the ComboBoxes
+                foreach (var campaign in uniqueCampaigns)
+                {
+                    Campaign.Items.Add(campaign);
+                }
+                foreach (var pacifier in uniquePacifiers)
+                {
+                    Pacifier.Items.Add(pacifier);
+                }
+                foreach (var sensor in uniqueSensors)
+                {
+                    Sensor.Items.Add(sensor);
+                }
+
+                // Set "All" as the selected item
+                Campaign.SelectedIndex = 0;
+                Pacifier.SelectedIndex = 0;
+                Sensor.SelectedIndex = 0;
+            });
+        }
+
+        private void DisplayData(DataTable dataToDisplay)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (dataToDisplay.Rows.Count == 0)
+                {
+                    DataListView.ItemsSource = null;
+                    MessageBox.Show("No data to display.");
+                    return;
+                }
+
+                // Clear existing columns
+                DataGridView.Columns.Clear();
+
+                // Add the checkbox column
+                var checkBoxColumn = new GridViewColumn
+                {
+                    Header = new CheckBox
+                    {
+                        Name = "SelectAllCheckBox",
+                        IsThreeState = false,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                    },
+                    CellTemplate = FindResource("CheckBoxCellTemplate") as DataTemplate,
+                    Width = 30
+                };
+
+                // Attach event handlers for the SelectAll checkbox
+                ((CheckBox)checkBoxColumn.Header).Checked += SelectAllCheckBox_Checked;
+                ((CheckBox)checkBoxColumn.Header).Unchecked += SelectAllCheckBox_Unchecked;
+
+                DataGridView.Columns.Add(checkBoxColumn);
+
+                // Generate columns dynamically based on DataTable columns
+                foreach (DataColumn column in dataToDisplay.Columns)
+                {
+                    // Skip columns that are already added
+                    if (DataGridView.Columns.Any(c => c.Header.ToString() == column.ColumnName))
+                        continue;
+
+                    // Create a new GridViewColumn
+                    var gridViewColumn = new GridViewColumn
+                    {
+                        Header = column.ColumnName,
+                        DisplayMemberBinding = new Binding($"[{column.ColumnName}]"),
+                        Width = Double.NaN // Set to Auto width initially
+                    };
+
+                    DataGridView.Columns.Add(gridViewColumn);
+                }
+
+                // Set the ItemsSource of the ListView
+                DataListView.ItemsSource = dataToDisplay.DefaultView;
+
+                // Adjust column widths to fit content
+                AutoAdjustColumnWidths(dataToDisplay);
+            });
+        }
+
+        private void AutoAdjustColumnWidths(DataTable dataTable)
+        {
+            GridView gridView = DataGridView;
+
+            // Exclude the checkbox column (index 0)
+            for (int i = 1; i < gridView.Columns.Count; i++)
+            {
+                GridViewColumn column = gridView.Columns[i];
+                double maxWidth = 0;
+
+                // Measure header width
+                if (column.Header != null)
+                {
+                    var header = new TextBlock { Text = column.Header.ToString(), FontSize = 14, FontFamily = new FontFamily("Segoe UI") };
+                    header.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+                    if (header.DesiredSize.Width > maxWidth)
+                    {
+                        maxWidth = header.DesiredSize.Width;
+                    }
+                }
+
+                // Measure cells width
+                foreach (DataRowView rowView in DataListView.Items)
+                {
+                    string cellText = rowView.Row[column.Header.ToString()]?.ToString() ?? "";
+                    var cell = new TextBlock { Text = cellText, FontSize = 14, FontFamily = new FontFamily("Segoe UI") };
+                    cell.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+                    if (cell.DesiredSize.Width > maxWidth)
+                    {
+                        maxWidth = cell.DesiredSize.Width;
+                    }
+                }
+
+                // Add padding
+                column.Width = maxWidth + 20; // Add some extra space
+            }
         }
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
@@ -91,14 +237,14 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             string selectedSensorType = Sensor.SelectedItem?.ToString();
 
             var filteredData = allData.AsEnumerable().Where(row =>
-                (string.IsNullOrEmpty(selectedCampaign) || row["Campaign Name"].ToString() == selectedCampaign) &&
-                (string.IsNullOrEmpty(selectedPacifier) || row["Pacifier Name"].ToString() == selectedPacifier) &&
-                (string.IsNullOrEmpty(selectedSensorType) || row["Sensor Type"].ToString() == selectedSensorType));
+                (selectedCampaign == "All" || (allData.Columns.Contains("campaign_name") && row["campaign_name"].ToString() == selectedCampaign)) &&
+                (selectedPacifier == "All" || (allData.Columns.Contains("pacifier_name") && row["pacifier_name"].ToString() == selectedPacifier)) &&
+                (selectedSensorType == "All" || (allData.Columns.Contains("sensor_type") && row["sensor_type"].ToString() == selectedSensorType)));
 
             if (filteredData.Any())
             {
                 DataTable filteredTable = filteredData.CopyToDataTable();
-                DataListView.ItemsSource = filteredTable.DefaultView;
+                DisplayData(filteredTable);
             }
             else
             {
@@ -107,14 +253,12 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-
-
         private void PreviousButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentPage > 1)
             {
                 currentPage--;
-                DisplayData();
+                DisplayData(allData);
             }
         }
 
@@ -123,19 +267,14 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             if (currentPage * pageSize < allData.Rows.Count)
             {
                 currentPage++;
-                DisplayData();
+                DisplayData(allData);
             }
         }
 
-        private async void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender == Campaign || sender == Pacifier || sender == Sensor)
-            {
-                ApplyButton_Click(sender, e);
-            }
+            // Do nothing here; Apply button will handle filtering
         }
-
-
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
@@ -166,29 +305,18 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
-        private void RowCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox checkBox && checkBox.DataContext is DataRowView dataRow)
-            {
-                DataListView.SelectedItem = dataRow;
-            }
-        }
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (DataListView.SelectedItem is DataRowView selectedRow)
+                if (DataListView.SelectedItems.Count > 0)
                 {
-                    // Check for the exact name of the column
-                    if (selectedRow.Row.Table.Columns.Contains("entry_id") && selectedRow.Row.Table.Columns.Contains("Measurement"))
-                    {
-                        // Verify column names (optional debug)
-                        foreach (DataColumn column in selectedRow.Row.Table.Columns)
-                        {
-                            Console.WriteLine(column.ColumnName);
-                        }
+                    var itemsToDelete = DataListView.SelectedItems.Cast<DataRowView>().ToList();
 
-                        try
+                    foreach (var selectedRow in itemsToDelete)
+                    {
+                        // Check for the exact name of the column
+                        if (selectedRow.Row.Table.Columns.Contains("entry_id") && selectedRow.Row.Table.Columns.Contains("Measurement"))
                         {
                             // Retrieve the entry ID and measurement type from the selected row
                             int entryId = Convert.ToInt32(selectedRow["entry_id"]);
@@ -196,24 +324,21 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
                             // Call the delete method with both entryId and measurement
                             await _databaseService.DeleteEntryFromDatabaseAsync(entryId, measurement);
-                            MessageBox.Show("Selected entry deleted successfully.");
-
-                            // Reload data to reflect changes
-                            await LoadDataAsync();
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            MessageBox.Show($"Error converting 'entry_id' to integer: {ex.Message}", "Conversion Error");
+                            MessageBox.Show("Error: 'entry_id' or 'Measurement' column not found.");
                         }
                     }
-                    else
-                    {
-                        MessageBox.Show("Error: 'entry_id' or 'Measurement' column not found.");
-                    }
+
+                    MessageBox.Show("Selected entries deleted successfully.");
+
+                    // Reload data to reflect changes
+                    await LoadDataAsync();
                 }
                 else
                 {
-                    MessageBox.Show("Please select an entry to delete.");
+                    MessageBox.Show("Please select entries to delete.");
                 }
             }
             catch (Exception ex)
@@ -221,10 +346,6 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 MessageBox.Show($"Error deleting entry: {ex.Message}");
             }
         }
-
-
-
-
 
         private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
         {
