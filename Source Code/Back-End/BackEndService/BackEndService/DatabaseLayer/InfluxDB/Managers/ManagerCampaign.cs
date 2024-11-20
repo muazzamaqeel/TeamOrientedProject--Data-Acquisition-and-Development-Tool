@@ -362,30 +362,32 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         {
             var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
                         "|> range(start: 0) " +
-                        "|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\") " +
-                        "|> keep(columns: [\"campaign_name\", \"pacifier_name\", \"_time\"])" +
-                        "|> group(columns: [\"campaign_name\", \"pacifier_name\"])";
+                        "|> filter(fn: (r) => r[\"_measurement\"] == \"campaign_metadata\") " +
+                        "|> filter(fn: (r) => r[\"_field\"] != \"entry_id\") " +
+                        "|> filter(fn: (r) => r[\"_field\"] != \"entry_time\") ";
 
             var campaignData = await _databaseService.ReadData(query);
 
-            var campaignPacifierCount = new Dictionary<string, HashSet<string>>();
             var campaignTimes = new Dictionary<string, (DateTime Min, DateTime Max)>();
+            var campaignStatuses = new Dictionary<string, string>();
+            var campaignPacifierCounts = new Dictionary<string, int>();
 
             foreach (var data in campaignData)
             {
                 var parsedData = JsonNode.Parse(data);
                 var campaignName = parsedData?["campaign_name"]?.ToString();
-                var pacifierName = parsedData?["pacifier_name"]?.ToString();
+                var pacifierCount = parsedData?["pacifier_count"]?.ToString();
                 var time = parsedData?["_time"]?.ToString();
+                var status = parsedData?["_value"]?.ToString();
 
-                if (!string.IsNullOrEmpty(campaignName) && !string.IsNullOrEmpty(pacifierName) && DateTime.TryParse(time, out var dateTime))
+                if (!string.IsNullOrEmpty(campaignName) && DateTime.TryParse(time, out var dateTime))
                 {
-                    if (!campaignPacifierCount.ContainsKey(campaignName))
+                    if (!campaignTimes.ContainsKey(campaignName))
                     {
-                        campaignPacifierCount[campaignName] = new HashSet<string>();
                         campaignTimes[campaignName] = (dateTime, dateTime);
+                        campaignStatuses[campaignName] = status;
+                        campaignPacifierCounts[campaignName] = int.Parse(pacifierCount ?? "0");
                     }
-                    campaignPacifierCount[campaignName].Add(pacifierName);
                     var (minTime, maxTime) = campaignTimes[campaignName];
                     campaignTimes[campaignName] = (dateTime < minTime ? dateTime : minTime, dateTime > maxTime ? dateTime : maxTime);
                 }
@@ -393,10 +395,12 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 
             var result = new List<string>();
 
-            foreach (var entry in campaignPacifierCount)
+            foreach (var entry in campaignTimes)
             {
-                var (startTime, endTime) = campaignTimes[entry.Key];
-                result.Add($"Campaign: {entry.Key}, PacifierCount: {entry.Value.Count}, StartTime: {startTime}, EndTime: {endTime}");
+                var (startTime, endTime) = entry.Value;
+                var status = campaignStatuses[entry.Key];
+                var pacifierCount = campaignPacifierCounts[entry.Key];
+                result.Add($"Campaign: {entry.Key}, PacifierCount: {pacifierCount}, StartTime: {startTime}, EndTime: {endTime}");
             }
 
             return result;
