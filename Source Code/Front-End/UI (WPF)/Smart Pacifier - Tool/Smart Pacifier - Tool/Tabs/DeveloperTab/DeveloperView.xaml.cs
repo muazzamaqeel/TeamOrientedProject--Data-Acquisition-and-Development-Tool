@@ -8,7 +8,9 @@ using System.Windows;
 using System.Windows.Controls;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.DataManipulation;
 using System.Windows.Data;
-using System.Windows.Input;
+using System.Windows.Threading;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
@@ -39,30 +41,14 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         {
             try
             {
+                ShowLoadingSpinner();
+
                 // Load all sensor data from the database
                 allData.Clear();
                 allData = await _databaseService.GetSensorDataAsync();
 
-                // Extract unique values for Campaign, Pacifier, and Sensor Type for combo boxes
-                var uniqueCampaigns = allData.Columns.Contains("campaign_name") ? allData.AsEnumerable()
-                    .Select(row => row["campaign_name"].ToString())
-                    .Distinct()
-                    .ToList() : new List<string>();
-
-                var uniquePacifiers = allData.Columns.Contains("pacifier_name") ? allData.AsEnumerable()
-                    .Select(row => row["pacifier_name"].ToString())
-                    .Distinct()
-                    .ToList() : new List<string>();
-
-                var uniqueSensors = allData.Columns.Contains("sensor_type") ? allData.AsEnumerable()
-                    .Select(row => row["sensor_type"].ToString())
-                    .Distinct()
-                    .ToList() : new List<string>();
-
-                // Populate the combo boxes with unique values
-                Campaign.ItemsSource = uniqueCampaigns;
-                Pacifier.ItemsSource = uniquePacifiers;
-                Sensor.ItemsSource = uniqueSensors;
+                // Populate ComboBoxes with unique values
+                PopulateComboBoxes();
 
                 // Display all data initially
                 DisplayData(allData);
@@ -71,59 +57,177 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             {
                 MessageBox.Show($"Error loading data: {ex.Message}");
             }
+            finally
+            {
+                HideLoadingSpinner();
+            }
+        }
+
+        private void ShowLoadingSpinner()
+        {
+            LoadingSpinner.Visibility = Visibility.Visible;
+            DataListView.Visibility = Visibility.Collapsed;
+        }
+
+        private void HideLoadingSpinner()
+        {
+            LoadingSpinner.Visibility = Visibility.Collapsed;
+            DataListView.Visibility = Visibility.Visible;
+        }
+
+        private void PopulateComboBoxes()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                // Clear existing items
+                Campaign.Items.Clear();
+                Pacifier.Items.Clear();
+                Sensor.Items.Clear();
+
+                // Add "All" as default option
+                Campaign.Items.Add("All");
+                Pacifier.Items.Add("All");
+                Sensor.Items.Add("All");
+
+                // Extract unique values from the data
+                var uniqueCampaigns = allData.Columns.Contains("campaign_name") ? allData.AsEnumerable()
+                    .Select(row => row["campaign_name"].ToString())
+                    .Where(value => !string.IsNullOrEmpty(value))
+                    .Distinct()
+                    .OrderBy(value => value)
+                    .ToList() : new List<string>();
+
+                var uniquePacifiers = allData.Columns.Contains("pacifier_name") ? allData.AsEnumerable()
+                    .Select(row => row["pacifier_name"].ToString())
+                    .Where(value => !string.IsNullOrEmpty(value))
+                    .Distinct()
+                    .OrderBy(value => value)
+                    .ToList() : new List<string>();
+
+                var uniqueSensors = allData.Columns.Contains("sensor_type") ? allData.AsEnumerable()
+                    .Select(row => row["sensor_type"].ToString())
+                    .Where(value => !string.IsNullOrEmpty(value))
+                    .Distinct()
+                    .OrderBy(value => value)
+                    .ToList() : new List<string>();
+
+                // Add unique values to the ComboBoxes
+                foreach (var campaign in uniqueCampaigns)
+                {
+                    Campaign.Items.Add(campaign);
+                }
+                foreach (var pacifier in uniquePacifiers)
+                {
+                    Pacifier.Items.Add(pacifier);
+                }
+                foreach (var sensor in uniqueSensors)
+                {
+                    Sensor.Items.Add(sensor);
+                }
+
+                // Set "All" as the selected item
+                Campaign.SelectedIndex = 0;
+                Pacifier.SelectedIndex = 0;
+                Sensor.SelectedIndex = 0;
+            });
         }
 
         private void DisplayData(DataTable dataToDisplay)
         {
-            if (dataToDisplay.Rows.Count == 0)
+            Dispatcher.Invoke(() =>
             {
-                MessageBox.Show("No data to display.");
-                return;
-            }
-
-            // Clear existing columns
-            DataGridView.Columns.Clear();
-
-            // Add the checkbox column
-            var checkBoxColumn = new GridViewColumn
-            {
-                Header = new CheckBox
+                if (dataToDisplay.Rows.Count == 0)
                 {
-                    Name = "SelectAllCheckBox",
-                    IsThreeState = false,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                },
-                CellTemplate = FindResource("CheckBoxCellTemplate") as DataTemplate,
-                Width = 30
-            };
+                    DataListView.ItemsSource = null;
+                    MessageBox.Show("No data to display.");
+                    return;
+                }
 
-            // Attach event handlers for the SelectAll checkbox
-            ((CheckBox)checkBoxColumn.Header).Checked += SelectAllCheckBox_Checked;
-            ((CheckBox)checkBoxColumn.Header).Unchecked += SelectAllCheckBox_Unchecked;
+                // Clear existing columns
+                DataGridView.Columns.Clear();
 
-            DataGridView.Columns.Add(checkBoxColumn);
-
-            // Generate columns dynamically based on DataTable columns
-            foreach (DataColumn column in dataToDisplay.Columns)
-            {
-                // Skip columns that are not needed or already added
-                if (DataGridView.Columns.Any(c => c.Header.ToString() == column.ColumnName))
-                    continue;
-
-                // Create a new GridViewColumn
-                var gridViewColumn = new GridViewColumn
+                // Add the checkbox column
+                var checkBoxColumn = new GridViewColumn
                 {
-                    Header = column.ColumnName,
-                    DisplayMemberBinding = new Binding($"[{column.ColumnName}]"),
-                    Width = Double.NaN // Auto width
+                    Header = new CheckBox
+                    {
+                        Name = "SelectAllCheckBox",
+                        IsThreeState = false,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                    },
+                    CellTemplate = FindResource("CheckBoxCellTemplate") as DataTemplate,
+                    Width = 30
                 };
 
-                DataGridView.Columns.Add(gridViewColumn);
-            }
+                // Attach event handlers for the SelectAll checkbox
+                ((CheckBox)checkBoxColumn.Header).Checked += SelectAllCheckBox_Checked;
+                ((CheckBox)checkBoxColumn.Header).Unchecked += SelectAllCheckBox_Unchecked;
 
-            // Set the ItemsSource of the ListView
-            DataListView.ItemsSource = dataToDisplay.DefaultView;
+                DataGridView.Columns.Add(checkBoxColumn);
+
+                // Generate columns dynamically based on DataTable columns
+                foreach (DataColumn column in dataToDisplay.Columns)
+                {
+                    // Skip columns that are already added
+                    if (DataGridView.Columns.Any(c => c.Header.ToString() == column.ColumnName))
+                        continue;
+
+                    // Create a new GridViewColumn
+                    var gridViewColumn = new GridViewColumn
+                    {
+                        Header = column.ColumnName,
+                        DisplayMemberBinding = new Binding($"[{column.ColumnName}]"),
+                        Width = Double.NaN // Set to Auto width initially
+                    };
+
+                    DataGridView.Columns.Add(gridViewColumn);
+                }
+
+                // Set the ItemsSource of the ListView
+                DataListView.ItemsSource = dataToDisplay.DefaultView;
+
+                // Adjust column widths to fit content
+                AutoAdjustColumnWidths(dataToDisplay);
+            });
+        }
+
+        private void AutoAdjustColumnWidths(DataTable dataTable)
+        {
+            GridView gridView = DataGridView;
+
+            // Exclude the checkbox column (index 0)
+            for (int i = 1; i < gridView.Columns.Count; i++)
+            {
+                GridViewColumn column = gridView.Columns[i];
+                double maxWidth = 0;
+
+                // Measure header width
+                if (column.Header != null)
+                {
+                    var header = new TextBlock { Text = column.Header.ToString(), FontSize = 14, FontFamily = new FontFamily("Segoe UI") };
+                    header.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+                    if (header.DesiredSize.Width > maxWidth)
+                    {
+                        maxWidth = header.DesiredSize.Width;
+                    }
+                }
+
+                // Measure cells width
+                foreach (DataRowView rowView in DataListView.Items)
+                {
+                    string cellText = rowView.Row[column.Header.ToString()]?.ToString() ?? "";
+                    var cell = new TextBlock { Text = cellText, FontSize = 14, FontFamily = new FontFamily("Segoe UI") };
+                    cell.Measure(new Size(Double.PositiveInfinity, Double.PositiveInfinity));
+                    if (cell.DesiredSize.Width > maxWidth)
+                    {
+                        maxWidth = cell.DesiredSize.Width;
+                    }
+                }
+
+                // Add padding
+                column.Width = maxWidth + 20; // Add some extra space
+            }
         }
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
@@ -133,9 +237,9 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             string selectedSensorType = Sensor.SelectedItem?.ToString();
 
             var filteredData = allData.AsEnumerable().Where(row =>
-                (string.IsNullOrEmpty(selectedCampaign) || (allData.Columns.Contains("campaign_name") && row["campaign_name"].ToString() == selectedCampaign)) &&
-                (string.IsNullOrEmpty(selectedPacifier) || (allData.Columns.Contains("pacifier_name") && row["pacifier_name"].ToString() == selectedPacifier)) &&
-                (string.IsNullOrEmpty(selectedSensorType) || (allData.Columns.Contains("sensor_type") && row["sensor_type"].ToString() == selectedSensorType)));
+                (selectedCampaign == "All" || (allData.Columns.Contains("campaign_name") && row["campaign_name"].ToString() == selectedCampaign)) &&
+                (selectedPacifier == "All" || (allData.Columns.Contains("pacifier_name") && row["pacifier_name"].ToString() == selectedPacifier)) &&
+                (selectedSensorType == "All" || (allData.Columns.Contains("sensor_type") && row["sensor_type"].ToString() == selectedSensorType)));
 
             if (filteredData.Any())
             {
@@ -169,7 +273,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Do nothing here, Apply button will handle filtering
+            // Do nothing here; Apply button will handle filtering
         }
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
