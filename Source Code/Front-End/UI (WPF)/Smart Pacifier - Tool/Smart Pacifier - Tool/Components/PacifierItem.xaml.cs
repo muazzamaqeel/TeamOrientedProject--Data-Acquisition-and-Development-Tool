@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 
 namespace Smart_Pacifier___Tool.Components
 {
@@ -54,6 +55,18 @@ namespace Smart_Pacifier___Tool.Components
                 }
             }
         }
+
+        private Brush _statusColor = Brushes.Green;
+        public Brush StatusColor
+        {
+            get => _statusColor;
+            set
+            {
+                _statusColor = value;
+                OnPropertyChanged(nameof(StatusColor)); // Notify the UI of changes
+            }
+        }
+
 
         public ObservableCollection<byte[]> RawData { get; private set; } = new ObservableCollection<byte[]>();
 

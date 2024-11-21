@@ -43,7 +43,7 @@
             <Style.Triggers>
                 <Trigger Property="IsChecked" Value="True">
                     <Setter Property="Background" Value="{StaticResource AccentColor}"/>
-                    <Setter Property="Foreground" Value="{StaticResource MainViewForegroundColor}"/>
+                    <Setter Property="Foreground" Value="White"/>
                 </Trigger>
                 <Trigger Property="IsChecked" Value="False">
                     <Setter Property="Background" Value="{StaticResource MainViewBackgroundColor}"/>

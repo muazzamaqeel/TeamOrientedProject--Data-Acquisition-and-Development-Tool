@@ -24,6 +24,7 @@ using OxyPlot.Legends;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol;
 using System.Windows.Documents;
+using System.Windows.Shapes;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -35,6 +36,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
         private readonly MonitoringViewModel _viewModel;
         public event NotifyCollectionChangedEventHandler? CollectionChanged;
+        public const string DeveloperTabVisibleKey = "DeveloperTabVisible";
 
         /// <summary>
         /// 
@@ -52,6 +54,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 
             // Clear items
             _viewModel.PacifierItems.Clear();
+
+            headerTextBlock.Text = currentCampaignName;
 
             // Initialize the UI
             AddPacifierItems(selectedPacifiers);
@@ -261,48 +265,106 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             RowDefinition row = new RowDefinition();
             pacifierGrid.RowDefinitions.Add(row);
 
-            pacifierGrid.Background = (Brush)Application.Current.FindResource("MainViewBackgroundColor");
-            pacifierGrid.Margin = new Thickness(5);
+            // Create a Border for the row with rounded corners
+            Border rowBorder = new Border
+            {
+                Background = (Brush)Application.Current.FindResource("AccentColor"), // Row background
+                CornerRadius = new CornerRadius(8), // Rounded corners
+                Margin = new Thickness(2), // Space around the row
+                Height = 40,
+            };
 
-            // Set up the first row with 3 columns
-            pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            // Create a Grid inside the Border for the row's content
+            Grid rowGrid = new Grid
+            {
+                Background = Brushes.Transparent // Transparent to let the border's background show
+            };
+
+            // Set up the Grid with 3 columns
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Create a Border for the status panel with rounded corners
+            Border statusBorder = new Border
+            {
+                CornerRadius = new CornerRadius(8), // Rounded corners
+                Background = (Brush)Application.Current.Resources["MainViewSecondaryBackgroundColor"],
+                Width = 150,
+                Height = 30,
+                Padding = new Thickness(2), // Space inside the border
+                Margin = new Thickness(5) // Space around the status panel
+            };
+
+            // Create a StackPanel to go inside the Border
+            StackPanel statusPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal, // Align items horizontally
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center
+            };
+
+            // Create the status circle
+            Ellipse statusCircle = new Ellipse
+            {
+                Width = 12, // Diameter of the circle
+                Height = 12,
+                Fill = Brushes.LawnGreen, // Initial color
+                Margin = new Thickness(0, 0, 5, 0) // Add spacing between the circle and text
+            };
+
+            // Optional: Bind the Fill property to a property in the PacifierItem class
+            Binding circleFillBinding = new Binding("StatusColor") // Assumes a `StatusColor` property exists
+            {
+                Source = pacifierItem,
+                Mode = BindingMode.TwoWay // Allow updates from the UI or code
+            };
+            statusCircle.SetBinding(Ellipse.FillProperty, circleFillBinding);
 
             // Create the first TextBlock for the status
-            TextBlock statusTextBox = new()
+            TextBlock statusTextBox = new TextBlock
             {
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
-                FontSize = 16,
+                FontSize = 12,
                 FontWeight = System.Windows.FontWeights.Bold,
-                Foreground = Brushes.White
+                Foreground = (Brush)Application.Current.Resources["MainViewForegroundColor"],
             };
-            // Create a Binding for the Status property
             Binding statusBinding = new Binding("Status")
             {
-                Source = pacifierItem // Bind to the pacifierItem
+                Source = pacifierItem
             };
-
-            // Apply the Binding to the TextBlock's Text property
             statusTextBox.SetBinding(TextBlock.TextProperty, statusBinding);
-            Grid.SetRow(statusTextBox, 0);
-            Grid.SetColumn(statusTextBox, 0);
-            pacifierGrid.Children.Add(statusTextBox);
 
-            // Create the first TextBlock for pacifier name
+            // Add the circle and text to the StackPanel
+            statusPanel.Children.Add(statusCircle);
+            statusPanel.Children.Add(statusTextBox);
+
+            // Add the StackPanel to the Border
+            statusBorder.Child = statusPanel;
+
+            // Add the Border to the Grid
+            Grid.SetRow(statusBorder, 0);
+            Grid.SetColumn(statusBorder, 0);
+            rowGrid.Children.Add(statusBorder);
+
+
+            // Create the TextBlock for pacifier name
             TextBlock pacifierNameTextBox = new()
             {
                 Text = pacifierItem.ButtonText,
+                Foreground = Brushes.White,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Margin = new Thickness(5),
+                TextAlignment = TextAlignment.Center,
                 FontSize = 16,
-                FontWeight = System.Windows.FontWeights.Bold,
-                Foreground = Brushes.White
+                Padding = new Thickness(8),
+                FontWeight = System.Windows.FontWeights.Bold
             };
             Grid.SetRow(pacifierNameTextBox, 0);
             Grid.SetColumn(pacifierNameTextBox, 1);
-            pacifierGrid.Children.Add(pacifierNameTextBox);
+            rowGrid.Children.Add(pacifierNameTextBox);
 
             // Create the "Debug" button
             Button debugButton = new()
@@ -314,47 +376,26 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
                 Margin = new Thickness(5),
                 Style = (Style)Application.Current.FindResource("ModernButtonStyle"),
-                Tag = pacifierItem.PacifierId // Use Tag to hold the pacifier id
+                Tag = pacifierItem.PacifierId
             };
-
-            var mainWindow = Application.Current.MainWindow as MainWindow;
-            if (mainWindow != null)
-            {
-                var sidebar = mainWindow.Sidebar; // Ensure SidebarInstance is accessible in MainWindow
-
-                if (sidebar != null && Application.Current.Properties.Contains(Sidebar.DeveloperTabVisibleKey))
-                {
-                    bool isDeveloperTabVisible = (bool)Application.Current.Properties[Sidebar.DeveloperTabVisibleKey];
-
-                    if (isDeveloperTabVisible)
-                    {
-                        debugButton.Visibility = Visibility.Visible;
-                        Debug.WriteLine("Monitoring: Developer Mode");
-                    }
-                    else
-                    {
-                        debugButton.Visibility = Visibility.Collapsed;
-                        Debug.WriteLine("Monitoring: User Mode");
-                    }
-                }
-                else
-                {
-                    debugButton.Visibility = Visibility.Collapsed;
-                    Debug.WriteLine("Monitoring: UserMode is null");
-                }
-            }
-            else
-            {
-                debugButton.Visibility = Visibility.Collapsed;
-                Debug.WriteLine("Monitoring: MainWindow is null");
-            }
+            
+            debugButton.Visibility = (Application.Current.Properties[DeveloperTabVisibleKey] is bool isVisible && isVisible)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
 
             Grid.SetRow(debugButton, 0);
             Grid.SetColumn(debugButton, 2);
-            debugButton.Click += OpenRawDataView_Click; // Directly attach the event handler
-            pacifierGrid.Children.Add(debugButton);
+            debugButton.Click += OpenRawDataView_Click;
+            rowGrid.Children.Add(debugButton);
 
+            // Add the Grid to the Border
+            rowBorder.Child = rowGrid;
+
+            // Add the Border to the main Grid
+            Grid.SetRow(rowBorder, pacifierGrid.RowDefinitions.Count - 1);
+            pacifierGrid.Children.Add(rowBorder);
         }
+
 
         // Add Graph Rows for all Toggled SensorItems in this PacifierItem Grid
         private void AddGraphRowsForToggledSensors(PacifierItem pacifierItem)
@@ -391,37 +432,53 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 pacifierGrid.RowDefinitions.Add(sensorRow);
                 pacifierGrid.Margin = new Thickness(15);
 
-                // Add a header for the sensor item
+                // Create a Border for the sensor header with rounded corners
+                Border sensorHeaderBorder = new Border
+                {
+                    CornerRadius = new CornerRadius(8), // Rounded corners
+                    Background = (Brush)Application.Current.Resources["MainViewSecondaryBackgroundColor"],
+                    Height = 30,
+                    Margin = new Thickness(5), // Space around the border
+                    Padding = new Thickness(2) // Space inside the border
+                };
+
+                // Create a TextBlock for the sensor header
                 TextBlock sensorHeader = new TextBlock
                 {
                     Text = $"Sensor: {sensorItem.SensorId}",
-                    Margin = new Thickness(15),
                     Foreground = (Brush)Application.Current.Resources["MainViewForegroundColor"],
-                    Background = (Brush)Application.Current.Resources["MainViewSecondaryBackgroundColor"],
                     TextAlignment = TextAlignment.Center, // Center the text
                     FontSize = 16, // Increase the text size
-                    Padding = new Thickness(8), // Add padding
+                    FontWeight = System.Windows.FontWeights.Bold,
+                    Padding = new Thickness(2) // Add padding inside the TextBlock
                 };
-                Grid.SetRow(sensorHeader, pacifierGrid.RowDefinitions.Count - 1);
-                Grid.SetColumnSpan(sensorHeader, 3); // Span 3 columns
-                pacifierGrid.Children.Add(sensorHeader);
+
+                // Add the TextBlock to the Border
+                sensorHeaderBorder.Child = sensorHeader;
+
+                // Add the Border to the Grid
+                Grid.SetRow(sensorHeaderBorder, pacifierGrid.RowDefinitions.Count - 1);
+                Grid.SetColumnSpan(sensorHeaderBorder, 3); // Span 3 columns
+                pacifierGrid.Children.Add(sensorHeaderBorder);
+
+                // Create a unique identifier for the graph
+                string uniqueUid = $"{pacifierItem.PacifierId}_{sensorItem.SensorId}";
+
+                // Ensure that the new row has the correct row index for the ScrollViewer
+                WrapPanel graphScrollViewer = CreateGraphForSensor(pacifierItem, sensorItem);
+                graphScrollViewer.Uid = uniqueUid;
+
+                // Set the new row index for the ScrollViewer
+                int newRowIndex = pacifierGrid.RowDefinitions.Count;
+                Grid.SetRow(graphScrollViewer, newRowIndex);
+                Grid.SetColumnSpan(graphScrollViewer, 3);
+
+                pacifierGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+                pacifierGrid.Children.Add(graphScrollViewer);
             }
-            // Create a unique identifier for the graph
-            string uniqueUid = $"{pacifierItem.PacifierId}_{sensorItem.SensorId}";
 
-            // Ensure that the new row has the correct row index for the ScrollViewer
-            WrapPanel graphScrollViewer = CreateGraphForSensor(pacifierItem, sensorItem);
-            graphScrollViewer.Uid = uniqueUid;
 
-            // Set the new row index for the ScrollViewer
-            int newRowIndex = pacifierGrid.RowDefinitions.Count;
-            Grid.SetRow(graphScrollViewer, newRowIndex);
-            Grid.SetColumnSpan(graphScrollViewer, 3);
-
-            pacifierGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
-            pacifierGrid.Children.Add(graphScrollViewer);
-
-            Debug.WriteLine($"Monitoring: Added SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId} at Row {newRowIndex}");
+            Debug.WriteLine($"Monitoring: Added SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId}");
         }
 
 
@@ -457,7 +514,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             }
         }
 
-        // Remove Graph Row for a Specific SensorItem in a PacifierItem Grid
         // Remove Graph Row for a Specific SensorItem in a PacifierItem Grid
         private void RemoveSensorRow(PacifierItem pacifierItem, SensorItem sensorItem)
         {
@@ -517,7 +573,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                     continue;
                 }
 
-                // Iterate through each SensorGroup in the sensor item
+                // Iterate through each SensorGroup in the sensor item's MeasurementGroup
                 foreach (var sensorGroup in sensorItem.MeasurementGroup)
                 {
                     var firstKvp = sensorGroup.FirstOrDefault();
@@ -526,25 +582,18 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                     {
                         var groupName = firstKvp.Value;
 
-
-                        var sensorHeaderRemove = pacifierGrid.Children
-                            .OfType<TextBlock>().FirstOrDefault(wp => wp.Text == $"Sensor: {sensorItem.SensorId}");
-
-                        if (sensorHeaderRemove != null)
+                        foreach (UIElement child in pacifierGrid.Children)
                         {
-                            int rowIndex = Grid.GetRow(sensorHeaderRemove);
-                            pacifierGrid.Children.Remove(sensorHeaderRemove);
-
-                            // Optionally, remove the corresponding row definition
-                            if (rowIndex < pacifierGrid.RowDefinitions.Count)
+                            // Find the sensor text row by matching the SensorId in the TextBlock
+                            if (child is Border border && border.Child is TextBlock textBlock && textBlock.Text == $"Sensor: {sensorItem.SensorId}")
                             {
-                                pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
+                                pacifierGrid.Children.Remove(child);
+                                Debug.WriteLine($"Monitoring: Removed Sensor Row for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId}");
+                                break; // Since we're only removing one row, break the loop after removal
                             }
-
-                            Debug.WriteLine($"Monitoring: Removed SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId}");
                         }
 
-                        // Find the WrapPanel that contains the graph for this sensor group
+                        // Remove the corresponding WrapPanel (graph row)
                         var wrapPanelToRemove = pacifierGrid.Children
                             .OfType<WrapPanel>()
                             .FirstOrDefault(wrapPanel => wrapPanel.Uid == $"{pacifierItem.PacifierId}_{sensorItem.SensorId}");
@@ -555,10 +604,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                             pacifierGrid.Children.Remove(wrapPanelToRemove);
 
                             // Optionally, remove the corresponding row definition
-                            if (rowIndex < pacifierGrid.RowDefinitions.Count)
-                            {
-                                pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
-                            }
+                            //if (rowIndex < pacifierGrid.RowDefinitions.Count)
+                            //{
+                            //    pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
+                            //}
 
                             Debug.WriteLine($"Monitoring: Removed graph row for {groupName} in Pacifier {pacifierItem.PacifierId}");
                         }
@@ -664,7 +713,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             var button = sender as Button;
             if (button != null && button.Tag is string pacifierName)
             {
-                var pacifierItem = _viewModel.CheckedPacifierItems.FirstOrDefault(p => p.PacifierId == pacifierName);
+                var pacifierItem = _viewModel.PacifierItems.FirstOrDefault(p => p.PacifierId == pacifierName);
 
                 Debug.WriteLine($"Monitoring: Pacifier Item is null {pacifierName}");
 
