@@ -79,10 +79,10 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
         private async Task PopulateComboBoxesAsync()
         {
-            // Fetch unique values from the database
-            var campaigns = await _databaseService.GetUniqueCampaignNamesAsync();
-            var pacifiers = await _databaseService.GetUniquePacifierNamesAsync();
-            var sensors = await _databaseService.GetUniqueSensorTypesAsync();
+            if (allData == null || allData.Columns.Count == 0)
+            {
+                return;
+            }
 
             Dispatcher.Invoke(() =>
             {
@@ -96,27 +96,40 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 Pacifier.Items.Add("All");
                 Sensor.Items.Add("All");
 
-                // Add unique values to the ComboBoxes
-                foreach (var campaign in campaigns)
+                // Populate unique values dynamically
+                if (allData.Columns.Contains("campaign_name"))
                 {
-                    Campaign.Items.Add(campaign);
-                }
-                foreach (var pacifier in pacifiers)
-                {
-                    Pacifier.Items.Add(pacifier);
-                }
-                foreach (var sensor in sensors)
-                {
-                    Sensor.Items.Add(sensor);
+                    var campaigns = allData.AsEnumerable()
+                        .Select(row => row["campaign_name"].ToString())
+                        .Distinct()
+                        .OrderBy(x => x);
+                    foreach (var campaign in campaigns) Campaign.Items.Add(campaign);
                 }
 
-                // Set "All" as the selected item
+                if (allData.Columns.Contains("pacifier_name"))
+                {
+                    var pacifiers = allData.AsEnumerable()
+                        .Select(row => row["pacifier_name"].ToString())
+                        .Distinct()
+                        .OrderBy(x => x);
+                    foreach (var pacifier in pacifiers) Pacifier.Items.Add(pacifier);
+                }
+
+                if (allData.Columns.Contains("sensor_type"))
+                {
+                    var sensors = allData.AsEnumerable()
+                        .Select(row => row["sensor_type"].ToString())
+                        .Distinct()
+                        .OrderBy(x => x);
+                    foreach (var sensor in sensors) Sensor.Items.Add(sensor);
+                }
+
+                // Set default selection
                 Campaign.SelectedIndex = 0;
                 Pacifier.SelectedIndex = 0;
                 Sensor.SelectedIndex = 0;
             });
         }
-
 
 
 
@@ -381,31 +394,25 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 
         private void ApplyFilters()
         {
-            // Safely retrieve and trim selected values from ComboBoxes
-            string selectedCampaign = (Campaign.SelectedItem as string)?.Trim() ?? "";
-            string selectedPacifier = (Pacifier.SelectedItem as string)?.Trim() ?? "";
-            string selectedSensorType = (Sensor.SelectedItem as string)?.Trim() ?? "";
+            if (allData == null || allData.Columns.Count == 0)
+            {
+                MessageBox.Show("No data available to filter.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
-            // Use the actual column names from your DataTable
-            string campaignColumn = "Campaign Name";
-            string pacifierColumn = "Pacifier Name";
-            string sensorTypeColumn = "Sensor Type";
+            string selectedCampaign = Campaign.SelectedItem as string ?? "All";
+            string selectedPacifier = Pacifier.SelectedItem as string ?? "All";
+            string selectedSensorType = Sensor.SelectedItem as string ?? "All";
+
+            // Dynamically handle column names
+            string campaignColumn = allData.Columns.Contains("campaign_name") ? "campaign_name" : null;
+            string pacifierColumn = allData.Columns.Contains("pacifier_name") ? "pacifier_name" : null;
+            string sensorColumn = allData.Columns.Contains("sensor_type") ? "sensor_type" : null;
 
             var filteredData = allData.AsEnumerable().Where(row =>
-            {
-                // Safely retrieve and trim values from the DataRow, handling DBNull.Value
-                string rowCampaignValue = row[campaignColumn] != DBNull.Value ? row[campaignColumn]?.ToString()?.Trim() ?? "" : "";
-                string rowPacifierValue = row[pacifierColumn] != DBNull.Value ? row[pacifierColumn]?.ToString()?.Trim() ?? "" : "";
-                string rowSensorTypeValue = row[sensorTypeColumn] != DBNull.Value ? row[sensorTypeColumn]?.ToString()?.Trim() ?? "" : "";
-
-                // Determine if each field matches the selected value or if "All" is selected
-                bool campaignMatch = selectedCampaign == "All" || string.Equals(rowCampaignValue, selectedCampaign, StringComparison.OrdinalIgnoreCase);
-                bool pacifierMatch = selectedPacifier == "All" || string.Equals(rowPacifierValue, selectedPacifier, StringComparison.OrdinalIgnoreCase);
-                bool sensorTypeMatch = selectedSensorType == "All" || string.Equals(rowSensorTypeValue, selectedSensorType, StringComparison.OrdinalIgnoreCase);
-
-                // Return true if all conditions are met
-                return campaignMatch && pacifierMatch && sensorTypeMatch;
-            });
+                (selectedCampaign == "All" || (campaignColumn != null && row[campaignColumn].ToString() == selectedCampaign)) &&
+                (selectedPacifier == "All" || (pacifierColumn != null && row[pacifierColumn].ToString() == selectedPacifier)) &&
+                (selectedSensorType == "All" || (sensorColumn != null && row[sensorColumn].ToString() == selectedSensorType)));
 
             if (filteredData.Any())
             {
@@ -418,6 +425,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 MessageBox.Show("No data matches the selected filters.");
             }
         }
+
 
         private void DeveloperView_Loaded(object sender, RoutedEventArgs e)
         {
