@@ -23,6 +23,7 @@ using OxyPlot.Axes;
 using OxyPlot.Legends;
 using Smart_Pacifier___Tool.Tabs.SettingsTab;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol;
+using System.Windows.Documents;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
 {
@@ -274,6 +275,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
                 FontSize = 16,
+                FontWeight = System.Windows.FontWeights.Bold,
                 Foreground = Brushes.White
             };
             // Create a Binding for the Status property
@@ -295,6 +297,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
                 FontSize = 16,
+                FontWeight = System.Windows.FontWeights.Bold,
                 Foreground = Brushes.White
             };
             Grid.SetRow(pacifierNameTextBox, 0);
@@ -372,10 +375,37 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             Grid? pacifierGrid = FindPacifierGrid(pacifierItem.PacifierId);
             if (pacifierGrid == null) return;
 
-            // Create a new row definition for this sensor's graphs
-            RowDefinition sensorRow = new RowDefinition();
-            pacifierGrid.RowDefinitions.Add(sensorRow);
+            bool headerExists = false;
+            foreach (UIElement child in pacifierGrid.Children)
+            {
+                if (child is TextBlock textBlock && textBlock.Text == $"Sensor: {sensorItem.SensorId}")
+                {
+                    headerExists = true;
+                    break;
+                }
+            }
 
+            if (!headerExists)
+            {
+                RowDefinition sensorRow = new RowDefinition();
+                pacifierGrid.RowDefinitions.Add(sensorRow);
+                pacifierGrid.Margin = new Thickness(15);
+
+                // Add a header for the sensor item
+                TextBlock sensorHeader = new TextBlock
+                {
+                    Text = $"Sensor: {sensorItem.SensorId}",
+                    Margin = new Thickness(15),
+                    Foreground = (Brush)Application.Current.Resources["MainViewForegroundColor"],
+                    Background = (Brush)Application.Current.Resources["MainViewSecondaryBackgroundColor"],
+                    TextAlignment = TextAlignment.Center, // Center the text
+                    FontSize = 16, // Increase the text size
+                    Padding = new Thickness(8), // Add padding
+                };
+                Grid.SetRow(sensorHeader, pacifierGrid.RowDefinitions.Count - 1);
+                Grid.SetColumnSpan(sensorHeader, 3); // Span 3 columns
+                pacifierGrid.Children.Add(sensorHeader);
+            }
             // Create a unique identifier for the graph
             string uniqueUid = $"{pacifierItem.PacifierId}_{sensorItem.SensorId}";
 
@@ -434,6 +464,24 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             Grid? pacifierGrid = FindPacifierGrid(pacifierItem.PacifierId);
             if (pacifierGrid == null) return;
 
+            var sensorHeaderRemove = pacifierGrid.Children
+                .OfType<TextBlock>().FirstOrDefault(wp => wp.Text == $"Sensor: {sensorItem.SensorId}");
+
+            if (sensorHeaderRemove != null)
+            {
+                int rowIndex = Grid.GetRow(sensorHeaderRemove);
+                pacifierGrid.Children.Remove(sensorHeaderRemove);
+
+                // Optionally, remove the corresponding row definition
+                if (rowIndex < pacifierGrid.RowDefinitions.Count)
+                {
+                    pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
+                }
+
+                Debug.WriteLine($"Monitoring: Removed SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId}");
+            }
+
+
             // Find the WrapPanel for this sensor using its Uid
             var wrapPanelToRemove = pacifierGrid.Children
                 .OfType<WrapPanel>()
@@ -477,6 +525,24 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                     if (firstKvp.Key != null && firstKvp.Key == "sensorGroup") // Ensure there's at least one key-value pair
                     {
                         var groupName = firstKvp.Value;
+
+
+                        var sensorHeaderRemove = pacifierGrid.Children
+                            .OfType<TextBlock>().FirstOrDefault(wp => wp.Text == $"Sensor: {sensorItem.SensorId}");
+
+                        if (sensorHeaderRemove != null)
+                        {
+                            int rowIndex = Grid.GetRow(sensorHeaderRemove);
+                            pacifierGrid.Children.Remove(sensorHeaderRemove);
+
+                            // Optionally, remove the corresponding row definition
+                            if (rowIndex < pacifierGrid.RowDefinitions.Count)
+                            {
+                                pacifierGrid.RowDefinitions.RemoveAt(rowIndex);
+                            }
+
+                            Debug.WriteLine($"Monitoring: Removed SensorRow for Pacifier {pacifierItem.PacifierId}, Sensor {sensorItem.SensorId}");
+                        }
 
                         // Find the WrapPanel that contains the graph for this sensor group
                         var wrapPanelToRemove = pacifierGrid.Children
@@ -607,7 +673,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 {
                     Debug.WriteLine($"Monitoring: Passing {pacifierItem.PacifierId}");
 
-                    var rawDataView = new RawDataView(pacifierItem, this, false);
+                    var rawDataView = new RawDataView(pacifierItem, this, true);
 
                     // Replace the current view with RawDataView
                     var parent = this.Parent as ContentControl;
