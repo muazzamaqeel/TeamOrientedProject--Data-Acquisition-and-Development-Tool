@@ -34,7 +34,7 @@ namespace Smart_Pacifier___Tool.Components
                 var sensorPanel = new WrapPanel
                 {
                     Margin = new Thickness(5),
-                    Background = (Brush)Application.Current.FindResource("MainViewSecondaryBackgroundColor")
+                    Background = (Brush)Application.Current.FindResource("MainViewBackgroundColor")
                 };
 
                 // Create a Grid for each sensor
@@ -42,18 +42,23 @@ namespace Smart_Pacifier___Tool.Components
                 sensorGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Row 1 for SensorId
                 sensorGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // Row 2 for SensorGroups and MeasurementGroups
 
+
                 // Row 1: SensorId
                 var sensorIdTextBlock = new TextBlock
                 {
                     Text = $"Sensor: {sensorItem.SensorId}",
-                    HorizontalAlignment = HorizontalAlignment.Center,
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Left,  // Center horizontally
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center,     // Center vertically
                     FontSize = 20,
                     FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(10),
                     Foreground = (Brush)Application.Current.FindResource("MainViewForegroundColor")
-
                 };
+
+                // Set the position of the sensorIdTextBlock in the grid (row 0, column 0)
                 Grid.SetRow(sensorIdTextBlock, 0);
                 sensorGrid.Children.Add(sensorIdTextBlock);
+
 
                 // Row 2: MeasurementGroup and TextBox
                 var measurementGroupStackPanel = new StackPanel()
@@ -64,13 +69,18 @@ namespace Smart_Pacifier___Tool.Components
                 foreach (var measurementGroup in sensorItem.SensorGroups)
                 {
                     // Create a StackPanel for each KeyValuePair in the MeasurementGroup
-                    var measurementStackPanel = new StackPanel { Orientation = Orientation.Horizontal };
+                    var measurementStackPanel = new StackPanel {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Stretch, 
+                        VerticalAlignment = VerticalAlignment.Stretch
+                    };
 
                     // Create a TextBlock for the measurement label (value)
                     var valueTextBlock = new TextBlock
                     {
                         Text = measurementGroup,
-                        Margin = new Thickness(5, 0, 5, 0),
+                        Margin = new Thickness(10),
+                        FontSize = 18,
                         VerticalAlignment = VerticalAlignment.Center,
                         Foreground = (Brush)Application.Current.FindResource("MainViewForegroundColor")
                     };
@@ -78,9 +88,13 @@ namespace Smart_Pacifier___Tool.Components
                     // Create a TextBox for the interval input
                     var textBox = new TextBox
                     {
+                        Style = (Style)Application.Current.FindResource("TextBoxStyle"),
                         Uid = measurementGroup,
                         Text = SensorIntervals[measurementGroup].ToString() ?? "0", // Default to 0 if no graph exists
-                        Width = 50
+                        Width = 100,
+                        Margin = new Thickness(0),
+                        FontSize = 10,
+                        Height = 35
                     };
 
                     // Optionally, add input validation for numeric values

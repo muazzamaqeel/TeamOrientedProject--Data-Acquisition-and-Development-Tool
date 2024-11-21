@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Interval Settings" Width="400" Height="500">
 
-    <Grid Background="{StaticResource MainViewBackgroundColor}">
+    <Grid Background="{StaticResource MainViewSecondaryBackgroundColor}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <!-- Scrollable area -->
@@ -19,6 +19,9 @@
             <StackPanel x:Name="SensorSettingsPanel" />
         </ScrollViewer>
 
-        <Button Content="Save" Click="SaveButton_Click" Style="{StaticResource ModernButtonStyle}" HorizontalAlignment="Center" Margin="10" Width="70" Height="25" Grid.Row="1"/>
+        <Grid Grid.Row="1" Background="{StaticResource MainViewBackgroundColor}">
+            <Button Content="Save" Click="SaveButton_Click" Style="{StaticResource ModernButtonStyle}" HorizontalAlignment="Center" Margin="10" Width="70" Height="25"/>
+
+        </Grid>
     </Grid>
 </Window>

@@ -21,9 +21,9 @@
                             <RowDefinition />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <Border Grid.Column="1" BorderThickness="0,1,1,1" Background="Transparent">
+                        <Border Grid.Column="1" BorderThickness="0,1,1,1" Background="{StaticResource MainViewSecondaryBackgroundColor}">
                             <Border.BorderBrush>
-                                <SolidColorBrush Color="#FF444444"/>
+                                <SolidColorBrush Color="#1f1f1f"/>
                             </Border.BorderBrush>
                             <ScrollContentPresenter CanContentScroll="{TemplateBinding CanContentScroll}" />
                         </Border>
@@ -33,7 +33,7 @@
                                    Maximum="{TemplateBinding ScrollableHeight}"
                                    ViewportSize="{TemplateBinding ViewportHeight}"
                                    Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
-                                   Background="#FF444444" />
+                                   Background="{StaticResource MainViewBackgroundColor}" />
                         <ScrollBar x:Name="PART_HorizontalScrollBar"
                                    Orientation="Horizontal"
                                    Grid.Row="1"
@@ -43,7 +43,7 @@
                                    Maximum="{TemplateBinding ScrollableWidth}"
                                    ViewportSize="{TemplateBinding ViewportWidth}"
                                    Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
-                                   Background="#FF444444" />
+                                   Background="{StaticResource MainViewBackgroundColor}" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
