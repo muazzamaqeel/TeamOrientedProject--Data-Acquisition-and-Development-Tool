@@ -419,6 +419,21 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
+        private void DeveloperView_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Attach mouse wheel scrolling to the ScrollViewer
+            DataListView.PreviewMouseWheel += (s, ev) =>
+            {
+                ScrollViewer scrollViewer = DataListView.Parent as ScrollViewer;
+                if (scrollViewer != null)
+                {
+                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - ev.Delta / 3);
+                    ev.Handled = true;
+                }
+            };
+        }
+
+
 
 
     }
