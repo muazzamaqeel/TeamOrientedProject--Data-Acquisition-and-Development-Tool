@@ -89,11 +89,13 @@ namespace Smart_Pacifier___Tool.Components
             {
                 Position = AxisPosition.Bottom,
                 StringFormat = "HH:mm:ss",
-                FontSize = 8,
+                FontSize = 10,
                 Title = "Time",
                 IsZoomEnabled = false,
                 IsPanEnabled = false,
                 IntervalLength = 50,
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot,
                 TextColor = foregroundColor,
                 TitleColor = foregroundColor
             });
@@ -104,6 +106,8 @@ namespace Smart_Pacifier___Tool.Components
                 IsZoomEnabled = false,
                 IsPanEnabled = false,
                 TextColor = foregroundColor,
+                MajorGridlineStyle = LineStyle.Solid,
+                MinorGridlineStyle = LineStyle.Dot,
                 TitleColor = foregroundColor
             });
 

@@ -20,6 +20,7 @@ using OxyPlot;
 using OxyPlot.Axes;
 using SmartPacifier.Interface.Services;
 using InfluxDB.Client.Api.Domain;
+using System.Windows.Media;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 {
@@ -36,6 +37,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         public Dictionary<string, int> SensorIntervals { get; private set; } = new Dictionary<string, int>();
 
         public Dictionary<string, DateTime> _lastUpdateTimestamps = new Dictionary<string, DateTime>();
+
+        // Maps for storing grid and row references
+        public Dictionary<PacifierItem, Grid> PacifierGridMap = new Dictionary<PacifierItem, Grid>();
+        public Dictionary<Tuple<PacifierItem, SensorItem>, RowDefinition> SensorRowMap = new Dictionary<Tuple<PacifierItem, SensorItem>, RowDefinition>();
 
         public Dictionary<PacifierItem, DateTime> _lastPacifierUpdate = new Dictionary<PacifierItem, DateTime>();
 
@@ -192,7 +197,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
                             string uniqueKey = $"{pacifierItem.PacifierId}_{e.SensorType}";
 
-                            // Check if we should throttle based on pacifier's update frequency
+                            //Check if we should throttle based on pacifier's update frequency
                             if (_lastUpdateTimestamps.ContainsKey(uniqueKey))
                             {
                                 var lastUpdate = _lastUpdateTimestamps[uniqueKey];
@@ -300,8 +305,10 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                 await Task.Delay(5000, token);
 
                 pacifierItem.Status = "Not Receiving";
+                pacifierItem.StatusColor = Brushes.Red; // Changes the circle to red
 
-                // If we reach here, it means 5 seconds passed without a new message
+
+            // If we reach here, it means 5 seconds passed without a new message
 
             //    //Debug.WriteLine($"No updates received for Pacifier {pacifierItem.PacifierId} in the last 5 seconds.");
             //}
@@ -334,17 +341,20 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
                 if (measurementGraph.PlotId == uniquePlotId)
                 {
-                    //// Throttle updates to given frequency
-                    //if (_lastUpdateTimestamps.TryGetValue(uniquePlotId, out DateTime lastUpdate))
+                    //if (_lastUpdateTimestamps.ContainsKey(uniquePlotId))
                     //{
-                    //    var difference = (DateTime.Now - lastUpdate).TotalMilliseconds;
-                    //    if (difference < pacifierItem.UpdateFrequency)
-                    //    {
-                    //        Debug.WriteLine($"Skipped {uniquePlotId}: {difference}");
+                    //    var lastUpdate = _lastUpdateTimestamps[uniquePlotId];
+                    //    var timeDifference = (DateTime.Now - lastUpdate).TotalMilliseconds;
 
-                    //        continue;
+                    //    // If the time difference is less than the update frequency, skip this update
+                    //    if (timeDifference < pacifierItem.UpdateFrequency)
+                    //    {
+                    //        Debug.WriteLine($"Throttle: Skipping update for Pacifier {pacifierItem.PacifierId} and Sensor {sensorItem.SensorId}. Time difference: {timeDifference}ms");
+                    //        return; // Skip the update
                     //    }
                     //}
+
+                    //// Update the timestamp for the pacifier and sensor pair
                     //_lastUpdateTimestamps[uniquePlotId] = DateTime.Now;
 
                     foreach (var kvp in sensorGroup)
@@ -369,6 +379,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                             {
                                 Title = kvp.Key,
                                 MarkerType = MarkerType.None,
+                                MarkerSize = 2,
                                 Color = blueShades[measurementGraph.LineSeriesCollection.Count % blueShades.Length]
                             };
                             measurementGraph.LineSeriesCollection.Add(existingSeries);
