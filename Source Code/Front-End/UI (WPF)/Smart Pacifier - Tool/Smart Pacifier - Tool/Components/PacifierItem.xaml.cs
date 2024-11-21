@@ -82,6 +82,8 @@ namespace Smart_Pacifier___Tool.Components
             set; 
         }
 
+        public List<object> CampaignData { get; set; }
+
         public PacifierItem(string pacifierId)
         {
             InitializeComponent();
@@ -94,6 +96,8 @@ namespace Smart_Pacifier___Tool.Components
             Status = "Connected";
 
             Sensors = new ObservableCollection<SensorItem>();
+            CampaignData = new List<object>();
+
 
             DataContext = this;
         }
@@ -123,7 +127,6 @@ namespace Smart_Pacifier___Tool.Components
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
 
     }
 }
