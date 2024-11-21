@@ -8,13 +8,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:converters="clr-namespace:Smart_Pacifier___Tool.Resources.Converters"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="600" d:DesignWidth="1000">
 
-    <!-- Define the resources -->
     <UserControl.Resources>
         <!-- Converter for dynamic column width if needed -->
-        <!-- You can remove this if not used -->
-        <converters:ColumnWidthConverter x:Key="ColumnWidthConverter"/>
+        <converters:ColumnWidthConverter x:Key="ColumnWidthConverter" />
 
         <!-- DataTemplate for the checkbox in each row -->
         <DataTemplate x:Key="CheckBoxCellTemplate">
@@ -62,7 +60,6 @@
                 <ComboBox Background="{StaticResource MainViewSecondaryBackgroundColor}" x:Name="Sensor" Width="150" SelectionChanged="ComboBox_SelectionChanged"/>
             </StackPanel>
 
-
             <!-- Action Buttons -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <Button Content="Add" Width="80" Click="AddButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
@@ -77,13 +74,13 @@
 
         <!-- Main Content Grid -->
         <Grid Grid.Row="1">
-            <!-- Loading Spinner -->
-            <components:LoadingSpinner x:Name="LoadingSpinner" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" Width="100" Height="100"/>
+            <!-- Loading Spinner: Replaced with ProgressBar -->
+            <ProgressBar x:Name="LoadingSpinner" Visibility="Collapsed" Width="200" Height="20" IsIndeterminate="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
             <!-- Enable horizontal scrolling by wrapping ListView in a ScrollViewer -->
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-              PanningMode="Both" PanningDeceleration="0.001"
-              Background="{StaticResource MainViewBackgroundColor}">
+                          PanningMode="Both" PanningDeceleration="0.001"
+                          Background="{StaticResource MainViewBackgroundColor}">
                 <ScrollViewer.Resources>
                     <Style TargetType="ScrollBar">
                         <Setter Property="Width" Value="14"/>
@@ -93,9 +90,16 @@
                         <Setter Property="Foreground" Value="DarkGray"/>
                     </Style>
                 </ScrollViewer.Resources>
-                
-                <ListView Background="{StaticResource MainViewBackgroundColor}" x:Name="DataListView" Margin="0,10,0,10" SelectionMode="Extended"
-                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
+
+                <ListView x:Name="DataListView"
+                          Background="{StaticResource MainViewBackgroundColor}"
+                          Margin="0,10,0,10"
+                          VirtualizingStackPanel.IsVirtualizing="True"
+                          VirtualizingStackPanel.VirtualizationMode="Recycling"
+                          ScrollViewer.CanContentScroll="True"
+                          SelectionMode="Extended"
+                          HorizontalContentAlignment="Stretch"
+                          VerticalContentAlignment="Center">
                     <ListView.View>
                         <GridView x:Name="DataGridView">
                             <!-- Columns will be added dynamically in code-behind -->
@@ -106,16 +110,10 @@
                         <Style TargetType="ListViewItem">
                             <Setter Property="FontFamily" Value="Segoe UI"/>
                             <Setter Property="FontSize" Value="14"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                            <Setter Property="VerticalContentAlignment" Value="Center"/>
                             <Setter Property="Padding" Value="5"/>
-                            <Setter Property="Margin" Value="2"/>
                             <Setter Property="Background" Value="{StaticResource MainViewSecondaryBackgroundColor}"/>
                             <Setter Property="Foreground" Value="White"/>
-                            <Setter Property="BorderBrush" Value="{StaticResource MainViewSecondaryBackgroundColor}"/>
-                            <Setter Property="BorderThickness" Value="1"/>
                             <Setter Property="SnapsToDevicePixels" Value="True"/>
-                            <Setter Property="UseLayoutRounding" Value="True"/>
                             <Style.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Background" Value="{StaticResource MainViewSecondaryBackgroundColor}"/>
@@ -132,7 +130,9 @@
 
         <!-- Pagination Controls -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
-            <!-- Pagination buttons if needed -->
+            <Button Content="Previous" Width="80" Click="PreviousButton_Click" Margin="5,0"/>
+            <TextBlock x:Name="PageIndicator" Text="Page 1" FontWeight="Bold" Margin="10,0" VerticalAlignment="Center"/>
+            <Button Content="Next" Width="80" Click="NextButton_Click" Margin="5,0"/>
         </StackPanel>
     </Grid>
 </UserControl>
