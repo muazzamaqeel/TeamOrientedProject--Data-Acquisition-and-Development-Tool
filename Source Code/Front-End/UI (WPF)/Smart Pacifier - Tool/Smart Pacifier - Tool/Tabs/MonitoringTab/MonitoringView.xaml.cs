@@ -125,7 +125,6 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             }
 
             // Call the method to update the visibility of the pacifier
-            _viewModel.TogglePacifierVisibility(pacifierItem);
         }
 
 
@@ -182,12 +181,25 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 _viewModel.CheckedPacifierItems.Add(pacifierItem);
                 AddPacifierGrid(pacifierItem);
                 AddGraphRowsForToggledSensors(pacifierItem);
+
+                // Remove all entries in _lastUpdateTimestamps associated with the sensor
+                var keysToUpdate = _viewModel._lastUpdateTimestamps.Keys
+                    .Where(key => key.EndsWith(pacifierItem.PacifierId))
+                    .ToList();
+
+                foreach (var key in keysToUpdate)
+                {
+                    _viewModel._lastUpdateTimestamps[key] = DateTime.Now.AddMilliseconds(-10000);
+                    Debug.WriteLine($"New timestamp entry: {key}");
+                }
+               
             }
             else
             {
                 pacifierItem.CircleText = " ";
                 _viewModel.CheckedPacifierItems.Remove(pacifierItem);
                 RemovePacifierGrid(pacifierItem);
+
             }
         }
 
@@ -198,12 +210,26 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             {
                 _viewModel.CheckedSensorItems.Add(sensorItem);
                 AddGraphRowsForToggledSensorsForAllPacifiers(sensorItem);
+
+
+                // Remove all entries in _lastUpdateTimestamps associated with the sensor
+                var keysToUpdate = _viewModel._lastUpdateTimestamps.Keys
+                    .Where(key => key.StartsWith(sensorItem.SensorId))
+                    .ToList();
+
+                foreach (var key in keysToUpdate)
+                {
+                    _viewModel._lastUpdateTimestamps[key] = DateTime.Now.AddMilliseconds(-10000);
+                    Debug.WriteLine($"New timestamp entry: {key}");
+                }
+                
             }
             else
             {
                 sensorItem.SensorCircleText = " ";
                 _viewModel.CheckedSensorItems.Remove(sensorItem);
                 RemoveGraphRowsForSensorItem(sensorItem);
+
             }
         }
 
@@ -241,6 +267,26 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Create the first TextBlock for the status
+            TextBlock statusTextBox = new()
+            {
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                FontSize = 16,
+                Foreground = Brushes.White
+            };
+            // Create a Binding for the Status property
+            Binding statusBinding = new Binding("Status")
+            {
+                Source = pacifierItem // Bind to the pacifierItem
+            };
+
+            // Apply the Binding to the TextBlock's Text property
+            statusTextBox.SetBinding(TextBlock.TextProperty, statusBinding);
+            Grid.SetRow(statusTextBox, 0);
+            Grid.SetColumn(statusTextBox, 0);
+            pacifierGrid.Children.Add(statusTextBox);
 
             // Create the first TextBlock for pacifier name
             TextBlock pacifierNameTextBox = new()
@@ -490,7 +536,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             WrapPanel graphPanel = new WrapPanel
             {
                 Orientation = Orientation.Horizontal,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Top,
                 Uid = uniqueUid
             };
@@ -511,11 +557,11 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 // Create an instance of the LineChartGraph with necessary properties
                 LineChartGraph graph = new LineChartGraph(sensorItem, sensorGroup, interval)
                 {
-                    Height = 300,
+                    Height = 250,
                     Uid = uniquePlotId,
                     Name = sensorGroup,
                     PlotId = uniquePlotId,  // Ensure unique PlotId
-                    HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch,
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                     Margin = new Thickness(5)
                 };
 
@@ -523,31 +569,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
                 //graph.PlotModel.IsLegendVisible = true;
 
                 // Optionally set specific properties (like disabling zoom) if handled in the class
-                graph.PlotModel.Axes.Add(new DateTimeAxis
-                {
-                    Position = AxisPosition.Bottom,
-                    StringFormat = "HH:mm:ss",
-                    Title = "Time",
-                    IsZoomEnabled = false,
-                    IsPanEnabled = false,
-                    IntervalLength = interval
-                });
 
-                graph.PlotModel.Axes.Add(new LinearAxis
-                {
-                    Position = AxisPosition.Left,
-                    IsZoomEnabled = false,
-                    IsPanEnabled = false
-                });
-
-                // Add a legend to the plot model
-                graph.PlotModel.Legends.Add(new Legend
-                {
-                    LegendPosition = LegendPosition.TopRight,
-                    LegendPlacement = LegendPlacement.Outside,
-                    LegendOrientation = LegendOrientation.Horizontal,
-                    LegendBorderThickness = 0
-                });
 
 
                 // Add the graph to the SensorItem's collection for future reference
@@ -622,6 +644,19 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             else
             {
                 MessageBox.Show("Please Select at least 1 Sensor.");
+            }
+        }
+
+        private void Frequency_Button(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel.PacifierItems != null)
+            {
+                var inputDialog = new InputDialog(_viewModel.PacifierItems);
+                inputDialog.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("No Pacifiers Available.");
             }
         }
 
