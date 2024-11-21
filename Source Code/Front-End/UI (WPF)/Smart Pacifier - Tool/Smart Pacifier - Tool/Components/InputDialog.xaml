@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Smart_Pacifier___Tool.Components"
         mc:Ignorable="d"
-        Title="InputDialog" Height="200" Width="400" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
-    <Grid>
+        Title="InputDialog" Height="200" Width="300" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Background="{StaticResource MainViewBackgroundColor}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -14,15 +14,15 @@
         </Grid.RowDefinitions>
 
         <!-- Title Text -->
-        <TextBlock Text="Enter Campaign Name:" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Left" FontWeight="Bold"/>
+        <TextBlock Text="Throttle Frequency (ms)" Grid.Row="0" FontSize="14" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource MainViewForegroundColor}"/>
 
         <!-- TextBox for Input -->
-        <TextBox x:Name="InputTextBox" Grid.Row="1" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Stretch" Height="30"/>
+        <TextBox x:Name="InputTextBox" Style="{StaticResource TextBoxStyle}" Grid.Row="1" Margin="10" VerticalAlignment="Center" Width="150"/>
 
         <!-- Button Panel -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
-            <Button Content="OK" Width="75" Margin="5" Click="OKButton_Click"/>
-            <Button Content="Cancel" Width="75" Margin="5" Click="CancelButton_Click"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+            <Button Style="{StaticResource SmallModernButtonStyle}" Content="Save" Margin = "5" Click="SaveButton_Click"/>
+            <Button Style="{StaticResource SmallModernButtonStyle}" Content="Cancel" Margin = "5" Click="CancelButton_Click"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -1,10 +1,12 @@
 ﻿using OxyPlot;
 using OxyPlot.Axes;
+using OxyPlot.Legends;
 using OxyPlot.Series;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using DataPoint = OxyPlot.DataPoint;
 
 namespace Smart_Pacifier___Tool.Components
@@ -71,10 +73,60 @@ namespace Smart_Pacifier___Tool.Components
             // Default values
             Interval = interval;
             GroupName = groupName;
-            PlotModel = new PlotModel { Title = GroupName };
+
+            OxyColor foregroundColor = ConvertBrushToOxyColor((SolidColorBrush)Application.Current.FindResource("MainViewForegroundColor"));
+
+            PlotModel = new PlotModel
+            {
+                Title = GroupName,
+                TextColor = foregroundColor,
+                TitleColor = foregroundColor,
+                TitleHorizontalAlignment = TitleHorizontalAlignment.CenteredWithinView
+
+            };
+
+            PlotModel.Axes.Add(new DateTimeAxis
+            {
+                Position = AxisPosition.Bottom,
+                StringFormat = "HH:mm:ss",
+                FontSize = 8,
+                Title = "Time",
+                IsZoomEnabled = false,
+                IsPanEnabled = false,
+                IntervalLength = 50,
+                TextColor = foregroundColor,
+                TitleColor = foregroundColor
+            });
+
+            PlotModel.Axes.Add(new LinearAxis
+            {
+                Position = AxisPosition.Left,
+                IsZoomEnabled = false,
+                IsPanEnabled = false,
+                TextColor = foregroundColor,
+                TitleColor = foregroundColor
+            });
+
+            // Add a legend to the plot model
+            PlotModel.Legends.Add(new Legend
+            {
+                LegendPosition = LegendPosition.TopRight,
+                LegendPlacement = LegendPlacement.Outside,
+                LegendOrientation = LegendOrientation.Horizontal,
+                LegendBorderThickness = 0,
+                TextColor = foregroundColor
+            });
+
+
+
             LineSeriesCollection = new ObservableCollection<LineSeries>();
 
             DataContext = this; // Enable data binding
+        }
+        private OxyColor ConvertBrushToOxyColor(SolidColorBrush brush)
+        {
+            Color color = brush.Color;
+            return OxyColor.FromArgb(color.A, color.R, color.G, color.B);
         }
 
         /// <summary>
@@ -123,7 +175,7 @@ namespace Smart_Pacifier___Tool.Components
             var newSeries = new LineSeries
             {
                 Title = measurementGroup,
-                MarkerType = MarkerType.Square
+                MarkerType = MarkerType.None
             };
 
             LineSeriesCollection.Add(newSeries);

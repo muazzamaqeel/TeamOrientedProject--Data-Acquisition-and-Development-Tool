@@ -4,5 +4,13 @@
              xmlns:oxy="http://oxyplot.org/wpf"
              Height="300" Width="400">
 
-    <oxy:PlotView x:Name="plotView" Model="{Binding PlotModel}" />
+    <Border CornerRadius="8" 
+            Background="{StaticResource MainViewSecondaryBackgroundColor}"
+            BorderBrush="{StaticResource MainViewForegroundColor}" 
+            BorderThickness="0">
+        <oxy:PlotView x:Name="plotView" 
+                      Model="{Binding PlotModel}"
+                      Foreground="{StaticResource MainViewForegroundColor}"
+                      Background="Transparent"/>
+    </Border>
 </UserControl>
