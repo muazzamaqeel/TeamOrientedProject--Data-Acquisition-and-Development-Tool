@@ -36,11 +36,6 @@
         <!-- Filter Controls with Headers -->
         <StackPanel Background="{StaticResource MainViewBackgroundColor}" Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,10" HorizontalAlignment="Center">
 
-            <!-- Time Range Filter -->
-            <StackPanel Margin="5" HorizontalAlignment="Center">
-                <TextBlock Text="Time Range" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox Background="{StaticResource MainViewSecondaryBackgroundColor}" x:Name="TimeRange" Width="150" SelectionChanged="ComboBox_SelectionChanged"/>
-            </StackPanel>
 
             <!-- Campaign Filter -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
@@ -60,10 +55,11 @@
                 <ComboBox Background="{StaticResource MainViewSecondaryBackgroundColor}" x:Name="Sensor" Width="150" SelectionChanged="ComboBox_SelectionChanged"/>
             </StackPanel>
 
-            <!-- Action Buttons -->
+            <!-- Action Buttons 
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <Button Content="Add" Width="80" Click="AddButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
             </StackPanel>
+            -->
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <Button Content="Edit" Width="80" Click="EditButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
             </StackPanel>
