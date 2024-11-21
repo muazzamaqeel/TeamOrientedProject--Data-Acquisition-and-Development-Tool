@@ -17,8 +17,6 @@
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
                 <Button Style="{StaticResource ModernButtonStyle}" Content="Back" Click="BackButton_Click" Margin="0,0,10,0"/>
-                <Button Style="{StaticResource ModernButtonStyle}" Content="Time Range" Margin="0,0,10,0"
-                        Visibility="{Binding ActiveMonitoring, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </StackPanel>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <TextBlock Text="Raw Data" Foreground="White" FontSize="24" HorizontalAlignment="Center" FontWeight="Bold"/>
@@ -59,12 +57,5 @@
                 </DataGrid>
             </Border>
         </Grid>
-
-        <!-- Navigation Buttons Section -->
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Height="60" Margin="0,0,0,15"
-                    Visibility="{Binding ActiveMonitoring, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Button Style="{StaticResource ModernButtonStyle}" Content="Previous" Margin="0,0,10,0"/>
-            <Button Style="{StaticResource ModernButtonStyle}" Content="Next" Margin="10,0,0,0"/>
-        </StackPanel>
     </Grid>
 </UserControl>
