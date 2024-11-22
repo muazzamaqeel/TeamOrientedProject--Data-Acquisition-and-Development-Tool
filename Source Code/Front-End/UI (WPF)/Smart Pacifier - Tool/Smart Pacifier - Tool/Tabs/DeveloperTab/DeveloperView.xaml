@@ -79,7 +79,7 @@
                           Background="{StaticResource MainViewBackgroundColor}">
                 <ScrollViewer.Resources>
                     <Style TargetType="ScrollBar">
-                        <Setter Property="Width" Value="14"/>
+                        <Setter Property="Width" Value="30"/>
                         <!-- Adjust scrollbar width -->
                         <Setter Property="Background" Value="LightGray"/>
                         <!-- Make it more visible -->
@@ -126,9 +126,9 @@
 
         <!-- Pagination Controls -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
-            <Button Content="Previous" Width="80" Click="PreviousButton_Click" Margin="5,0"/>
-            <TextBlock x:Name="PageIndicator" Text="Page 1" FontWeight="Bold" Margin="10,0" VerticalAlignment="Center"/>
-            <Button Content="Next" Width="80" Click="NextButton_Click" Margin="5,0"/>
+            <Button Content="Previous" Width="80" Click="PreviousButton_Click" Margin="5,0" Style="{StaticResource SmallModernButtonStyle}"/>
+            <TextBlock x:Name="PageIndicator" Text="Page 1" FontWeight="Bold" Margin="10,0" VerticalAlignment="Center" Foreground="White"/>
+            <Button Content="Next" Width="80" Click="NextButton_Click" Margin="5,0" Style="{StaticResource SmallModernButtonStyle}"/>
         </StackPanel>
     </Grid>
 </UserControl>
