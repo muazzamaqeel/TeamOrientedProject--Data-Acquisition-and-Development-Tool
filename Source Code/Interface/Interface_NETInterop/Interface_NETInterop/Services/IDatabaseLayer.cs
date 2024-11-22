@@ -22,6 +22,9 @@ namespace SmartPacifier.Interface.Services
         Task<List<string>> GetUniqueCampaignNamesAsync();
         Task<List<string>> GetUniquePacifierNamesAsync();
         Task<List<string>> GetUniqueSensorTypesAsync();
+        Task DeleteEntryWithFluxAsync(int entryId, string measurement);
+        Task DeleteByPredicateAsync(string start, string stop, string predicate);
+        Task DeleteEntriesAsync(List<(int entryId, string campaignName)> entries);
     }
 
     public interface IDataManipulationHandler
