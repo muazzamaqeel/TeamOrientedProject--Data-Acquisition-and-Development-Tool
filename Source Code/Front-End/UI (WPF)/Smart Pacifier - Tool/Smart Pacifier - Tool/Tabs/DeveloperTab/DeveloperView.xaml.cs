@@ -3,6 +3,7 @@ using SmartPacifier.Interface.Services;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -71,6 +72,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 HideLoadingSpinner();
             }
         }
+
 
         // Display data with pagination
         private void DisplayData(DataTable data, int page)
@@ -317,43 +319,61 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         {
             try
             {
-                if (DataListView.SelectedItems.Count > 0)
+                var selectedRows = DataListView.SelectedItems.Cast<DataRowView>().ToList();
+
+                if (!selectedRows.Any())
                 {
-                    var itemsToDelete = DataListView.SelectedItems.Cast<DataRowView>().ToList();
+                    MessageBox.Show("Please select rows to delete using checkboxes.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
 
-                    foreach (var selectedRow in itemsToDelete)
+                var result = MessageBox.Show(
+                    $"Are you sure you want to delete {selectedRows.Count} entries?",
+                    "Confirm Deletion",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+
+                if (!_allData.Columns.Contains("entry_id") || !_allData.Columns.Contains("campaign_name"))
+                {
+                    MessageBox.Show("Error: The required 'entry_id' or 'campaign_name' column is missing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var entriesToDelete = new List<(int, string)>();
+
+                foreach (var row in selectedRows)
+                {
+                    if (row["entry_id"] == DBNull.Value || row["campaign_name"] == DBNull.Value)
                     {
-                        // Check for the exact name of the column
-                        if (selectedRow.Row.Table.Columns.Contains("entry_id") && selectedRow.Row.Table.Columns.Contains("Measurement"))
-                        {
-                            // Retrieve the entry ID and measurement type from the selected row
-                            int entryId = Convert.ToInt32(selectedRow["entry_id"]);
-                            string measurement = selectedRow["Measurement"].ToString();
-
-                            // Call the delete method with both entryId and measurement
-                            await _databaseService.DeleteEntryFromDatabaseAsync(entryId, measurement);
-                        }
-                        else
-                        {
-                            MessageBox.Show("Error: 'entry_id' or 'Measurement' column not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
+                        MessageBox.Show("Invalid 'entry_id' or 'campaign_name' found in selected row.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        continue;
                     }
 
-                    MessageBox.Show("Selected entries deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    int entryId = Convert.ToInt32(row["entry_id"]);
+                    string campaignName = row["campaign_name"].ToString();
 
-                    // Reload data to reflect changes
-                    await LoadDataAsync();
+                    entriesToDelete.Add((entryId, campaignName));
                 }
-                else
-                {
-                    MessageBox.Show("Please select entries to delete.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
+
+                await _databaseService.DeleteEntriesAsync(entriesToDelete);
+
+                MessageBox.Show("Selected entries deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Reload the data to reflect changes with the same filters
+                await LoadDataAsync();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting entry: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error deleting entries: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+
 
         // Event handler for Select All checkbox checked
         private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)

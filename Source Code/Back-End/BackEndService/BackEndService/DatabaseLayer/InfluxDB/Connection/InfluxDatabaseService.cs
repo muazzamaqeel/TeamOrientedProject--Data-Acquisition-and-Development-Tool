@@ -214,64 +214,127 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         {
             try
             {
-                using (var client = new HttpClient())
+                string start = "1970-01-01T00:00:00Z";
+                string stop = DateTime.UtcNow.ToString("o");
+
+                string predicate = measurement switch
                 {
-                    // Set up the headers
-                    client.DefaultRequestHeaders.Add("Authorization", $"Token {_token}");
-                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+                    "campaign_metadata" => $"_measurement=\"campaign_metadata\" AND entry_id=\"{entryId}\"",
+                    "campaigns" => $"_measurement=\"campaigns\" AND entry_id=\"{entryId}\"",
+                    _ => throw new ArgumentException("Invalid measurement type specified.", nameof(measurement))
+                };
 
-                    // Define the start and stop times for deletion
-                    string start = "1970-01-01T00:00:00Z";
-                    string stop = DateTime.UtcNow.ToString("o");
+                var deleteRequest = new
+                {
+                    start,
+                    stop,
+                    predicate
+                };
 
-                    // Create a dynamic predicate based on measurement type
-                    string predicate;
-                    if (measurement == "campaign_metadata")
-                    {
-                        // Only use entry_id for campaign_metadata
-                        predicate = $"_measurement=\"campaign_metadata\" AND entry_id=\"{entryId}\"";
-                    }
-                    else if (measurement == "campaigns")
-                    {
-                        // Use both measurement and entry_id for campaigns
-                        predicate = $"_measurement=\"campaigns\" AND entry_id=\"{entryId}\"";
-                    }
-                    else
-                    {
-                        MessageBox.Show("Unknown measurement type specified.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
+                var jsonContent = JsonConvert.SerializeObject(deleteRequest);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                    // Create the JSON payload for the delete request
-                    var deleteRequest = new
-                    {
-                        start = start,
-                        stop = stop,
-                        predicate = predicate
-                    };
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Token {_token}");
+                httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
-                    var jsonContent = JsonConvert.SerializeObject(deleteRequest);
-                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                var response = await httpClient.PostAsync($"{_baseUrl}/api/v2/delete?org={_org}&bucket={_bucket}", content);
 
-                    // Send the DELETE request to the InfluxDB API
-                    var response = await client.PostAsync($"{_baseUrl}/api/v2/delete?org={_org}&bucket={_bucket}", content);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        //MessageBox.Show("Entry deleted successfully from the database.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        string errorContent = await response.Content.ReadAsStringAsync();
-                        MessageBox.Show($"Error deleting entry: {response.ReasonPhrase} - {errorContent}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                if (response.IsSuccessStatusCode)
+                {
+                    Debug.WriteLine($"Entry with ID {entryId} deleted successfully.");
+                }
+                else
+                {
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Error deleting entry: {response.ReasonPhrase} - {errorContent}");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting entry from database: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw new Exception($"Failed to delete entry from database: {ex.Message}");
             }
         }
+
+        public async Task DeleteEntryAsync(int entryId, string campaignName)
+        {
+            try
+            {
+                // Define the time range for deletion (entire range)
+                string start = "1970-01-01T00:00:00Z";
+                string stop = DateTime.UtcNow.ToString("o");
+
+                // Delete from campaign_metadata
+                string predicateMetadata = $"_measurement=\"campaign_metadata\" AND entry_id=\"{entryId}\" AND campaign_name=\"{campaignName}\"";
+                await DeleteByPredicateAsync(start, stop, predicateMetadata);
+
+                // Delete from campaigns
+                string predicateCampaigns = $"_measurement=\"campaigns\" AND entry_id=\"{entryId}\" AND campaign_name=\"{campaignName}\"";
+                await DeleteByPredicateAsync(start, stop, predicateCampaigns);
+
+                Debug.WriteLine($"Entries with ID {entryId} and Campaign '{campaignName}' deleted successfully from both measurements.");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to delete entry: {ex.Message}");
+            }
+        }
+
+        public async Task DeleteEntriesAsync(List<(int entryId, string campaignName)> entries)
+        {
+            foreach (var (entryId, campaignName) in entries)
+            {
+                await DeleteEntryAsync(entryId, campaignName);
+            }
+        }
+        public async Task DeleteByPredicateAsync(string start, string stop, string predicate)
+        {
+            var deleteRequest = new
+            {
+                start,
+                stop,
+                predicate
+            };
+
+            var jsonContent = JsonConvert.SerializeObject(deleteRequest);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Token {_token}");
+            httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+
+            var response = await httpClient.PostAsync($"{_baseUrl}/api/v2/delete?org={_org}&bucket={_bucket}", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorContent = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Error deleting entry: {response.ReasonPhrase} - {errorContent}");
+            }
+        }
+
+
+        public async Task DeleteEntryWithFluxAsync(int entryId, string measurement)
+        {
+            try
+            {
+                var fluxQuery = $@"
+            from(bucket: ""{_bucket}"")
+            |> range(start: 0)
+            |> filter(fn: (r) => r._measurement == ""{measurement}"" and r.entry_id == {entryId})
+        ";
+
+                var queryApi = _client.GetQueryApi();
+                var tables = await queryApi.QueryAsync(fluxQuery, _org);
+
+                Debug.WriteLine($"Deleted entry with ID {entryId} from measurement {measurement}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error deleting entry with ID {entryId}: {ex.Message}");
+                throw new Exception($"Failed to delete entry with ID {entryId}: {ex.Message}");
+            }
+        }
+
 
 
         public async Task<Dictionary<string, object>> GetCampaignDataAlgorithmLayerAsync(string campaignName)
