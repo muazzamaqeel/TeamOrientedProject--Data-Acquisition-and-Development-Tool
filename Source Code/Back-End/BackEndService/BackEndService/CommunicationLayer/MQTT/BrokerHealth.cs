@@ -17,15 +17,10 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
         public BrokerHealth()
         {
-            // Initialize MQTT client
             var factory = new MqttFactory();
             mqttClient = factory.CreateMqttClient();
         }
 
-        /// <summary>
-        /// Checks the overall broker health, including reachability and data reception.
-        /// </summary>
-        /// <returns>A string describing the broker's health status.</returns>
         public async Task<string> CheckBrokerHealthAsync()
         {
             bool isReachable = await IsBrokerReachableAsync();
@@ -45,10 +40,6 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-        /// <summary>
-        /// Checks if the broker is reachable via a TCP connection.
-        /// </summary>
-        /// <returns>True if reachable, false otherwise.</returns>
         public async Task<bool> IsBrokerReachableAsync()
         {
             try
@@ -56,66 +47,69 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                 using (var tcpClient = new TcpClient())
                 {
                     await tcpClient.ConnectAsync(brokerAddress, brokerPort);
-                    return tcpClient.Connected;
                 }
+
+                // Attempt an MQTT handshake
+                var options = new MqttClientOptionsBuilder()
+                    .WithTcpServer(brokerAddress, brokerPort)
+                    .Build();
+
+                if (!mqttClient.IsConnected)
+                {
+                    await mqttClient.ConnectAsync(options);
+                }
+
+                await mqttClient.DisconnectAsync(); // Disconnect after validation
+                return true; // Successful MQTT connection means broker is reachable
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Broker reachability check failed: {ex.Message}");
                 return false;
             }
         }
 
-        /// <summary>
-        /// Checks if the broker is receiving data by subscribing to a topic.
-        /// </summary>
-        /// <returns>True if data is being received, false otherwise.</returns>
         public async Task<bool> IsReceivingDataAsync()
         {
             try
             {
-                isReceivingMessages = false; // Reset flag
+                isReceivingMessages = false; // Reset the flag
 
-                // Configure MQTT client options dynamically
                 var mqttClientOptions = new MqttFactory().CreateClientOptionsBuilder()
                     .WithTcpServer(brokerAddress, brokerPort)
                     .Build();
 
-                // Ensure the client is connected
                 if (!mqttClient.IsConnected)
                 {
                     await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
                 }
 
-                // Subscribe to the topic
+                // Subscribe to a topic
                 await mqttClient.SubscribeAsync(new MqttTopicFilterBuilder().WithTopic("Pacifier/#").Build());
 
-                // Attach a message received handler
                 mqttClient.ApplicationMessageReceivedAsync += async e =>
                 {
-                    if (e.ApplicationMessage != null && e.ApplicationMessage.Payload?.Length > 0)
+                    if (e.ApplicationMessage.Payload?.Length > 0)
                     {
-                        isReceivingMessages = true; // Set flag when a valid message is received
+                        isReceivingMessages = true;
                     }
                     await Task.CompletedTask;
                 };
 
-                // Wait for a short duration to allow messages to arrive
+                // Allow some time for messages to arrive
                 await Task.Delay(2000);
 
-                // Unsubscribe and disconnect the client (if necessary)
                 await mqttClient.UnsubscribeAsync("Pacifier/#");
                 await mqttClient.DisconnectAsync();
 
-                // Return the result of the message receiving check
                 return isReceivingMessages;
             }
             catch (Exception ex)
             {
-                // Log the error and return false in case of an exception
                 Console.WriteLine($"Error checking if data is being received: {ex.Message}");
                 return false;
             }
         }
-
     }
+
 }
