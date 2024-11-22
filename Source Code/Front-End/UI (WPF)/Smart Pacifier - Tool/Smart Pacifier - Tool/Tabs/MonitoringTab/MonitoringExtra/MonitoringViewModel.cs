@@ -19,6 +19,8 @@ using OxyPlot.Series;
 using OxyPlot;
 using OxyPlot.Axes;
 using SmartPacifier.Interface.Services;
+using InfluxDB.Client.Api.Domain;
+using System.Windows.Media;
 
 namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 {
@@ -33,6 +35,17 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
         public ObservableCollection<SensorItem> _checkedSensorItems = new ObservableCollection<SensorItem>();
 
         public Dictionary<string, int> SensorIntervals { get; private set; } = new Dictionary<string, int>();
+
+        public Dictionary<string, DateTime> _lastUpdateTimestamps = new Dictionary<string, DateTime>();
+
+        // Maps for storing grid and row references
+        public Dictionary<PacifierItem, Grid> PacifierGridMap = new Dictionary<PacifierItem, Grid>();
+        public Dictionary<Tuple<PacifierItem, SensorItem>, RowDefinition> SensorRowMap = new Dictionary<Tuple<PacifierItem, SensorItem>, RowDefinition>();
+
+        public Dictionary<PacifierItem, DateTime> _lastPacifierUpdate = new Dictionary<PacifierItem, DateTime>();
+
+        private Dictionary<PacifierItem, CancellationTokenSource> _pacifierCancellationTokens = new Dictionary<PacifierItem, CancellationTokenSource>();
+
 
         private readonly ILineProtocol _lineProtocol;
         private string _currentCampaignName;
@@ -141,7 +154,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             }
 
             // Get the current date and time
-            DateTime dateTime = DateTime.UtcNow;
+            DateTime dateTime = DateTime.Now;
             string entryTime = dateTime.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
             // Only proceed if the pacifier ID is in the checkedPacifiers list and data is valid
@@ -152,13 +165,26 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                     // Use Dispatcher to safely update the ObservableCollection on the UI thread
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-
                         // Find the PacifierItem in PacifierItems with a matching ItemId and also in checkedPacifiers
                         var pacifierItem = PacifierItems.FirstOrDefault(p => p.PacifierId == e.PacifierId);
                         var pacifiercount = PacifierItems.Count;
 
                         if (pacifierItem != null)
                         {
+                            // Cancel any existing timeout for this pacifier
+                            if (_pacifierCancellationTokens.ContainsKey(pacifierItem))
+                            {
+                                _pacifierCancellationTokens[pacifierItem].Cancel();
+                                _pacifierCancellationTokens.Remove(pacifierItem);
+                            }
+
+                            // Reset the status and start the 5-second check asynchronously
+                            pacifierItem.Status = "Receiving";
+                            _pacifierCancellationTokens[pacifierItem] = new CancellationTokenSource();
+
+                            // Start the async task to check if there were no updates for 5 seconds
+                            _ = CheckForTimeout(pacifierItem, _pacifierCancellationTokens[pacifierItem].Token);
+
                             // Convert ObservableCollection to List before passing to AppendToCampaignFile
                             _lineProtocol.AppendToCampaignFile(
                                 _currentCampaignName,
@@ -169,6 +195,24 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                 entryTime);
                             //MessageBox.Show($"Data appended to campaign file for Pacifier: {pacifierItem.PacifierId}, Sensor: {e.SensorType}");
 
+                            string uniqueKey = $"{pacifierItem.PacifierId}_{e.SensorType}";
+
+                            //Check if we should throttle based on pacifier's update frequency
+                            if (_lastUpdateTimestamps.ContainsKey(uniqueKey))
+                            {
+                                var lastUpdate = _lastUpdateTimestamps[uniqueKey];
+                                var timeDifference = (DateTime.Now - lastUpdate).TotalMilliseconds;
+
+                                // If the time difference is less than the update frequency, skip this update
+                                if (timeDifference < pacifierItem.UpdateFrequency)
+                                {
+                                    Debug.WriteLine($"Throttle: Skipping update for Pacifier {pacifierItem.PacifierId} and Sensor {e.SensorType}. Time difference: {timeDifference}ms");
+                                    return; // Skip the update
+                                }
+                            }
+
+                            // Update the timestamp for the pacifier and sensor pair
+                            _lastUpdateTimestamps[uniqueKey] = DateTime.Now;
 
                             if (pacifierItem.IsChecked)
                             {
@@ -223,8 +267,8 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                                         // Add the entire list of dictionaries to the SensorItem
                                         sensorItem.MeasurementGroup.Clear();
                                         sensorItem.MeasurementGroup = new ObservableCollection<Dictionary<string, object>>(e.ParsedData);
-                                        AddLineSeries(pacifierItem, sensorItem);
 
+                                        AddLineSeries(pacifierItem, sensorItem);
                                         //Debug
                                         //DisplaySensorDetails(pacifierItem, sensorItem);
                                     }
@@ -253,7 +297,27 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                 //Debug.WriteLine($"Message skipped - PacifierId: {e.PacifierId} not in selected list or invalid data.");
             }
         }
+        private async Task CheckForTimeout(PacifierItem pacifierItem, CancellationToken token)
+        {
+            //try
+            //{
+                // Wait for 5 seconds or until the cancellation token is triggered
+                await Task.Delay(5000, token);
 
+                pacifierItem.Status = "Not Receiving";
+                pacifierItem.StatusColor = Brushes.Red; // Changes the circle to red
+
+
+            // If we reach here, it means 5 seconds passed without a new message
+
+            //    //Debug.WriteLine($"No updates received for Pacifier {pacifierItem.PacifierId} in the last 5 seconds.");
+            //}
+            //catch (TaskCanceledException)
+            //{
+            //    // Task was canceled, meaning a new message arrived before the timeout
+            //    //Debug.WriteLine($"Update received for Pacifier {pacifierItem.PacifierId}, status reset.");
+            //}
+        }
 
         private void AddLineSeries(PacifierItem pacifierItem, SensorItem sensorItem)
         {
@@ -265,18 +329,34 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
             }
         }
 
+
+
         private void AddDataToGraphs(LineChartGraph measurementGraph, SensorItem sensorItem, PacifierItem pacifierItem)
         {
+
             foreach (var sensorGroup in sensorItem.MeasurementGroup)
             {
                 var firstKvp = sensorGroup.FirstOrDefault();
                 string uniquePlotId = $"{sensorItem.SensorId}_{firstKvp.Value}_{pacifierItem.PacifierId}";
 
-                //Debug.WriteLine($"AddDataToGraphs Graph ID {measurementGraph.PlotId} is this {uniquePlotId}");
-
                 if (measurementGraph.PlotId == uniquePlotId)
                 {
-                    // Now, add the remaining key-value pairs as DataPoints to the corresponding LineSeries
+                    //if (_lastUpdateTimestamps.ContainsKey(uniquePlotId))
+                    //{
+                    //    var lastUpdate = _lastUpdateTimestamps[uniquePlotId];
+                    //    var timeDifference = (DateTime.Now - lastUpdate).TotalMilliseconds;
+
+                    //    // If the time difference is less than the update frequency, skip this update
+                    //    if (timeDifference < pacifierItem.UpdateFrequency)
+                    //    {
+                    //        Debug.WriteLine($"Throttle: Skipping update for Pacifier {pacifierItem.PacifierId} and Sensor {sensorItem.SensorId}. Time difference: {timeDifference}ms");
+                    //        return; // Skip the update
+                    //    }
+                    //}
+
+                    //// Update the timestamp for the pacifier and sensor pair
+                    //_lastUpdateTimestamps[uniquePlotId] = DateTime.Now;
+
                     foreach (var kvp in sensorGroup)
                     {
                         if (kvp.Key == "sensorGroup") continue; // Skip the sensorGroup field
@@ -284,100 +364,47 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
                         // Find the existing LineSeries for this sensor group (or create a new one if not found)
                         var existingSeries = measurementGraph.LineSeriesCollection.FirstOrDefault(series => series.Title == kvp.Key);
 
+                        OxyColor[] blueShades = new OxyColor[]
+                        {
+                            OxyColor.FromRgb(0, 0, 255),    // Pure Blue
+                            OxyColor.FromRgb(90, 90, 255),  // Even lighter Blue
+                            OxyColor.FromRgb(255, 255, 255),  // Light Blue
+                            OxyColor.FromRgb(120, 120, 255), // Very light Blue
+                            OxyColor.FromRgb(60, 60, 255)  // Lighter Blue
+                        };
+
                         if (existingSeries == null)
                         {
-                            // Create a new LineSeries for this sensor group if it doesn't already exist
                             existingSeries = new LineSeries
                             {
                                 Title = kvp.Key,
-                                MarkerType = MarkerType.Square
+                                MarkerType = MarkerType.None,
+                                MarkerSize = 2,
+                                Color = blueShades[measurementGraph.LineSeriesCollection.Count % blueShades.Length]
                             };
                             measurementGraph.LineSeriesCollection.Add(existingSeries);
                             measurementGraph.PlotModel.Series.Add(existingSeries);
-
-                            //Debug.WriteLine($"AddDataToGraphs Created New Line Series {kvp.Key}");
                         }
 
-                        //Debug.WriteLine($"AddDataToGraphs Line Series {kvp.Key} with Interval {measurementGraph.Interval}");
-
-                        // Add the value as DataPoint to the existing LineSeries for this sensor group
                         DateTime xValue = sensorItem.dateTime;
-                        double yValue = Convert.ToDouble(kvp.Value); // Assuming the value can be converted to double
+                        double yValue = Convert.ToDouble(kvp.Value);
 
-                        existingSeries.Points.Add((new DataPoint(DateTimeAxis.ToDouble(xValue), yValue)));
+                        existingSeries.Points.Add(new DataPoint(DateTimeAxis.ToDouble(xValue), yValue));
 
+                        // Enforce point limit based on sensor intervals
                         if (existingSeries.Points.Count > SensorIntervals[measurementGraph.Name])
                         {
-                            //Debug.WriteLine($"Update Graph Interval: {SensorIntervals[measurementGraph.Name]}");
-
-                            var difference = existingSeries.Points.Count - SensorIntervals[measurementGraph.Name];
+                            int difference = existingSeries.Points.Count - SensorIntervals[measurementGraph.Name];
                             for (int i = 0; i <= difference; i++)
                             {
                                 existingSeries.Points.RemoveAt(0);
                             }
                         }
-
-                        //Debug.WriteLine($"AddDataToGraphs Add DataPoints {yValue}");
                     }
 
+                    measurementGraph.PlotModel.IsLegendVisible = true;
+                    measurementGraph.PlotModel.InvalidatePlot(true);
                 }
-
-            }
-
-            measurementGraph.PlotModel.IsLegendVisible = true;
-            measurementGraph.PlotModel.InvalidatePlot(true);
-
-
-        }
-
-
-        private void DisplaySensorDetails(PacifierItem pacifierItem, SensorItem sensorItem)
-        {
-            if (pacifierItem == null)
-            {
-                MessageBox.Show("Pacifier item not found.", "Sensor Details", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-
-            StringBuilder detailsBuilder = new StringBuilder();
-
-            // Collect sensor details
-            detailsBuilder.AppendLine($"PacifierId: {pacifierItem.PacifierId}");
-            detailsBuilder.AppendLine($"Button Text: {pacifierItem.ButtonText}");
-            detailsBuilder.AppendLine($"IsChecked: {pacifierItem.IsChecked}");
-            detailsBuilder.AppendLine();
-            detailsBuilder.AppendLine($"SensorId: {sensorItem.SensorId}");
-
-            foreach (var sensorGroup in sensorItem.MeasurementGroup)
-            {
-                if (sensorGroup != null)
-                {
-                    foreach (var measurement in sensorGroup)
-                    {
-                        detailsBuilder.AppendLine($"Measurement Name: {measurement.Key}, Value: {measurement.Value}");
-                    }
-                }
-                else
-                {
-                    detailsBuilder.AppendLine("No MeasurementGroup available in this sensor.");
-                }
-                detailsBuilder.AppendLine();
-            }
-            detailsBuilder.AppendLine();
-
-            // Open the custom window to display the details asynchronously
-            var sensorDetailsWindow = new SensorDetailsWindow(detailsBuilder.ToString());
-            sensorDetailsWindow.Show();
-        }
-
-        public void TogglePacifierVisibility(PacifierItem pacifierItem)
-        {
-            bool toggledPacifiers = PacifierItems.Any(p => p.IsChecked);
-            // Make all SensorItems visible if pacifier item is toggled on
-            foreach (var sensorItem in SensorItems)
-            {
-                sensorItem.Visibility = toggledPacifiers ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -390,29 +417,5 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
     }
 
-
-    public class SensorDetailsWindow : Window
-    {
-        public SensorDetailsWindow(string details)
-        {
-            Title = "Sensor Details";
-            Width = 400;
-            Height = 300;
-
-            var textBox = new TextBox
-            {
-                Text = details,
-                IsReadOnly = true,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                VerticalAlignment = System.Windows.VerticalAlignment.Stretch,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch
-            };
-
-            var grid = new Grid();
-            grid.Children.Add(textBox);
-            Content = grid;
-        }
-    }
 
 }

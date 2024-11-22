@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace Smart_Pacifier___Tool.Components
 {
@@ -10,34 +11,44 @@ namespace Smart_Pacifier___Tool.Components
         /// <summary>
         /// Gets the input text from the dialog.
         /// </summary>
-        public string InputText { get; private set; } = string.Empty;  // Initialize with an empty string
+        public int InputText { get; set; }  // Initialize with an empty string
+
+        public ObservableCollection<PacifierItem> PacifierItems { get; set; }
+        public PacifierItem pacifierItem { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InputDialog"/> class.
         /// </summary>
         /// <param name="title">The title of the dialog window.</param>
-        public InputDialog(string title)
+        public InputDialog(ObservableCollection<PacifierItem> pacifierItems)
         {
             InitializeComponent();  // Initialize the XAML components
-            this.Title = title;  // Set the window title dynamically
+            PacifierItems = pacifierItems;
+            pacifierItem = pacifierItems.FirstOrDefault(); 
+            UpdateWindow();
+        }
+
+        private void UpdateWindow()
+        {
+            if (pacifierItem != null)
+            {
+                InputTextBox.Text = pacifierItem.UpdateFrequency.ToString();
+            }
         }
 
         /// <summary>
-        /// Handles the OK button click event.
+        /// Handles the Save button click event.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The event data.</param>
-        private void OKButton_Click(object sender, RoutedEventArgs e)
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            InputText = InputTextBox.Text.Trim();  // Get the input from the TextBox
-            if (!string.IsNullOrWhiteSpace(InputText))  // Ensure it's not empty
+            InputText = int.Parse(InputTextBox.Text);  // Get the input from the TextBox
+            foreach(var pacifierItem in PacifierItems)
             {
-                DialogResult = true;  // Close the dialog and signal success
+                pacifierItem.UpdateFrequency = InputText;
             }
-            else
-            {
-                MessageBox.Show("Please enter a valid name.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);  // Show a warning message
-            }
+            DialogResult = true;  // Close the dialog and signal success
         }
 
         /// <summary>

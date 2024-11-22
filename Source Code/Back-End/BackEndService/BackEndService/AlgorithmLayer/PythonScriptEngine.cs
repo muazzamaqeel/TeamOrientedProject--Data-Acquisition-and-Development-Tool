@@ -24,19 +24,18 @@ public class PythonScriptEngine
     {
         string response = string.Empty;
         TcpListener listener = null;
+        int fixedPort = 5000; // Choose an appropriate port
 
         try
         {
-            listener = new TcpListener(IPAddress.Loopback, 0);
+            listener = new TcpListener(IPAddress.Loopback, fixedPort);
             listener.Start();
-            int assignedPort = ((IPEndPoint)listener.LocalEndpoint).Port;
-
-            Console.WriteLine($"TCP Listener started on port {assignedPort}");
+            Console.WriteLine($"TCP Listener started on port {fixedPort}");
 
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = "python",
-                Arguments = $"\"{scriptPath}\" {assignedPort}",
+                Arguments = $"\"{scriptPath}\" {fixedPort}",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,

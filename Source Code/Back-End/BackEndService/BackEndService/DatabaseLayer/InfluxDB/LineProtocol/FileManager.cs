@@ -143,12 +143,21 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                 {
                     // Generate tags
                     var tagSet = new List<string>
+            {
+                $"campaign_name={SanitizeTagValue(campaignName)}",
+                $"pacifier_name={SanitizeTagValue(pacifierName)}",
+                $"sensor_type={SanitizeTagValue(sensorType)}",
+                $"entry_id={nextEntryId}"
+            };
+
+                    // Include sensorGroup in tags if it exists
+                    if (sensorData.ContainsKey("sensorGroup"))
                     {
-                        $"campaign_name={SanitizeTagValue(campaignName)}",
-                        $"pacifier_name={SanitizeTagValue(pacifierName)}",
-                        $"sensor_type={SanitizeTagValue(sensorType)}",
-                        $"entry_id={nextEntryId}"
-                    };
+                        var sensorGroupValue = sensorData["sensorGroup"].ToString();
+                        tagSet.Add($"sensorGroup={SanitizeTagValue(sensorGroupValue)}");
+                        // Do not remove sensorGroup from sensorData
+                    }
+
                     string tags = string.Join(",", tagSet);
 
                     // Generate fields
@@ -157,6 +166,12 @@ namespace SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol
                     {
                         string key = kvp.Key;
                         object value = kvp.Value;
+
+                        // Skip sensorGroup as it's already included in tags
+                        if (key == "sensorGroup")
+                        {
+                            continue; // Skip adding sensorGroup to fields
+                        }
 
                         // Escape field keys if necessary
                         key = EscapeFieldKey(key);

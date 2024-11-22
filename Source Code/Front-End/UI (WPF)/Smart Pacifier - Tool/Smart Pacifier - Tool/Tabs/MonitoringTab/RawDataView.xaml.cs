@@ -66,9 +66,18 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             RawDataTable.ItemsSource = collectionViewSource.View;
 
 
-            LoadData(pacifierItem);
+            if (activeMonitoring)
+            {
+                LoadData(pacifierItem);
+            }
+            else
+            {
+                LoadCampaignData(pacifierItem);
+            }
 
             pacifierItem.RawData.CollectionChanged += OnMeasurementGroupUpdated;
+
+            
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -77,6 +86,89 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             if (parent != null)
             {
                 parent.Content = backLocation;
+            }
+        }
+
+        public void LoadCampaignData(PacifierItem pacifierItem)
+        {
+            SensorEntries.Clear(); // Clear previous data before adding new rows
+
+            RawDataTable.Columns.Clear();
+
+            // Add the Timestamp and SensorType columns
+            RawDataTable.Columns.Add(new DataGridTextColumn
+            {
+                Header = "Timestamp",
+                Binding = new Binding("Timestamp"),
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+            });
+            RawDataTable.Columns.Add(new DataGridTextColumn
+            {
+                Header = "SensorType",
+                Binding = new Binding("Sensor"),
+                Width = new DataGridLength(1, DataGridLengthUnitType.Auto)
+            });
+
+            // Dictionary to hold aggregated sensor data by time
+            var sensorDataDictionary = new Dictionary<DateTime, SensorData>();
+
+            // Iterate over each entry in CampaignData
+            foreach (var entry in pacifierItem.CampaignData)
+            {
+                // Assuming entry is a dynamic object with SensorType and FieldGroups properties
+                dynamic dynamicEntry = entry;
+                string sensorType = dynamicEntry.SensorType;
+                var fieldGroups = dynamicEntry.FieldGroups;
+
+                // Iterate over each field group
+                foreach (var fieldGroup in fieldGroups)
+                {
+                    dynamic dynamicFieldGroup = fieldGroup;
+                    var keyValuePairs = dynamicFieldGroup.KeyValuePairs;
+
+                    // Iterate over each key-value pair
+                    foreach (var keyValuePair in keyValuePairs)
+                    {
+                        DateTime time = keyValuePair.Key;
+                        var sensorDataGroup = keyValuePair.Value;
+
+                        // Check if sensor data already exists for this time
+                        if (!sensorDataDictionary.TryGetValue(time, out var sensorData))
+                        {
+                            // Create a new SensorData entry if it doesn't exist
+                            sensorData = new SensorData
+                            {
+                                Timestamp = time.ToString("HH:mm:ss:ff"), // Convert time to string
+                                Sensor = sensorType,
+                                SensorDataGroup = new Dictionary<string, object>()
+                            };
+                            sensorDataDictionary[time] = sensorData;
+                        }
+
+                        // Add columns for each key in sensorDataGroup if they don't already exist
+                        foreach (var key in sensorDataGroup.Keys)
+                        {
+                            if (!RawDataTable.Columns.Any(c => c.Header.ToString() == key))
+                            {
+                                RawDataTable.Columns.Add(new DataGridTextColumn
+                                {
+                                    Header = key,
+                                    Binding = new Binding($"SensorDataGroup[{key}]"),
+                                    Width = new DataGridLength(1, DataGridLengthUnitType.Auto)
+                                });
+                            }
+
+                            // Add the key-value pair to the SensorDataGroup
+                            sensorData.SensorDataGroup[key] = sensorDataGroup[key];
+                        }
+                    }
+                }
+            }
+
+            // Add all aggregated sensor data to SensorEntries
+            foreach (var sensorData in sensorDataDictionary.Values)
+            {
+                SensorEntries.Add(sensorData);
             }
         }
 

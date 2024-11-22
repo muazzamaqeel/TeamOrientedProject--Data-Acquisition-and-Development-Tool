@@ -193,7 +193,7 @@ namespace Smart_Pacifier___Tool
                 return new SettingsView(localHostService, brokerHealthService, defaultView); // Pass both
             });
 
-            services.AddSingleton<CampaignsView>();
+            services.AddTransient<CampaignsView>();
         }
 
 

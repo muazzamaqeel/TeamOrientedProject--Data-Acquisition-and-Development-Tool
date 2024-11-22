@@ -13,6 +13,7 @@ using OxyPlot.Wpf;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
+using System.Diagnostics;
 
 
 namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
@@ -28,7 +29,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         private List<CampaignDataEntry> _campaignDataEntries = new List<CampaignDataEntry>();
         private object _groupedData;
         private List<Grid> _pacifierGrids = new List<Grid>(); // List to store pacifier grids
-
+        public const string DeveloperTabVisibleKey = "DeveloperTabVisible";
 
         /// <summary>
         /// 
@@ -101,24 +102,26 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void GroupAndProcessData(List<string> jsonDataEntries)
         {
+            var sensorGroupData = new Dictionary<string, List<Dictionary<string, double>>>();
+
             var groupedData = jsonDataEntries
                 .Select(jsonData => JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonData))
-                .GroupBy(entry => entry.TryGetValue("pacifier_name", out var pacifierName) ? pacifierName : null)
+                .GroupBy(entry => entry.TryGetValue("pacifier_name", out var pacifierName) && pacifierName != null ? pacifierName : string.Empty)
                 .Select(pacifierGroup => new
                 {
                     PacifierName = pacifierGroup.Key,
                     SensorGroups = pacifierGroup
-                        .GroupBy(entry => entry.TryGetValue("sensor_type", out var sensorType) ? sensorType : null)
+                        .GroupBy(entry => entry.TryGetValue("sensor_type", out var sensorType) && sensorType != null ? sensorType : string.Empty)
                         .Select(sensorGroup => new
                         {
                             SensorType = sensorGroup.Key,
                             FieldGroups = sensorGroup
-                                .GroupBy(entry => entry.TryGetValue("_field", out var field) ? GetModifiedFieldName(field?.ToString() ?? string.Empty) : null)
+                                .GroupBy(entry => entry.TryGetValue("sensorGroup", out var field) && field != null ? field : string.Empty)
                                 .Select(fieldGroup => new
                                 {
                                     FieldName = fieldGroup.Key,
                                     OriginalFieldGroups = fieldGroup
-                                        .GroupBy(entry => entry.TryGetValue("_field", out var field) ? field : null)
+                                        .GroupBy(entry => entry.TryGetValue("_field", out var field) && field != null ? field : string.Empty)
                                         .Select(originalFieldGroup => new
                                         {
                                             OriginalFieldName = originalFieldGroup.Key,
@@ -127,14 +130,30 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                                                 ItemsSource = originalFieldGroup
                                                 .Select(entry =>
                                                 {
-                                                    double time = DateTimeConverter(entry["_time"].ToString());
-                                                    double value = entry.TryGetValue("_value", out var valueObj) && double.TryParse(valueObj.ToString(), out var parsedValue) ? parsedValue : 0;
+                                                    double time = entry.TryGetValue("_time", out var timeObj) && timeObj != null ? DateTimeConverter(timeObj.ToString()) : 0;
+                                                    double value = entry.TryGetValue("_value", out var valueObj) && valueObj != null && double.TryParse(valueObj.ToString(), out var parsedValue) ? parsedValue : 0;
                                                     return new DataPoint(time, value);
                                                 })
                                                 .ToList()
                                             }
                                         })
-                                        .ToList()
+                                        .ToList(),
+                                    KeyValuePairs = fieldGroup
+                                    .GroupBy(entry => entry.TryGetValue("_time", out var timeObj) && timeObj != null ? timeObj : 0)
+                                    .Select(timeGroup => new
+                                    {
+                                        Time = timeGroup.Key,
+                                        Fields = timeGroup
+                                            .GroupBy(entry => entry.TryGetValue("_field", out var fieldObj) && fieldObj != null ? fieldObj.ToString() : string.Empty)
+                                            .ToDictionary(
+                                                g => g.Key,
+                                                g => g.First().TryGetValue("_value", out var valueObj) && double.TryParse(valueObj?.ToString(), out var parsedValue) ? parsedValue : 0
+                                            )
+                                    })
+                                    .ToDictionary(
+                                        tg => tg.Time,
+                                        tg => tg.Fields
+                                    )
                                 })
                                 .ToList()
                         })
@@ -144,13 +163,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
             _groupedData = groupedData;
         }
-        private string GetModifiedFieldName(string field)
-        {
-            var underscoreIndex = field.IndexOf('_');
-            return underscoreIndex >= 0 ? field.Substring(0, underscoreIndex) : field;
-        }
 
-      
         private double DateTimeConverter (string dateTimeString)
         {
             DateTime dateTime = DateTime.Parse(dateTimeString);
@@ -307,9 +320,6 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             RowDefinition row = new RowDefinition();
             pacifierGrid.RowDefinitions.Add(row);
 
-            pacifierGrid.Background = (Brush)Application.Current.FindResource("MainViewBackgroundColor");
-            pacifierGrid.Margin = new Thickness(5);
-
             // Set up the first row with 3 columns
             pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -318,43 +328,81 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
         private void AddPacifierHeader(Grid pacifierGrid, PacifierItem pacifierItem)
         {
-            // Create the first TextBlock for pacifier name
+            // Create a Border for the row with rounded corners
+            Border rowBorder = new Border
+            {
+                Background = (Brush)Application.Current.FindResource("AccentColor"), // Row background
+                CornerRadius = new CornerRadius(8), // Rounded corners
+                Margin = new Thickness(2), // Space around the row
+                Height = 40,
+            };
+
+            // Create a Grid inside the Border for the row's content
+            Grid rowGrid = new Grid
+            {
+                Background = Brushes.Transparent // Transparent to let the border's background show
+            };
+
+            // Set up the Grid with 3 columns
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+
+            // Create the TextBlock for pacifier name
             TextBlock pacifierNameTextBox = new()
             {
                 Text = pacifierItem.ButtonText,
+                Foreground = Brushes.White,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
-                FontSize = 20,
-                Foreground = (Brush)Application.Current.Resources["MainViewForegroundColor"]
+                Margin = new Thickness(5),
+                TextAlignment = TextAlignment.Center,
+                FontSize = 16,
+                Padding = new Thickness(8),
+                FontWeight = System.Windows.FontWeights.Bold
             };
             Grid.SetRow(pacifierNameTextBox, 0);
-            Grid.SetColumn(pacifierNameTextBox, 0);
-            pacifierGrid.Children.Add(pacifierNameTextBox);
+            Grid.SetColumn(pacifierNameTextBox, 1);
+            rowGrid.Children.Add(pacifierNameTextBox);
 
             // Create the "Debug" button
-            /*
             Button debugButton = new()
             {
                 Content = "Debug",
                 Width = 50,
-                Height = 25,
+                Height = 30,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center,
                 Margin = new Thickness(5),
                 Style = (Style)Application.Current.FindResource("ModernButtonStyle"),
-                Tag = pacifierItem.ButtonText // Use Tag to hold the pacifier name
+                Tag = pacifierItem.PacifierId
             };
+
+            debugButton.Visibility = (Application.Current.Properties[DeveloperTabVisibleKey] is bool isVisible && isVisible)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
             Grid.SetRow(debugButton, 0);
             Grid.SetColumn(debugButton, 2);
-            debugButton.Click += OpenRawDataView_Click; // Directly attach the event handler
-            pacifierGrid.Children.Add(debugButton);
-              */
+            debugButton.Click += OpenRawDataView_Click;
+            rowGrid.Children.Add(debugButton);
+
+            // Add the Grid to the Border
+            rowBorder.Child = rowGrid;
+
+            // Add the Border to the main Grid
+            Grid.SetRow(rowBorder, pacifierGrid.RowDefinitions.Count - 1);
+            Grid.SetColumnSpan(rowBorder, 3);
+            pacifierGrid.Children.Add(rowBorder);
+
         }
 
         private void AddSensorGroups(Grid pacifierGrid, PacifierItem pacifierItem, String sensorID)
         {
             var groupedData = (dynamic)_groupedData;
             var matchingPacifierGroup = ((IEnumerable<dynamic>)groupedData).FirstOrDefault(p => p.PacifierName == pacifierItem.PacifierId);
+
 
             // Loop through all the sensor groups
             foreach (var sensorGroup in matchingPacifierGroup.SensorGroups)
@@ -364,6 +412,8 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 {
                     continue;
                 }
+      
+                pacifierItem.CampaignData.Add(sensorGroup);
 
                 // Add a new row for the sensor group
                 var sensorGroupRowIndex = pacifierGrid.RowDefinitions.Count;
@@ -383,8 +433,16 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         {
             var fieldName = fieldGroup.FieldName;
 
+            // Retrieve the color from application resources
+            var brush = (Brush)Application.Current.Resources["MainViewForegroundColor"];
+            var oxyColor = brush.ToOxyColor();
+
             // Create a plot for each field name
-            var plotModel = new PlotModel { Title = $"{fieldName}" };
+            var plotModel = new PlotModel
+            {
+                Title = fieldName,
+                TitleColor = oxyColor,
+            };
 
             // Add a legend to the plot model
             plotModel.Legends.Add(new Legend
@@ -392,17 +450,20 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 LegendPosition = LegendPosition.TopRight,
                 LegendPlacement = LegendPlacement.Outside,
                 LegendOrientation = LegendOrientation.Horizontal,
-                LegendBorderThickness = 0
+                LegendBorderThickness = 0,
+                TextColor = oxyColor,
+                LegendTextColor = oxyColor
             });
 
             var dateTimeAxis = new DateTimeAxis
             {
                 Position = AxisPosition.Bottom,
-                StringFormat = "dd HH:mm:ss", // Date and time format on the X-axis
+                StringFormat = "HH:mm:ss",
                 IntervalType = DateTimeIntervalType.Auto,
                 IntervalLength = 80, // Adjust this value to control the spacing of labels
                 MajorGridlineStyle = LineStyle.Solid,
                 MinorGridlineStyle = LineStyle.Dot,
+                TextColor = oxyColor
             };
             plotModel.Axes.Add(dateTimeAxis);
 
@@ -410,9 +471,21 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             {
                 Position = AxisPosition.Left,
                 MajorGridlineStyle = LineStyle.Solid,
-                MinorGridlineStyle = LineStyle.Dot
+                MinorGridlineStyle = LineStyle.Dot,
+                TextColor = oxyColor
             };
             plotModel.Axes.Add(valueAxis);
+
+            OxyColor[] blueShades = new OxyColor[]
+            {
+        OxyColor.FromRgb(0, 0, 255),    // Pure Blue
+        OxyColor.FromRgb(90, 90, 255),  // Even lighter Blue
+        OxyColor.FromRgb(255, 255, 255),  // Light Blue
+        OxyColor.FromRgb(120, 120, 255), // Very light Blue
+        OxyColor.FromRgb(60, 60, 255)  // Lighter Blue
+            };
+
+            int colorIndex = 0;
 
             foreach (var originalFieldGroup in fieldGroup.OriginalFieldGroups)
             {
@@ -420,6 +493,14 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
                 // Ensure the line series has a title for the legend
                 lineSeries.Title = originalFieldGroup.OriginalFieldName;
+
+                // Add markers to the line series
+                lineSeries.MarkerType = MarkerType.Square;
+                lineSeries.MarkerSize = 2;
+
+                // Set the color of the line series
+                lineSeries.Color = blueShades[colorIndex % blueShades.Length];
+                colorIndex++;
 
                 // Check if the lineSeries is already part of another plot model
                 if (lineSeries.PlotModel != null)
@@ -432,12 +513,24 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 plotModel.Series.Add(lineSeries);
             }
 
+            // Create a PlotView with the rounded corner Border
             var plotView = new PlotView
             {
                 Model = plotModel,
-                Height = 300,
+                Height = 250,
                 Margin = new Thickness(5),
-                Tag = $"{sensorType}"
+                Tag = sensorType,
+                Background = (Brush)Application.Current.Resources["MainViewSecondaryBackgroundColor"]
+            };
+
+            // Wrap the PlotView in a Border to apply rounded corners
+            var border = new Border
+            {
+                Margin = new Thickness(5),
+                CornerRadius = new CornerRadius(8), // Set corner radius for rounded corners
+                Background = (Brush)Application.Current.Resources["MainViewSecondaryBackgroundColor"],
+                Padding = new Thickness(5), // Add padding for inner spacing
+                Child = plotView // Place the PlotView inside the Border
             };
 
             // Add a new column for each plot if necessary
@@ -453,12 +546,13 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 pacifierGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             }
 
-            Grid.SetRow(plotView, sensorGroupRowIndex);
-            Grid.SetColumn(plotView, columnIndex);
-            pacifierGrid.Children.Add(plotView);
+            Grid.SetRow(border, sensorGroupRowIndex); // Set the row for the Border
+            Grid.SetColumn(border, columnIndex); // Set the column for the Border
+            pacifierGrid.Children.Add(border); // Add the Border (with PlotView) to the grid
 
             columnIndex++; // Increment column index for the next plot
         }
+
 
 
         // Add Graph Rows for all Toggled SensorItems in this PacifierItem Grid
@@ -473,14 +567,15 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
         }
 
         // Add Graph Row for a Specific SensorItem in a PacifierItem Grid
-        private void AddSensorRow(Grid pacifierGrid, SensorItem sensorItem,PacifierItem pacifierItem)
+        private void AddSensorRow(Grid pacifierGrid, SensorItem sensorItem, PacifierItem pacifierItem)
         {
             // Check if the sensor header already exists
             bool headerExists = false;
             foreach (UIElement child in pacifierGrid.Children)
             {
-                if (child is TextBlock textBlock && textBlock.Text == $"Sensor: {sensorItem.SensorId}")
+                if (child is Border border && border.Child is TextBlock textBlock && textBlock.Text == $"Sensor: {sensorItem.SensorId}")
                 {
+    
                     headerExists = true;
                     break;
                 }
@@ -492,21 +587,36 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 pacifierGrid.RowDefinitions.Add(sensorRow);
                 pacifierGrid.Margin = new Thickness(15);
 
-                // Add a header for the sensor item
+                // Create a Border for the sensor header with rounded corners
+                Border sensorHeaderBorder = new Border
+                {
+                    CornerRadius = new CornerRadius(8), // Rounded corners
+                    Background = (Brush)Application.Current.Resources["MainViewSecondaryBackgroundColor"],
+                    Height = 30,
+                    Margin = new Thickness(5), // Space around the border
+                    Padding = new Thickness(2) // Space inside the border
+                };
+
+                // Create a TextBlock for the sensor header
                 TextBlock sensorHeader = new TextBlock
                 {
                     Text = $"Sensor: {sensorItem.SensorId}",
-                    Margin = new Thickness(15),
                     Foreground = (Brush)Application.Current.Resources["MainViewForegroundColor"],
-                    Background = (Brush)Application.Current.Resources["MainViewSecondaryBackgroundColor"],
                     TextAlignment = TextAlignment.Center, // Center the text
                     FontSize = 16, // Increase the text size
-                    Padding = new Thickness(8), // Add padding
+                    FontWeight = System.Windows.FontWeights.Bold,
+                    Padding = new Thickness(2) // Add padding inside the TextBlock
                 };
-                Grid.SetRow(sensorHeader, pacifierGrid.RowDefinitions.Count - 1);
-                Grid.SetColumnSpan(sensorHeader, 3); // Span 3 columns
-                pacifierGrid.Children.Add(sensorHeader);
 
+                // Add the TextBlock to the Border
+                sensorHeaderBorder.Child = sensorHeader;
+
+                // Add the Border to the Grid
+                Grid.SetRow(sensorHeaderBorder, pacifierGrid.RowDefinitions.Count - 1);
+                Grid.SetColumnSpan(sensorHeaderBorder, 3); // Span 3 columns
+                pacifierGrid.Children.Add(sensorHeaderBorder);
+
+                // Add the Graph for the Sensor
                 ScrollViewer graphScrollViewer = new ScrollViewer
                 {
                     HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -516,8 +626,6 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                     Uid = sensorItem.SensorId
                 };
 
-                //graphScrollViewer.Content = CreateGraphForSensor(sensorItem);
-
                 pacifierGrid.Children.Add(graphScrollViewer);
 
                 AddSensorGroups(pacifierGrid, pacifierItem, sensorItem.SensorId);
@@ -526,6 +634,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 _viewModel.SensorRowMap[new Tuple<PacifierItem, SensorItem>(sensorItem.ParentPacifierItem.GetPacifierItem(), sensorItem)] = sensorRow;
             }
         }
+
 
         // Add Graph Rows for all Toggled SensorItems for all Pacifiers
         private void AddGraphRowsForToggledSensorsForAllPacifiers(SensorItem sensorItem)
@@ -567,6 +676,7 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
                 foreach (var sensorItem in _viewModel.CheckedSensorItems)
                 {
+                    // Remove the graph rows for the matching sensor item
                     RemoveSensorRow(grid, sensorItem);
                 }
             }
@@ -627,16 +737,18 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             {
                 var elementsToRemove = new List<UIElement>();
 
-                // Iterate through the grid's children to find the header and graph row
+                // Iterate through the grid's children to find the border and graph row
                 foreach (UIElement child in pacifierGrid.Children)
                 {
-                    if (child is TextBlock textBlock && textBlock.Text == $"Sensor: {sensorItem.SensorId}")
+                    // Check if the child is a Border containing the TextBlock
+                    if (child is Border border && border.Child is TextBlock textBlock && textBlock.Text == $"Sensor: {sensorItem.SensorId}")
                     {
-                        elementsToRemove.Add(child);
+                        elementsToRemove.Add(child); // Add the Border (containing TextBlock) for removal
                     }
+                    // Check if the child is a PlotView associated with this sensor
                     else if (child is PlotView plotView && plotView.Tag?.ToString() == sensorItem.SensorId)
                     {
-                        elementsToRemove.Add(child);
+                        elementsToRemove.Add(child); // Add PlotView for removal
                     }
                 }
 
@@ -645,9 +757,9 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
                 {
                     pacifierGrid.Children.Remove(element);
                 }
-
             }
         }
+
 
         // ================ Buttons ===============
 

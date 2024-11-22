@@ -1,13 +1,15 @@
 ﻿using OxyPlot.Series;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 
 namespace Smart_Pacifier___Tool.Components
 {
-    public partial class PacifierItem : UserControl
+    public partial class PacifierItem : UserControl, INotifyPropertyChanged
     {
         public event EventHandler? ToggleChanged;
 
@@ -32,6 +34,39 @@ namespace Smart_Pacifier___Tool.Components
             get;
             set;
         }
+
+        public int UpdateFrequency
+        {
+            get;
+            set;
+        }
+
+        private string _status;
+
+        public string Status
+        {
+            get { return _status; }
+            set
+            {
+                if (_status != value)
+                {
+                    _status = value;
+                    OnPropertyChanged(nameof(Status));  // Notify UI of the property change
+                }
+            }
+        }
+
+        private Brush _statusColor = Brushes.Green;
+        public Brush StatusColor
+        {
+            get => _statusColor;
+            set
+            {
+                _statusColor = value;
+                OnPropertyChanged(nameof(StatusColor)); // Notify the UI of changes
+            }
+        }
+
 
         public ObservableCollection<byte[]> RawData { get; private set; } = new ObservableCollection<byte[]>();
 
@@ -60,6 +95,8 @@ namespace Smart_Pacifier___Tool.Components
             set; 
         }
 
+        public List<object> CampaignData { get; set; }
+
         public PacifierItem(string pacifierId)
         {
             InitializeComponent();
@@ -68,8 +105,12 @@ namespace Smart_Pacifier___Tool.Components
             PacifierId = pacifierId;
             ButtonText = "basePacifier";
             HasRow = false;
+            UpdateFrequency = 500;
+            Status = "Connected";
 
             Sensors = new ObservableCollection<SensorItem>();
+            CampaignData = new List<object>();
+
 
             DataContext = this;
         }
@@ -93,6 +134,12 @@ namespace Smart_Pacifier___Tool.Components
             }
         }
 
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
     }
 }
