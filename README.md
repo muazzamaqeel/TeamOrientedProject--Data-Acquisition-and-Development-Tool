@@ -32,8 +32,34 @@ Emma and Moosbauer, Sebastian.
 </details>
 
 # Installation
-*TODO*
-# Setup
+As this tool is the first prototype, this section will explain how you can run the tool using Visual Studio
+Prerequirment:
+- Install Visual Stuido 2022
+- Install .NETFrameWork 8.0
+- Install Docker (Optional) - If you need to have local database
+
+# Application File Structure
+
+**Configration Files**
+
+1. config.json
+- This is where you can define the API Tokens of the Local & Server Database
+
+2. docker-compose.yml
+- This is where you can see what services we are currently using in our application as external dependencies
+- In the current state, we explicity install Influxdb 2.7 and eclipse-mosquitto:2.0 images
+
+**Operational Files**
+
+1. Active Mointoring
+- Live data files are generated in the following Output directory:
+- \Smart Pacifier - Tool\bin\Debug\net8.0-windows\Resources\OutputResources\LiveDataFiles
+
+2. Algorithm Layer
+- The Python Scripts should be located in the following Output directory:
+- \Smart Pacifier - Tool\bin\Debug\net8.0-windows\Resources\OutputResources\PythonFiles\ExecutableScript
+
+
 ## Requirements
 - Mosquitto
 - MQTTnet
