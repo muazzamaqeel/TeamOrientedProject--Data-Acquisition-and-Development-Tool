@@ -20,8 +20,10 @@
         </ScrollViewer>
 
         <Grid Grid.Row="1" Background="{StaticResource MainViewBackgroundColor}">
-            <Button Content="Save" Click="SaveButton_Click" Style="{StaticResource ModernButtonStyle}" HorizontalAlignment="Center" Margin="10" Width="70" Height="25"/>
-
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+                <Button Style="{StaticResource SmallModernButtonStyle}" Content="Save" Margin = "5" Click="SaveButton_Click"/>
+                <Button Style="{StaticResource SmallModernButtonStyle}" Content="Cancel" Margin = "5" Click="CancelButton_Click"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

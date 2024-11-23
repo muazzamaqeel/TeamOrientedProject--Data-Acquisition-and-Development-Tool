@@ -189,6 +189,10 @@ namespace Smart_Pacifier___Tool.Components
             this.DialogResult = true; // Indicate success
         }
 
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;  // Close the dialog and signal cancellation
+        }
 
 
         private SensorItem FindSensorById(string sensorId)
