@@ -180,6 +180,7 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab.MonitoringExtra
 
                             // Reset the status and start the 5-second check asynchronously
                             pacifierItem.Status = "Receiving";
+                            pacifierItem.StatusColor = Brushes.LawnGreen;
                             _pacifierCancellationTokens[pacifierItem] = new CancellationTokenSource();
 
                             // Start the async task to check if there were no updates for 5 seconds
