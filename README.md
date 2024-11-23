@@ -33,7 +33,8 @@ Emma and Moosbauer, Sebastian.
 
 # Installation
 As this tool is the first prototype, this section will explain how you can run the tool using Visual Studio
-Prerequirment:
+
+Pre Requirements:
 - Install Visual Stuido 2022
 - Install .NETFrameWork 8.0
 - Install Docker (Optional) - If you need to have local database
