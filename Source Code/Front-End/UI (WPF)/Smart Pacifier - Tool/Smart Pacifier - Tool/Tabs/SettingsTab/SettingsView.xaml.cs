@@ -18,6 +18,7 @@ using OxyPlot.Axes;
 using OxyPlot.Series;
 using OxyPlot;
 using System.Windows.Threading;
+using OxyPlot.Wpf;
 
 namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
@@ -519,7 +520,14 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
         }
         private void InitializeBrokerHealthChart()
         {
-            brokerHealthModel = new PlotModel { Title = "Broker Health Over Time" };
+            var brush = (Brush)Application.Current.Resources["MainViewForegroundColor"];
+            var oxyColor = brush.ToOxyColor();
+
+            brokerHealthModel = new PlotModel
+            {
+                Title = "Broker Health Over Time",
+                TitleColor = oxyColor
+            };
 
             // Time Axis
             brokerHealthModel.Axes.Add(new DateTimeAxis
@@ -531,6 +539,8 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 MinorIntervalType = DateTimeIntervalType.Seconds,
                 IsZoomEnabled = true,
                 IsPanEnabled = true,
+                TextColor = oxyColor,
+                TitleColor = oxyColor
             });
 
             // Status Axis
@@ -549,7 +559,9 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                     1 => "True",
                     0 => "False",
                     _ => string.Empty,
-                }
+                },
+                TextColor = oxyColor,
+                TitleColor = oxyColor
             });
 
             // Line series for "Broker Reachable"
@@ -558,6 +570,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 Title = "Broker Reachable",
                 MarkerType = MarkerType.Circle,
                 Color = OxyColors.Green,
+                TextColor = oxyColor,
             };
 
             // Line series for "Receiving Data"
@@ -566,6 +579,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 Title = "Receiving Data",
                 MarkerType = MarkerType.Circle,
                 Color = OxyColors.Green,
+                TextColor = oxyColor
             };
 
             brokerHealthModel.Series.Add(brokerReachableSeries);
