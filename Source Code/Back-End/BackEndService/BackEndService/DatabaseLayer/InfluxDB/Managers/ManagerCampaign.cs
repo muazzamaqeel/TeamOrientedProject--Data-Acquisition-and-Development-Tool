@@ -296,7 +296,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         public async Task<List<string>> GetPacifiersByCampaignNameAsync(string campaignName)
         {
             var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
-                        "|> range(start: -1y) " +
+                        "|> range(start: 0) " +
                         $"|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\" and r[\"campaign_name\"] == \"{campaignName}\") " +
                         "|> keep(columns: [\"pacifier_name\"]) " +
                         "|> distinct(column: \"pacifier_name\")";
@@ -322,7 +322,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
         public async Task<List<string>> GetSensorsByPacifierNameAsync(string pacifierName, string campaignName)
         {
             var query = $"from(bucket:\"{_databaseService.Bucket}\") " +
-                        "|> range(start: -1y) " +
+                        "|> range(start: 0) " +
                         $"|> filter(fn: (r) => r[\"_measurement\"] == \"campaigns\" and r[\"pacifier_name\"] == \"{pacifierName}\" and r[\"campaign_name\"] == \"{campaignName}\") " +
                         "|> keep(columns: [\"sensor_type\"])" +
                         "|> distinct(column: \"sensor_type\")"; ;
