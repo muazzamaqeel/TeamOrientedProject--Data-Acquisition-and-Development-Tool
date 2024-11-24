@@ -33,18 +33,40 @@ Emma and Moosbauer, Sebastian.
 
 # Installation
 As this tool is the first prototype, this section will explain how you can run the tool using Visual Studio
-Prerequirment:
-- Install Visual Stuido 2022
+
+Pre Requirements:
+- Install Visual Stuido 2022 (Recommended)
 - Install .NETFrameWork 8.0
-- Install Docker (Optional) - If you need to have local database
+- Install Docker (Optional) - If you need to have a local database
 
 # Application File Structure
 
 **Configration Files**
 
 1. config.json
-- This is where you can define the API Tokens of the Local & Server Database
 
+- This is where you can define the API Tokens of the Local & Server Database
+- \Smart Pacifier - Tool\bin\Debug\net8.0-windows\Resources\OutputResources
+
+## Example
+```json
+{
+    "UseLocal": true,
+    "Local": {
+        "Host": "localhost:8086",
+        "ApiKey": "example"
+    },
+    "Server": {
+        "Host": "18.195.167.238",
+        "Port": "8086",
+        "Username": "ubuntu",
+        "ApiKey": "example"
+    },
+    "PythonScript": {
+        "FileName": "python1.py"
+    }
+}
+```
 2. docker-compose.yml
 - This is where you can see what services we are currently using in our application as external dependencies
 - In the current state, we explicity install Influxdb 2.7 and eclipse-mosquitto:2.0 images

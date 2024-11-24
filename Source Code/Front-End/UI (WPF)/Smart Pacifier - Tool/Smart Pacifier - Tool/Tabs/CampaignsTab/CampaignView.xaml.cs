@@ -53,12 +53,11 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
             // Clear items
             _viewModel.SensorTypes.Clear();
             _viewModel.PacifierItems.Clear();
-
+            LoadCampaignData();
             LoadPacifiersForCampaign();
 
             pacifierFilterPanel.ItemsSource = _viewModel.PacifierItems;
             sensorFilterPanel.ItemsSource = _viewModel.SensorItems;
-            LoadCampaignData();
 
             foreach (var pacifier in _viewModel.PacifierItems) // Loop through each sensor
             {
@@ -92,10 +91,12 @@ namespace Smart_Pacifier___Tool.Tabs.CampaignsTab
 
             }
             AddPacifierItems(pacifierItems);
+            LoadingSpinner.Visibility = Visibility.Collapsed;
         }
 
         private async void LoadCampaignData()
         {
+            LoadingSpinner.Visibility = Visibility.Visible;
             var campaignData = await _managerCampaign.GetCampaignDataEntriesAsync(_campaignName);
             GroupAndProcessData(campaignData);
         }

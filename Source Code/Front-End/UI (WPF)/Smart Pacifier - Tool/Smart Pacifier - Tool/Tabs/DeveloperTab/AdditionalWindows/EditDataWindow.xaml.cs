@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
@@ -30,6 +31,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 var label = new TextBlock
                 {
                     Text = kvp.Key,
+                    Foreground = (Brush)Application.Current.Resources["MainViewForegroundColor"],
                     Margin = new Thickness(0, 10, 0, 5)
                 };
                 DynamicFieldsPanel.Children.Add(label);
@@ -39,7 +41,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 {
                     Text = kvp.Value?.ToString() ?? string.Empty,
                     Name = kvp.Key.Replace(" ", "_") + "TextBox",
-                    Margin = new Thickness(0, 0, 0, 10)
+                    Margin = new Thickness(0, 0, 0, 10),
+                    Style = (Style)Application.Current.Resources["TextBoxStyle"],
                 };
 
                 // Store the TextBox for later access

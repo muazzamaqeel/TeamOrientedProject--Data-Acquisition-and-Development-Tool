@@ -229,12 +229,20 @@
                                Grid.Row="0" />
 
                         <!-- Add OxyPlot Chart -->
-                        <oxy:PlotView x:Name="BrokerHealthPlot"
-                              HorizontalAlignment="Stretch"
-                              VerticalAlignment="Stretch"
-                              Width="500"
-                              Height="300"
-                              Grid.Row="1" />
+
+                        <Border x:Name="graphBorder" CornerRadius="8" 
+                                Background="{StaticResource MainViewSecondaryBackgroundColor}"
+                                BorderBrush="{StaticResource MainViewForegroundColor}" 
+                                BorderThickness="0">
+                            <oxy:PlotView x:Name="BrokerHealthPlot"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                                           Background="Transparent"
+                                           Foreground="{StaticResource MainViewForegroundColor}"
+                            Width="500"
+                            Height="300"
+                            Grid.Row="1" />
+                        </Border>
 
 
                         <!-- Check Health Button -->

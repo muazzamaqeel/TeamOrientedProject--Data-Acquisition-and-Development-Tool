@@ -18,6 +18,9 @@
                        Foreground="White" FontSize="24" FontWeight="Bold"/>
         </Grid>
 
+        <local:LoadingSpinner Grid.Row="3" x:Name="LoadingSpinner" Visibility="Visible" EllipseSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,10,5" Height="48" Width="48"/>
+
+
         <!-- Pacifier Filters Grid (Components) - Horizontal Scroll -->
         <ScrollViewer Grid.Row="1" Style="{StaticResource LeftScrollViewer}" 
                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" 

@@ -25,15 +25,23 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
         private readonly string _org = "thu-de";
         private readonly string _token;
         private readonly string _baseUrl;
+        private readonly int _timeout = 60000; // 1 min
+
         public InfluxDatabaseService(InfluxDBClient client, string token, string baseUrl, string org)
         {
-            _client = client;
             _token = token;
             _baseUrl = baseUrl;
             _org = org;
 
-        }
+            var options = new InfluxDBClientOptions.Builder()
+                .Url(_baseUrl)
+                .AuthenticateToken(_token.ToCharArray())
+                .TimeOut(TimeSpan.FromMilliseconds(_timeout))
+                .Build();
 
+            _client = new InfluxDBClient(options);
+        }
+       
         public InfluxDBClient GetClient() => _client;
 
         public string Bucket => _bucket;
