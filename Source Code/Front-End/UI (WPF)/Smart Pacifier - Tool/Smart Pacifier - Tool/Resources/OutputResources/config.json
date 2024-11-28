@@ -12,5 +12,9 @@
   },
   "PythonScript": {
     "FileName": "python1.py"
+  },
+  "Mqtt": {
+    "Host": "192.168.0.101",
+    "Port": "1883"
   }
 }

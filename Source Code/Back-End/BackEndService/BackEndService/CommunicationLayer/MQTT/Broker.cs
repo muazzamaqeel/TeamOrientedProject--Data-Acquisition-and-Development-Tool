@@ -14,14 +14,31 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
     public class Broker : IDisposable
     {
-        private readonly string BROKER_ADDRESS = "localhost";
-        private readonly int BROKER_PORT = 1883;
+        private string? _brokerAddress;
+
+        public string? BrokerAddress
+        {
+            get => _brokerAddress;
+            // TODO: to be changed?
+            // once set, you cannot reset it
+            set => _brokerAddress ??= value;
+        }
+
+        private int? _brokerPort;
+
+        public int? BrokerPort
+        {
+            get => _brokerPort;
+            // TODO: to be changed?
+            // once set, you cannot reset it
+            set => _brokerPort ??= value;
+        }
 
         private static Broker? _brokerInstance;
         private static readonly object _lock = new object();
 
         private IMqttClient _mqttClient;
-        private bool disposed = false;
+        private bool _disposed = false;
 
         public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
 
@@ -37,11 +54,12 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
         public void Dispose()
         {
-            if (!disposed)
+            if (!_disposed)
             {
                 _mqttClient?.Dispose();
-                disposed = true;
+                _disposed = true;
             }
+
             GC.SuppressFinalize(this);
         }
 
@@ -60,6 +78,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                     {
                         _brokerInstance = new Broker();
                     }
+
                     return _brokerInstance;
                 }
             }
@@ -67,8 +86,11 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
         public async Task ConnectBroker()
         {
+            if (_brokerAddress == null || _brokerPort == null)
+                throw new ArgumentException("Broker address and/or port cannot be null.");
+
             var options = new MqttClientOptionsBuilder()
-                .WithTcpServer(BROKER_ADDRESS, BROKER_PORT)
+                .WithTcpServer(_brokerAddress, _brokerPort)
                 .WithKeepAlivePeriod(TimeSpan.FromSeconds(20))
                 .WithCleanSession(false)
                 .Build();
@@ -117,7 +139,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                     if (topicParts.Length >= 2 && topicParts[0] == "Pacifier")
                     {
                         string pacifierId = topicParts[1];
-                        var (parsedPacifierId, parsedSensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(rawPayload);
+                        var (parsedPacifierId, parsedSensorType, parsedData) =
+                            ExposeSensorDataManager.Instance.ParseSensorData(rawPayload);
 
                         foreach (var sensorGroup in parsedData)
                         {
@@ -128,7 +151,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                             }
                         }
 
-                        MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, parsedPacifierId, parsedSensorType, parsedData));
+                        MessageReceived?.Invoke(this,
+                            new MessageReceivedEventArgs(topic, rawPayload, parsedPacifierId, parsedSensorType,
+                                parsedData));
                     }
                     else
                     {
@@ -174,7 +199,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             public string SensorType { get; set; }
             public ObservableCollection<Dictionary<string, object>> ParsedData { get; set; }
 
-            public MessageReceivedEventArgs(string topic, byte[] payload, string pacifierId, string sensorType, ObservableCollection<Dictionary<string, object>> parsedData)
+            public MessageReceivedEventArgs(string topic, byte[] payload, string pacifierId, string sensorType,
+                ObservableCollection<Dictionary<string, object>> parsedData)
             {
                 Topic = topic;
                 Payload = payload;

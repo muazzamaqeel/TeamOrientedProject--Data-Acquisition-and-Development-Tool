@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,8 +11,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
     public class BrokerHealth : IBrokerHealthService
     {
-        private readonly string brokerAddress = "localhost";
-        private readonly int brokerPort = 1883;
+        // private readonly string brokerAddress = "localhost";
+        // private readonly int brokerPort = 1883;
         private IMqttClient mqttClient;
         private bool isReceivingMessages = false;
 
@@ -42,8 +43,14 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 
         public async Task<bool> IsBrokerReachableAsync()
         {
+            if (Broker.Instance.BrokerAddress is null || Broker.Instance.BrokerPort == null)
+                throw new ConfigurationErrorsException("Broker is not configured.");
+
+            var brokerAddress = Broker.Instance.BrokerAddress;
+            var brokerPort = (int)Broker.Instance.BrokerPort;
             try
             {
+                //TODO: why do we need typ here? Python Execution?
                 using (var tcpClient = new TcpClient())
                 {
                     await tcpClient.ConnectAsync(brokerAddress, brokerPort);
@@ -74,6 +81,11 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             try
             {
                 isReceivingMessages = false; // Reset the flag
+                if (Broker.Instance.BrokerAddress is null || Broker.Instance.BrokerPort == null)
+                    throw new ConfigurationErrorsException("Broker is not configured.");
+
+                var brokerAddress = Broker.Instance.BrokerAddress;
+                var brokerPort = (int)Broker.Instance.BrokerPort;
 
                 var mqttClientOptions = new MqttFactory().CreateClientOptionsBuilder()
                     .WithTcpServer(brokerAddress, brokerPort)
@@ -111,5 +123,4 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
     }
-
 }

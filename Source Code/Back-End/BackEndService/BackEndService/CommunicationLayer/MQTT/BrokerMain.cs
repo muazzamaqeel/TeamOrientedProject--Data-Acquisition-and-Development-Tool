@@ -12,13 +12,13 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
 {
     public class BrokerMain : IBrokerMain
     {
-        private static bool isBrokerRunning = false;
-        private readonly Broker broker;
+        private static bool _isBrokerRunning = false;
+        private readonly Broker _broker;
 
         public BrokerMain()
         {
-            broker = Broker.Instance;
-            broker.MessageReceived += OnMessageReceived;
+            _broker = Broker.Instance;
+            _broker.MessageReceived += OnMessageReceived;
         }
 
         public async Task StartAsync(string[] args)
@@ -26,9 +26,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             StringBuilder debugLog = new StringBuilder();
             debugLog.AppendLine("Starting MQTT Client...");
 
-            if (!isBrokerRunning)
+            if (!_isBrokerRunning)
             {
-                isBrokerRunning = true;
+                _isBrokerRunning = true;
                 bool connected = false;
                 int retryCount = 0;
                 const int maxRetries = 5;
@@ -38,8 +38,8 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
                     try
                     {
                         // Attempt to connect to the Docker Mosquitto broker
-                        await broker.ConnectBroker();
-                        await broker.Subscribe("Pacifier/#");
+                        await _broker.ConnectBroker();
+                        await _broker.Subscribe("Pacifier/#");
                         debugLog.AppendLine("Client connected and subscribed to 'Pacifier/#' topic.");
                         connected = true;
                     }

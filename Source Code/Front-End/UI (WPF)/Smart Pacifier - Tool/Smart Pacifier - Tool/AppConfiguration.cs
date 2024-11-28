@@ -12,38 +12,60 @@ namespace Smart_Pacifier___Tool
         public LocalConfig? Local { get; set; }
         public ServerConfig? Server { get; set; }
         public PythonScriptConfig? PythonScript { get; set; } // Add this property
+        public MqttConfig? Mqtt { get; set; }
 
-        public AppConfiguration LoadDatabaseConfiguration()
+        /// <summary>
+        /// Loads the database configuration from the config.json file.
+        /// This method deserializes the JSON file to populate the AppConfiguration object.
+        /// </summary>
+        /// <returns>Returns the AppConfiguration object with loaded settings.</returns>
+        public static AppConfiguration LoadDatabaseConfiguration()
         {
-            string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "config.json");
+            // Navigate up from the bin directory to the project root
+            string? projectDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            for (int i = 0; i < 4 && projectDirectory != null; i++) // Adjust as needed to reach the project root
+            {
+                projectDirectory = Directory.GetParent(projectDirectory)?.FullName;
+            }
+
+            if (projectDirectory == null)
+                throw new ArgumentException("projectDirectory is null. Terminating");
+
+            // Define the path to the original config.json in the project structure
+            string configPath = Path.Combine(projectDirectory, "Resources", "OutputResources", "config.json");
 
             if (!File.Exists(configPath))
             {
-                MessageBox.Show($"Configuration file not found at: {configPath}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Configuration file not found at: {configPath}", "Configuration Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
                 throw new FileNotFoundException("Configuration file not found.", configPath);
             }
 
             try
             {
-                string configJson = File.ReadAllText(configPath);
+                var configJson = File.ReadAllText(configPath);
                 var config = JsonConvert.DeserializeObject<AppConfiguration>(configJson);
 
                 if (config == null)
                 {
-                    MessageBox.Show("Failed to parse configuration file.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Failed to parse configuration file.", "Configuration Error", MessageBoxButton.OK,
+                        MessageBoxImage.Error);
                     throw new InvalidOperationException("Failed to parse configuration file.");
                 }
 
+                Console.WriteLine($"Read Mqtt config: {config.Mqtt}");
                 return config;
             }
-            catch (JsonException ex)
+            catch (Newtonsoft.Json.JsonException ex)
             {
-                MessageBox.Show($"Error parsing configuration file: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error parsing configuration file: {ex.Message}", "Configuration Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Configuration Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
         }
@@ -67,5 +89,11 @@ namespace Smart_Pacifier___Tool
     {
         public string? FileName { get; set; } // This will hold the name of the Python script
         public List<string>? AvailableScripts { get; set; } // List of available scripts
+    }
+    
+    public class MqttConfig
+    {
+        public required string Host { get; set; }
+        public required int Port { get; set; }
     }
 }
