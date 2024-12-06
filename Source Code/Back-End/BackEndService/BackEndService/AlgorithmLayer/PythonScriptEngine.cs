@@ -8,69 +8,64 @@ using System.Threading.Tasks;
 
 public class PythonScriptEngine
 {
+    private const int FixedPort = 5000; // Choose a fixed port for reuse
+
     public async Task<string> ExecuteScriptAsync(string scriptPath, string dataJson, bool usePort = true)
     {
-        if (usePort)
-        {
-            return await ExecuteScriptWithPortAsync(scriptPath, dataJson);
-        }
-        else
-        {
-            return await ExecuteScriptWithoutPortAsync(scriptPath, dataJson);
-        }
+        return usePort
+            ? await ExecuteScriptWithPortAsync(scriptPath, dataJson)
+            : await ExecuteScriptWithoutPortAsync(scriptPath, dataJson);
     }
 
     private async Task<string> ExecuteScriptWithPortAsync(string scriptPath, string dataJson)
     {
         string response = string.Empty;
-        TcpListener listener = null;
-        int fixedPort = 5000; // Choose an appropriate port
 
         try
         {
-            listener = new TcpListener(IPAddress.Loopback, fixedPort);
-            listener.Start();
-            Console.WriteLine($"TCP Listener started on port {fixedPort}");
-
-            var processStartInfo = new ProcessStartInfo
+            using (var listener = new TcpListener(IPAddress.Loopback, FixedPort))
             {
-                FileName = "python",
-                Arguments = $"\"{scriptPath}\" {fixedPort}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                listener.Start();
 
-            var pythonProcess = new Process { StartInfo = processStartInfo };
-            pythonProcess.Start();
-
-            using (TcpClient client = await listener.AcceptTcpClientAsync())
-            using (NetworkStream stream = client.GetStream())
-            {
-                byte[] dataBytes = Encoding.UTF8.GetBytes(dataJson);
-                await stream.WriteAsync(dataBytes, 0, dataBytes.Length);
-
-                using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+                // Start the Python process
+                var processStartInfo = new ProcessStartInfo
                 {
-                    response = await reader.ReadToEndAsync();
+                    FileName = "python",
+                    Arguments = $"\"{scriptPath}\" {FixedPort}",
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                var pythonProcess = new Process { StartInfo = processStartInfo };
+                pythonProcess.Start();
+
+                // Wait for the client to connect and send data
+                using (TcpClient client = await listener.AcceptTcpClientAsync())
+                using (NetworkStream stream = client.GetStream())
+                {
+                    byte[] dataBytes = Encoding.UTF8.GetBytes(dataJson);
+                    await stream.WriteAsync(dataBytes, 0, dataBytes.Length);
+                    await stream.FlushAsync();
+
+                    response = await ReadStreamDataAsync(stream);
+                }
+
+                string errorOutput = await pythonProcess.StandardError.ReadToEndAsync();
+                if (!string.IsNullOrEmpty(errorOutput))
+                {
+                    throw new Exception($"Python script error: {errorOutput}");
                 }
             }
-
-            string errorOutput = await pythonProcess.StandardError.ReadToEndAsync();
-            if (!string.IsNullOrEmpty(errorOutput))
-            {
-                throw new Exception($"Python script error: {errorOutput}");
-            }
+        }
+        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
+        {
+            response = $"Error: Port {FixedPort} is already in use. Ensure no other processes are using this port.";
         }
         catch (Exception ex)
         {
             response = $"Error executing Python script with port: {ex.Message}";
-        }
-        finally
-        {
-            listener?.Stop();
-            Console.WriteLine("TCP Listener stopped.");
         }
 
         return response;
@@ -93,26 +88,27 @@ public class PythonScriptEngine
                 CreateNoWindow = true
             };
 
-            var pythonProcess = new Process { StartInfo = processStartInfo };
-            pythonProcess.Start();
-
-            using (StreamWriter writer = pythonProcess.StandardInput)
+            using (var pythonProcess = new Process { StartInfo = processStartInfo })
             {
-                if (writer.BaseStream.CanWrite)
+                pythonProcess.Start();
+
+                // Write data to the process's input stream
+                using (StreamWriter writer = pythonProcess.StandardInput)
                 {
-                    await writer.WriteLineAsync(dataJson);
+                    if (writer.BaseStream.CanWrite)
+                    {
+                        await writer.WriteAsync(dataJson);
+                    }
                 }
-            }
 
-            using (StreamReader reader = pythonProcess.StandardOutput)
-            {
-                response = await reader.ReadToEndAsync();
-            }
+                // Read the output from the process
+                response = await pythonProcess.StandardOutput.ReadToEndAsync();
 
-            string errorOutput = await pythonProcess.StandardError.ReadToEndAsync();
-            if (!string.IsNullOrEmpty(errorOutput))
-            {
-                throw new Exception($"Python script error: {errorOutput}");
+                string errorOutput = await pythonProcess.StandardError.ReadToEndAsync();
+                if (!string.IsNullOrEmpty(errorOutput))
+                {
+                    throw new Exception($"Python script error: {errorOutput}");
+                }
             }
         }
         catch (Exception ex)
@@ -122,5 +118,20 @@ public class PythonScriptEngine
 
         return response;
     }
-}
 
+    private async Task<string> ReadStreamDataAsync(NetworkStream stream)
+    {
+        using (var memoryStream = new MemoryStream())
+        {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+
+            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                memoryStream.Write(buffer, 0, bytesRead);
+            }
+
+            return Encoding.UTF8.GetString(memoryStream.ToArray());
+        }
+    }
+}

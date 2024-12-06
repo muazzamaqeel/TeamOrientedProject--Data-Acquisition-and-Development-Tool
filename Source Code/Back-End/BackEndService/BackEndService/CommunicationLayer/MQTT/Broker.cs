@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using MQTTnet;
@@ -20,7 +22,11 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         private static Broker? _brokerInstance;
         private static readonly object _lock = new object();
 
-        private IMqttClient _mqttClient;
+        private readonly IMqttClient _mqttClient;
+        private readonly ConcurrentQueue<(string Topic, byte[] Payload)> _messageQueue = new();
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
+        private readonly SemaphoreSlim _semaphore = new(Environment.ProcessorCount * 2); // Limit concurrency.
+        private const int MaxQueueSize = 1000; // Limit queue size to avoid memory overflow.
         private bool disposed = false;
 
         public event EventHandler<MessageReceivedEventArgs>? MessageReceived;
@@ -33,21 +39,9 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             _mqttClient.ApplicationMessageReceivedAsync += OnMessageReceivedAsync;
             _mqttClient.ConnectedAsync += OnConnectedAsync;
             _mqttClient.DisconnectedAsync += OnDisconnectedAsync;
-        }
 
-        public void Dispose()
-        {
-            if (!disposed)
-            {
-                _mqttClient?.Dispose();
-                disposed = true;
-            }
-            GC.SuppressFinalize(this);
-        }
-
-        ~Broker()
-        {
-            Dispose();
+            // Start background processing for queued messages.
+            Task.Run(() => ProcessMessagesAsync(_cancellationTokenSource.Token));
         }
 
         public static Broker Instance
@@ -56,11 +50,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             {
                 lock (_lock)
                 {
-                    if (_brokerInstance == null)
-                    {
-                        _brokerInstance = new Broker();
-                    }
-                    return _brokerInstance;
+                    return _brokerInstance ??= new Broker();
                 }
             }
         }
@@ -89,7 +79,7 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
         {
             var topicFilter = new MqttTopicFilterBuilder()
                 .WithTopic(topic)
-                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtMostOnce)
+                .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce) // Use AtLeastOnce QoS for reliability.
                 .Build();
 
             var subscribeResult = await _mqttClient.SubscribeAsync(topicFilter);
@@ -101,39 +91,83 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-
-        private async Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
+        private Task OnMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
         {
             try
             {
-                byte[] rawPayload = e.ApplicationMessage.PayloadSegment.ToArray();
-                string topic = e.ApplicationMessage.Topic;
+                var payload = e.ApplicationMessage.PayloadSegment.ToArray();
+                var topic = e.ApplicationMessage.Topic;
 
-                Console.WriteLine($"Received raw data on topic '{topic}'");
-
-                if (rawPayload.Length > 0)
+                // Enqueue the message for background processing.
+                if (_messageQueue.Count >= MaxQueueSize)
                 {
-                    string[] topicParts = topic.Split('/');
-                    if (topicParts.Length >= 2 && topicParts[0] == "Pacifier")
-                    {
-                        string pacifierId = topicParts[1];
-                        var (parsedPacifierId, parsedSensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(rawPayload);
+                    _messageQueue.TryDequeue(out _); // Drop the oldest message.
+                }
+                _messageQueue.Enqueue((topic, payload));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error enqueuing message: {ex.Message}");
+            }
 
+            return Task.CompletedTask;
+        }
+
+        private async Task ProcessMessagesAsync(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (_messageQueue.TryDequeue(out var message))
+                {
+                    await _semaphore.WaitAsync(cancellationToken);
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await ProcessMessageAsync(message.Topic, message.Payload);
+                        }
+                        finally
+                        {
+                            _semaphore.Release();
+                        }
+                    }, cancellationToken);
+                }
+                else
+                {
+                    await Task.Delay(10); // Prevent busy-waiting.
+                }
+            }
+        }
+
+        private async Task ProcessMessageAsync(string topic, byte[] payload)
+        {
+            try
+            {
+                Console.WriteLine($"Processing message from topic '{topic}'");
+
+                string[] topicParts = topic.Split('/');
+                if (topicParts.Length >= 2 && topicParts[0] == "Pacifier")
+                {
+                    var pacifierId = topicParts[1];
+                    var (parsedPacifierId, parsedSensorType, parsedData) = ExposeSensorDataManager.Instance.ParseSensorData(payload);
+
+                    if (parsedData != null)
+                    {
+                        Console.WriteLine($"Pacifier: {parsedPacifierId} - Sensor: {parsedSensorType}");
                         foreach (var sensorGroup in parsedData)
                         {
-                            Console.WriteLine($"Pacifier: {parsedPacifierId} - Sensor: {parsedSensorType}");
                             foreach (var kvp in sensorGroup)
                             {
                                 Console.WriteLine($"     {kvp.Key}: {kvp.Value}");
                             }
                         }
 
-                        MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, rawPayload, parsedPacifierId, parsedSensorType, parsedData));
+                        MessageReceived?.Invoke(this, new MessageReceivedEventArgs(topic, payload, parsedPacifierId, parsedSensorType, parsedData));
                     }
-                    else
-                    {
-                        Console.WriteLine($"Invalid topic format: {topic}");
-                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid topic format: {topic}");
                 }
 
                 await Task.CompletedTask;
@@ -144,11 +178,10 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
-
-        private async Task OnConnectedAsync(MqttClientConnectedEventArgs e)
+        private Task OnConnectedAsync(MqttClientConnectedEventArgs e)
         {
             Console.WriteLine("Connected successfully with MQTT Broker.");
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         private async Task OnDisconnectedAsync(MqttClientDisconnectedEventArgs e)
@@ -166,13 +199,25 @@ namespace SmartPacifier.BackEnd.CommunicationLayer.MQTT
             }
         }
 
+        public void Dispose()
+        {
+            if (!disposed)
+            {
+                _mqttClient?.Dispose();
+                _cancellationTokenSource.Cancel();
+                _semaphore.Dispose();
+                disposed = true;
+            }
+            GC.SuppressFinalize(this);
+        }
+
         public class MessageReceivedEventArgs : EventArgs
         {
-            public string Topic { get; set; }
-            public byte[] Payload { get; set; }
-            public string PacifierId { get; set; }
-            public string SensorType { get; set; }
-            public ObservableCollection<Dictionary<string, object>> ParsedData { get; set; }
+            public string Topic { get; }
+            public byte[] Payload { get; }
+            public string PacifierId { get; }
+            public string SensorType { get; }
+            public ObservableCollection<Dictionary<string, object>> ParsedData { get; }
 
             public MessageReceivedEventArgs(string topic, byte[] payload, string pacifierId, string sensorType, ObservableCollection<Dictionary<string, object>> parsedData)
             {

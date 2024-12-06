@@ -4,6 +4,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,8 +19,10 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         private readonly IDatabaseService _databaseService;
         private bool _isMonitoring = false;
         private bool _isDisposing = false;
-        private CancellationTokenSource _scrollCancellationTokenSource;
+        private CancellationTokenSource _cancellationTokenSource;
         private readonly string _outputFilePath;
+        private readonly StringBuilder _buffer = new();
+        private readonly object _bufferLock = new();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -31,14 +34,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             {
                 _liveDataOutput = value;
                 OnPropertyChanged(nameof(LiveDataOutput));
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (!_isDisposing && LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
-                    {
-                        LiveDataOutputTextBox.ScrollToEnd();
-                    }
-                });
             }
         }
 
@@ -50,7 +45,6 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             {
                 _scrollingSpeed = value;
                 OnPropertyChanged(nameof(ScrollingSpeed));
-                RestartAutoScrolling(); // Restart auto-scrolling with updated speed
             }
         }
 
@@ -65,11 +59,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
             DataContext = this;
 
-            _outputFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "PythonFiles", "ExecutableScript", "AlgoOutput.txt");
-
-            StartAutoScrolling(); // Initialize auto-scrolling
-            ScrollingSpeedSlider.ValueChanged += ScrollingSpeedSlider_ValueChanged;
-
+            _outputFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "OutputResources", "PythonFiles", "AlgoOutput.txt");
         }
 
         private void OnControlLoaded(object sender, RoutedEventArgs e)
@@ -95,23 +85,28 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             try
             {
                 // Reset CancellationTokenSource if it was disposed
-                if (_scrollCancellationTokenSource == null || _scrollCancellationTokenSource.IsCancellationRequested)
-                {
-                    _scrollCancellationTokenSource = new CancellationTokenSource();
-                }
+                _cancellationTokenSource = new CancellationTokenSource();
 
                 SubscribeToBroker(); // Subscribe to broker
-                StartAutoScrolling(); // Start scrolling
+                StartUIUpdateTask(_cancellationTokenSource.Token); // Start UI update task
                 Debug.WriteLine("Monitoring started.");
-                LiveDataOutput += "\nMonitoring started successfully.";
+                AppendToBuffer("\nMonitoring started successfully.");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error starting monitoring: {ex.Message}");
-                LiveDataOutput += $"\nError starting monitoring: {ex.Message}";
+                AppendToBuffer($"\nError starting monitoring: {ex.Message}");
                 _isMonitoring = false;
             }
         }
+        private void AppendToBuffer(string data)
+        {
+            lock (_bufferLock)
+            {
+                _buffer.AppendLine(data);
+            }
+        }
+
         private void StopMonitoringButton_Click(object sender, RoutedEventArgs e)
         {
             if (!_isMonitoring)
@@ -122,11 +117,11 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
 
             _isMonitoring = false;
 
-            StopAutoScrolling();
             SaveRemainingDataToFile();
             UnsubscribeFromBroker();
+            _cancellationTokenSource.Cancel();
 
-            LiveDataOutput += "Monitoring stopped successfully.";
+            AppendToBuffer("Monitoring stopped successfully.");
         }
 
         private void SubscribeToBroker()
@@ -135,7 +130,7 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
             {
                 Broker.Instance.MessageReceived += OnMessageReceived; // Hook up the event
                 Debug.WriteLine("Subscribed to broker messages.");
-                LiveDataOutput += "Subscribed to broker messages.";
+                AppendToBuffer("Subscribed to broker messages.");
             }
         }
 
@@ -166,71 +161,41 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
                 Data = e.ParsedData
             });
 
-            // Append received data to the UI output and save it to the file
-            Application.Current.Dispatcher.Invoke(() =>
+            lock (_bufferLock)
             {
-                LiveDataOutput += $"\nReceived Data: {liveDataJson}";
-                SaveDataToFile($"Received Data: {liveDataJson}"); // Save to file immediately
-            });
+                _buffer.AppendLine($"Received Data: {liveDataJson}");
+            }
+
+            // Save to file immediately in the background
+            Task.Run(() => SaveDataToFile($"Received Data: {liveDataJson}"));
         }
 
-        private void StopAutoScrolling()
+        private void StartUIUpdateTask(CancellationToken token)
         {
-            try
-            {
-                if (_scrollCancellationTokenSource != null && !_scrollCancellationTokenSource.IsCancellationRequested)
-                {
-                    _scrollCancellationTokenSource.Cancel();
-                    _scrollCancellationTokenSource.Dispose();
-                }
-                _scrollCancellationTokenSource = null; // Reset for reuse
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error stopping auto-scrolling: {ex.Message}");
-            }
-        }
-
-        private void AdjustTextBoxHeight()
-        {
-            // Increase the height of the TextBox dynamically
-            if (LiveDataOutputTextBox != null && LiveDataOutputTextBox.IsLoaded)
-            {
-                // Adjust height based on the scrolling speed slider
-                double newHeight = LiveDataOutputTextBox.ActualHeight + (10 / ScrollingSpeed);
-                LiveDataOutputTextBox.Height = newHeight > 600 ? 600 : newHeight; // Cap height at 600
-            }
-        }
-
-        private void StartAutoScrolling()
-        {
-            if (_scrollCancellationTokenSource == null)
-            {
-                _scrollCancellationTokenSource = new CancellationTokenSource();
-            }
-
-            var token = _scrollCancellationTokenSource.Token;
-
             Task.Run(async () =>
             {
                 while (!token.IsCancellationRequested)
                 {
-                    await Task.Delay((int)(1000 / _scrollingSpeed), token);
+                    await Task.Delay(500, token); // Update the UI every 500ms
 
-                    Application.Current.Dispatcher.Invoke(() =>
+                    string bufferedData;
+                    lock (_bufferLock)
                     {
-                        LiveDataScrollViewer?.ScrollToEnd();
-                    });
+                        bufferedData = _buffer.ToString();
+                        _buffer.Clear();
+                    }
+
+                    if (!string.IsNullOrEmpty(bufferedData))
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            LiveDataOutput += bufferedData;
+                            LiveDataScrollViewer?.ScrollToEnd();
+                        });
+                    }
                 }
             }, token);
         }
-
-        private void RestartAutoScrolling()
-        {
-            StopAutoScrolling();
-            StartAutoScrolling();
-        }
-
 
         private void SaveDataToFile(string data)
         {
@@ -248,10 +213,13 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         {
             try
             {
-                if (!string.IsNullOrEmpty(LiveDataOutput))
+                lock (_bufferLock)
                 {
-                    File.AppendAllText(_outputFilePath, LiveDataOutput);
-                    LiveDataOutput = string.Empty; // Clear UI buffer
+                    if (_buffer.Length > 0)
+                    {
+                        File.AppendAllText(_outputFilePath, _buffer.ToString());
+                        _buffer.Clear();
+                    }
                 }
             }
             catch (Exception ex)
@@ -271,24 +239,5 @@ namespace Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-
-        private void ScrollingSpeedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            ScrollingSpeed = e.NewValue;
-
-            string speedText = ScrollingSpeed switch
-            {
-                <= 3 => "Slow",
-                <= 7 => "Normal",
-                _ => "Fast"
-            };
-
-            if (SpeedDisplay != null)
-            {
-                SpeedDisplay.Text = $"Speed: {speedText}";
-            }
-        }
-
-
     }
 }
