@@ -28,10 +28,13 @@ public class PythonScriptEngine
 
         try
         {
+            // Initialize TCP Listener with Reuse Address option
             listener = new TcpListener(IPAddress.Loopback, fixedPort);
+            listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true); // Enable port reuse
             listener.Start();
-            Console.WriteLine($"TCP Listener started on port {fixedPort}");
+            //Console.WriteLine($"TCP Listener started on port {fixedPort}");
 
+            // Start the Python process
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = "python",
@@ -62,6 +65,10 @@ public class PythonScriptEngine
             {
                 throw new Exception($"Python script error: {errorOutput}");
             }
+        }
+        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
+        {
+            response = $"Error: Port {fixedPort} is already in use. Please ensure no other processes are using this port.";
         }
         catch (Exception ex)
         {
