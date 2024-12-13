@@ -23,6 +23,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Smart_Pacifier___Tool.Tabs.AlgorithmTab.AlgoExtra;
 using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.LineProtocol;
+
 namespace Smart_Pacifier___Tool
 {
     public partial class App : Application
@@ -31,8 +32,8 @@ namespace Smart_Pacifier___Tool
         private IServiceProvider? _serviceProvider;
 
         // Mutex instances to prevent multiple instances of the application and the broker
-        private static Mutex? appMutex;
-        private static Mutex? brokerMutex;
+        private static Mutex? _appMutex;
+        private static Mutex? _brokerMutex;
 
         // Expose the service provider publicly so other components can access it
         public IServiceProvider ServiceProvider => _serviceProvider!;
@@ -57,7 +58,7 @@ namespace Smart_Pacifier___Tool
 
             // Ensure only one instance of the main application
             bool isAppNewInstance;
-            appMutex = new Mutex(true, "SmartPacifierMainAppMutex", out isAppNewInstance);
+            _appMutex = new Mutex(true, "SmartPacifierMainAppMutex", out isAppNewInstance);
             if (!isAppNewInstance)
             {
                 MessageBox.Show("The application is already running.");
@@ -67,7 +68,7 @@ namespace Smart_Pacifier___Tool
 
             // Ensure only one instance of the MQTT client
             bool isBrokerNewInstance;
-            brokerMutex = new Mutex(true, "SmartPacifierBrokerMutex", out isBrokerNewInstance);
+            _brokerMutex = new Mutex(true, "SmartPacifierBrokerMutex", out isBrokerNewInstance);
 
             if (!isBrokerNewInstance)
             {
@@ -85,6 +86,7 @@ namespace Smart_Pacifier___Tool
             {
                 themeUri = "Resources/ColorsDark.xaml";
             }
+
             ApplyTheme(themeUri);
 
             // Create a new service collection that will hold our service registrations
@@ -92,14 +94,15 @@ namespace Smart_Pacifier___Tool
 
             // Call the method that registers all necessary services
             ConfigureServices(services);
+            Console.WriteLine(
+                $"MQTT Configuration: Host={Broker.Instance.BrokerAddress}; Port={Broker.Instance.BrokerPort}");
 
             // Build the service provider from the service collection (This is the Dependency Injection container)
             _serviceProvider = services.BuildServiceProvider();
 
             // Run BrokerMain asynchronously to avoid blocking the main UI thread
             var brokerMain = _serviceProvider.GetRequiredService<IBrokerMain>();
-            await brokerMain.StartAsync(Array.Empty<string>()); // Await the task directly
-
+            await brokerMain.StartAsync([]); // Await the task directly
 
 
             /*
@@ -116,7 +119,6 @@ namespace Smart_Pacifier___Tool
             {
                 MessageBox.Show($"Error executing Python script:\n{ex.Message}", "Execution Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
             */
         }
 
@@ -128,7 +130,7 @@ namespace Smart_Pacifier___Tool
         public void ConfigureServices(IServiceCollection services)
         {
             // Load database configuration from config.json
-            var config = LoadDatabaseConfiguration();
+            var config = AppConfiguration.LoadDatabaseConfiguration();
 
             // Determine which configuration to use
             bool useLocal = config.UseLocal == true;
@@ -137,10 +139,17 @@ namespace Smart_Pacifier___Tool
             string? host = useLocal ? config.Local?.Host : $"{config.Server?.Host}:{config.Server?.Port}";
             string? apiKey = useLocal ? config.Local?.ApiKey : config.Server?.ApiKey;
 
+            // Configure broker
+            var broker = Broker.Instance;
+            broker.BrokerAddress = config.Mqtt?.Host ?? "localhost";
+            broker.BrokerPort = config.Mqtt?.Port ?? 1883;
+
             // Check if Host or ApiKey is missing and throw an exception with a detailed message
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(apiKey))
             {
-                MessageBox.Show("Host or API key is missing or improperly configured. Please check your configuration file.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    "Host or API key is missing or improperly configured. Please check your configuration file.",
+                    "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw new InvalidOperationException("Host or API key is missing or improperly configured.");
             }
 
@@ -162,15 +171,14 @@ namespace Smart_Pacifier___Tool
             {
                 var influxClient = sp.GetRequiredService<InfluxDBClient>();
                 string org = "thu-de"; // Keep your org consistent
-
                 return new InfluxDatabaseService(
                     influxClient,
                     apiKey, // API key retrieved from the configuration
-                    host,   // baseUrl from configuration
-                    org     // organization name
+                    host, // baseUrl from configuration
+                    org // organization name
                 );
             });
-            
+
             // Register other necessary services
             services.AddTransient<FileUpload>();
             services.AddSingleton<ILocalHost, LocalHostSetup>();
@@ -195,56 +203,6 @@ namespace Smart_Pacifier___Tool
 
             services.AddTransient<CampaignsView>();
         }
-
-
-        /// <summary>
-        /// Loads the database configuration from the config.json file.
-        /// This method deserializes the JSON file to populate the AppConfiguration object.
-        /// </summary>
-        /// <returns>Returns the AppConfiguration object with loaded settings.</returns>
-        public AppConfiguration LoadDatabaseConfiguration()
-        {
-            // Navigate up from the bin directory to the project root
-            string ?projectDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            for (int i = 0; i < 4; i++)  // Adjust as needed to reach the project root
-            {
-                projectDirectory = Directory.GetParent(projectDirectory)?.FullName;
-            }
-
-            // Define the path to the original config.json in the project structure
-            string configPath = Path.Combine(projectDirectory, "Resources", "OutputResources", "config.json");
-
-            if (!File.Exists(configPath))
-            {
-                MessageBox.Show($"Configuration file not found at: {configPath}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                throw new FileNotFoundException("Configuration file not found.", configPath);
-            }
-
-            try
-            {
-                var configJson = File.ReadAllText(configPath);
-                var config = JsonConvert.DeserializeObject<AppConfiguration>(configJson);
-
-                if (config == null)
-                {
-                    MessageBox.Show("Failed to parse configuration file.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    throw new InvalidOperationException("Failed to parse configuration file.");
-                }
-
-                return config;
-            }
-            catch (Newtonsoft.Json.JsonException ex)
-            {
-                MessageBox.Show($"Error parsing configuration file: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                throw;
-            }
-        }
-
 
         /// <summary>
         /// Applies the passed theme, clears all current resource dictionaries and adds them back
@@ -292,14 +250,16 @@ namespace Smart_Pacifier___Tool
         public void ReloadServices()
         {
             // Re-load database configuration from the updated config.json
-            var config = LoadDatabaseConfiguration();
+            var config = AppConfiguration.LoadDatabaseConfiguration();
             bool useLocal = config.UseLocal == true;
             string? host = useLocal ? config.Local?.Host : $"{config.Server?.Host}:{config.Server?.Port}";
             string? apiKey = useLocal ? config.Local?.ApiKey : config.Server?.ApiKey;
 
             if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(apiKey))
             {
-                MessageBox.Show("Host or API key is missing or improperly configured. Please check your configuration file.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(
+                    "Host or API key is missing or improperly configured. Please check your configuration file.",
+                    "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -318,7 +278,6 @@ namespace Smart_Pacifier___Tool
             {
                 var influxClient = sp.GetRequiredService<InfluxDBClient>();
                 string org = "thu-de";
-
                 return new InfluxDatabaseService(
                     influxClient,
                     apiKey,
@@ -333,10 +292,9 @@ namespace Smart_Pacifier___Tool
             // Rebuild the service provider with updated services
             _serviceProvider = services.BuildServiceProvider();
 
-            MessageBox.Show("Database configuration updated and services reloaded successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Database configuration updated and services reloaded successfully.", "Success",
+                MessageBoxButton.OK, MessageBoxImage.Information);
         }
-
-
 
 
         protected override void OnExit(ExitEventArgs e)
@@ -358,8 +316,8 @@ namespace Smart_Pacifier___Tool
             }
 
             // Release Mutexes
-            appMutex?.ReleaseMutex();
-            brokerMutex?.ReleaseMutex();
+            _appMutex?.ReleaseMutex();
+            _brokerMutex?.ReleaseMutex();
         }
 
 
@@ -391,7 +349,6 @@ namespace Smart_Pacifier___Tool
         }
 
 
-
         /// <summary>
         /// Extension method to get the parent process ID
         /// </summary>
@@ -400,7 +357,7 @@ namespace Smart_Pacifier___Tool
             try
             {
                 using (var searcher = new System.Management.ManagementObjectSearcher(
-                    "SELECT ParentProcessId FROM Win32_Process WHERE ProcessId = " + process.Id))
+                           "SELECT ParentProcessId FROM Win32_Process WHERE ProcessId = " + process.Id))
                 {
                     foreach (var obj in searcher.Get())
                     {
@@ -412,9 +369,8 @@ namespace Smart_Pacifier___Tool
             {
                 // If unable to retrieve the parent process ID, return 0
             }
+
             return 0;
         }
-
-
     }
 }
